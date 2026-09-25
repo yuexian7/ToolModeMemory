@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--Tool Mode Memory 发布元数据。首发（PublishNewMod）成功后把返回的 ModId 回填到 <ModId Value="..." />。
+    本轮用户要求：官方平台不要公开（private / 不公开）。-->
+<PublishConfiguration>
+	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
+	<ModId Value="160529" />
+	<ModVersion Value="0.1.1" />
+	<GameVersion Value="1.6.*" />
+	<!--Private = 不公开（用户要求）。若平台拒绝此值再改 Unlisted。-->
+	<AccessLevel Value="Private" />
+	<DisplayName Value="Tool Mode Memory" />
+	<ShortDescription Value="Remembers tool panel settings per savegame (draw mode, snap, height...) with configurable sharing scope." />
+	<LongDescription Value="## **English**&#xA;&#xA;Tired of redoing the same tool options every time you enter a save? **Tool Mode Memory** remembers how you left the tool panel — draw mode, snapping, parallel roads, height, placement modes and more — and brings those choices back when you return.&#xA;&#xA;Every savegame gets its own memory file. Leave a save, come back later, and your setup is still there.&#xA;&#xA;**Sharing scope** is configurable per tool item:&#xA;&#xA;- Same group (e.g. all small roads)&#xA;- Same menu (roads, education, ...)&#xA;- Same asset type (alley, metro track, ...)&#xA;- Shared globally&#xA;- Per asset (not shared)&#xA;&#xA;Turn the master switch **off** for 100% vanilla behaviour. Memory management (reset / open folder) and links live on the About tab.&#xA;&#xA;Zero Harmony. Does not modify game files.&#xA;&#xA;## **中文**&#xA;&#xA;每次进档都要把工具选项重设一遍？**Tool Mode Memory** 会记住你离开时的工具选项——绘制模式、吸附、平行道路、高度、放置模式等——下次进入该存档自动恢复。&#xA;&#xA;每个存档单独一份记忆，退出覆盖保存。&#xA;&#xA;**共用范围**可按工具项配置：同组 / 同菜单 / 同类资产 / 全局共用 / 全局不共用。&#xA;&#xA;总开关关闭 = 完全原版行为。重置记忆、打开记忆文件夹与链接在「关于」页。&#xA;&#xA;零 Harmony，不修改游戏文件。" />
+	<Thumbnail Value="Properties/Thumbnail.jpg" />
+	<Tag Value="Code Mod" />
+	<ExternalLink Type="github" Url="https://github.com/yuexian7/ToolModeMemory" />
+	<ExternalLink Type="kofi" Url="https://ko-fi.com/yuexian7" />
+	<ChangeLog>
+v0.1.1
+
+- Per-save tool mode memory (draw mode, snap, height, place modes...).
+- Configurable sharing scope per tool item (group / menu / asset type / global / per-asset).
+- Master switch (default off = vanilla). About tab: version, author, links.
+- Fixed height not staying per-asset (desired-elevation sync).
+- Official Chinese terminology alignment.
+
+中文
+
+- 按存档记忆工具选项（绘制模式、吸附、高度、放置模式等）。
+- 每个工具项可配置共用范围（同组 / 同菜单 / 同类资产 / 全局共用 / 全局不共用）。
+- 总开关默认关闭（原版行为）。关于页：版本、作者、链接。
+- 修复高度无法按资产独立记忆。
+- 中文文案对齐官方用词。
+	</ChangeLog>
+</PublishConfiguration>

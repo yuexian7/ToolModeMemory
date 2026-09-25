@@ -1,0 +1,3 @@
+@echo off
+REM placeholder thumbnail — replace before any publish
+echo Thumbnail placeholder > nul
