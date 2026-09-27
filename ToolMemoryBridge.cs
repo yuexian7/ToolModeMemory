@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Colossal.Entities;
 using Colossal.Logging;
@@ -13,12 +14,22 @@ namespace ToolModeMemory
 {
 	/// <summary>
 	/// 范围键解析 + 工具状态快照/写回。
-	/// 键：G:group / M:menu / C:category / S / P:prefabIndex
 	///
-	/// 关键修复（v0.1.1）：NetToolSystem.CheckElevationRange 会执行
+	/// 真实层级（反编译 Game.dll 证据）：
+	///   资产 prefab --UIObjectData.m_Group--> 分类 --UIAssetCategoryData.m_Menu--> 菜单(UIAssetMenuData)
+	///   UIObjectData 只有 m_Group / m_Priority 两个字段，不存在第三层「组」。
+	/// 键：
+	///   Menu     = M:{菜单名}
+	///   Group    = G:{菜单名}/{分类名}      （= 原版 NetToolSystem 粒度）
+	///   Category = C:{分类名}              （跨菜单同名分类）
+	///   GlobalShared = S
+	///   GlobalUnique = P:{PrefabID}
+	/// 名称一律取 PrefabSystem.GetPrefabName / PrefabBase.GetPrefabID，不用 Entity.Index
+	/// （索引会随 DLC / 创意工坊资产加载顺序变化而漂移，导致串记忆）。
+	///
+	/// 高程（v0.1.1 结论保留）：NetToolSystem.CheckElevationRange 执行
 	///   elevation = Clamp(m_DesiredElevation, range)
-	/// 只写公开 elevation 属性会在换 prefab / 高度范围变化时被 m_DesiredElevation 冲掉，
-	/// 表现为「切路高度仍然共用」。写回时必须同步私有 m_DesiredElevation。
+	/// 而 elevation setter 不写 m_DesiredElevation，所以写回必须同步私有字段。
 	/// </summary>
 	public static class ToolMemoryBridge
 	{
@@ -28,88 +39,121 @@ namespace ToolModeMemory
 		private static readonly FieldInfo s_LastElevationRange =
 			typeof(NetToolSystem).GetField("m_LastElevationRange", BindingFlags.Instance | BindingFlags.NonPublic);
 
-		public static string ResolveKey(MemoryScope scope, PrefabBase prefab, PrefabSystem prefabSystem, EntityManager em)
+		private static readonly Dictionary<Entity, string> s_NameCache = new Dictionary<Entity, string>();
+
+		/// <summary>清掉实体名缓存（退出存档 / 资产重载时调用）。</summary>
+		public static void ForgetNames()
 		{
+			s_NameCache.Clear();
+		}
+
+		public static string ResolveKey(MemoryScope scope, PrefabBase prefab, ToolBaseSystem tool,
+			PrefabSystem prefabSystem, EntityManager em)
+		{
+			string key;
 			switch (scope)
 			{
 				case MemoryScope.GlobalShared:
-					return "S";
+					return MemoryKeys.Shared();
 				case MemoryScope.GlobalUnique:
-					if (prefab == null) return "P:null";
-					Entity pe = prefabSystem.GetEntity(prefab);
-					return "P:" + pe.Index.ToString();
-				case MemoryScope.Group:
-					return "G:" + GetGroup(prefab, prefabSystem, em);
-				case MemoryScope.Category:
-					return "C:" + GetCategory(prefab, prefabSystem, em);
+					key = MemoryKeys.Asset(AssetName(prefab, tool, prefabSystem));
+					break;
 				case MemoryScope.Menu:
-					return "M:" + GetMenu(prefab, prefabSystem, em);
+					key = MemoryKeys.Menu(MenuOf(prefab, prefabSystem, em));
+					break;
+				case MemoryScope.Category:
+					key = MemoryKeys.Category(CategoryOf(prefab, prefabSystem, em));
+					break;
+				case MemoryScope.Group:
+					key = MemoryKeys.Group(MenuOf(prefab, prefabSystem, em), CategoryOf(prefab, prefabSystem, em));
+					break;
 				default:
-					return "S";
+					return MemoryKeys.Shared();
 			}
+			// 该层级解析不出来（资产不在工具栏层级里 / 没有选中资产）：退回按工具隔离，
+			// 绝不能让多个互不相干的工具共用一个桶。
+			return key ?? ToolIdentity(tool);
 		}
 
-		private static string GetGroup(PrefabBase prefab, PrefabSystem prefabSystem, EntityManager em)
+		// ---- 键拼装规则见 Memory/MemoryKeys.cs（纯函数，离线可测）----
+
+		private static string AssetName(PrefabBase prefab, ToolBaseSystem tool, PrefabSystem prefabSystem)
 		{
-			if (prefab == null) return "null";
-			Entity e = prefabSystem.GetEntity(prefab);
-			UIObjectData data;
-			if (em.TryGetComponent(e, out data))
+			if (prefab == null) return null;
+			try
 			{
-				return data.m_Group.Index.ToString();
+				PrefabID id = prefab.GetPrefabID();
+				string s = id.ToString();
+				if (!string.IsNullOrEmpty(s)) return s;
+				if (!string.IsNullOrEmpty(prefab.name)) return prefab.name;
 			}
-			return "null";
+			catch { }
+			return null;
 		}
 
-		private static string GetCategory(PrefabBase prefab, PrefabSystem prefabSystem, EntityManager em)
+		private static string ToolIdentity(ToolBaseSystem tool)
 		{
-			if (prefab == null) return "null";
-			Entity e = prefabSystem.GetEntity(prefab);
-			UIObjectData data;
-			if (em.TryGetComponent(e, out data))
-			{
-				return "c" + data.m_Group.Index.ToString();
-			}
-			return "null";
+			return MemoryKeys.Tool(tool != null ? tool.toolID : null);
 		}
 
-		private static string GetMenu(PrefabBase prefab, PrefabSystem prefabSystem, EntityManager em)
+		/// <summary>资产所属分类名；无 UIObjectData / 未分组时返回 null。</summary>
+		private static string CategoryOf(PrefabBase prefab, PrefabSystem prefabSystem, EntityManager em)
 		{
-			if (prefab == null) return "null";
-			Entity e = prefabSystem.GetEntity(prefab);
-			UIObjectData data;
-			if (em.TryGetComponent(e, out data))
-			{
-				return "m" + data.m_Group.Index.ToString();
-			}
-			return "null";
+			Entity group = GroupOf(prefab, prefabSystem, em);
+			if (group == Entity.Null) return null;
+			return NameOf(group, prefabSystem, em);
 		}
 
-		/// <summary>未命中记忆时的出厂默认值。</summary>
+		/// <summary>资产所属分类所属菜单名。</summary>
+		private static string MenuOf(PrefabBase prefab, PrefabSystem prefabSystem, EntityManager em)
+		{
+			Entity group = GroupOf(prefab, prefabSystem, em);
+			if (group == Entity.Null) return null;
+			try
+			{
+				UIAssetCategoryData catData;
+				if (!em.TryGetComponent(group, out catData)) return null;
+				Entity menu = catData.m_Menu;
+				if (menu == Entity.Null) return null;
+				return NameOf(menu, prefabSystem, em);
+			}
+			catch { return null; }
+		}
+
+		private static Entity GroupOf(PrefabBase prefab, PrefabSystem prefabSystem, EntityManager em)
+		{
+			if (prefab == null || prefabSystem == null) return Entity.Null;
+			try
+			{
+				Entity e = prefabSystem.GetEntity(prefab);
+				if (e == Entity.Null || !em.Exists(e)) return Entity.Null;
+				UIObjectData data;
+				if (!em.TryGetComponent(e, out data)) return Entity.Null;
+				return data.m_Group;
+			}
+			catch { return Entity.Null; }
+		}
+
+		private static string NameOf(Entity e, PrefabSystem prefabSystem, EntityManager em)
+		{
+			if (e == Entity.Null) return null;
+			string cached;
+			if (s_NameCache.TryGetValue(e, out cached)) return cached;
+			string name = null;
+			try
+			{
+				if (prefabSystem != null && em.Exists(e)) name = prefabSystem.GetPrefabName(e);
+			}
+			catch { name = null; }
+			if (string.IsNullOrEmpty(name)) name = null;
+			if (s_NameCache.Count < 4096) s_NameCache[e] = name;
+			return name;
+		}
+
+		/// <summary>未命中记忆时的出厂默认值：各枚举的第 0 项 / 高度 0 / 平行 0。</summary>
 		public static int DefaultValue(string itemId)
 		{
-			switch (itemId)
-			{
-				case ToolItemCatalog.kNetElevation:
-				case ToolItemCatalog.kNetUnderground:
-				case ToolItemCatalog.kObjUnderground:
-				case ToolItemCatalog.kNetParallel:
-					return 0;
-				case ToolItemCatalog.kNetDraw:
-				case ToolItemCatalog.kObjPlace:
-				case ToolItemCatalog.kZoneMode:
-				case ToolItemCatalog.kAreaMode:
-				case ToolItemCatalog.kWaterMode:
-				case ToolItemCatalog.kTerrainMode:
-				case ToolItemCatalog.kBulldozeMode:
-				case ToolItemCatalog.kUpgradeMode:
-					return 0;
-				case ToolItemCatalog.kNetSnap:
-				case ToolItemCatalog.kObjAlign:
-					return 0;
-				default:
-					return 0;
-			}
+			return 0;
 		}
 
 		public static bool TryCapture(string itemId, ToolBaseSystem tool, out int value)
@@ -293,7 +337,7 @@ namespace ToolModeMemory
 
 		/// <summary>
 		/// 同时写 m_Elevation 与 m_DesiredElevation，并作废 m_LastElevationRange，
-		/// 否则 CheckElevationRange 会在换路时用旧 desired 冲掉新高度。
+		/// 否则 CheckElevationRange 会在换资产时用旧 desired 冲掉新高度。
 		/// </summary>
 		public static void ApplyElevation(NetToolSystem net, float meters)
 		{
@@ -301,20 +345,12 @@ namespace ToolModeMemory
 			net.elevation = meters;
 			if (s_DesiredElevation != null)
 			{
-				s_DesiredElevation.SetValue(net, meters);
+				try { s_DesiredElevation.SetValue(net, meters); } catch { }
 			}
 			if (s_LastElevationRange != null)
 			{
-				// 置为不可能相等的默认值，迫使下次 CheckElevationRange 重新 clamp(desired)
-				try
-				{
-					object current = s_LastElevationRange.GetValue(net);
-					// Bounds1 是 struct；直接置 default 再改 desired 已足够，这里写回 default
-					s_LastElevationRange.SetValue(net, current); // keep
-					// 将 range 置为 default：用 Activator 创建默认 struct
-					Type t = s_LastElevationRange.FieldType;
-					s_LastElevationRange.SetValue(net, Activator.CreateInstance(t));
-				}
+				// 置为 default(Bounds1)，迫使下次 CheckElevationRange 用新 range 重新 clamp(desired)
+				try { s_LastElevationRange.SetValue(net, Activator.CreateInstance(s_LastElevationRange.FieldType)); }
 				catch { }
 			}
 		}

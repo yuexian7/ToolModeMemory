@@ -23,7 +23,7 @@ namespace ToolModeMemory
 	[SettingsUITabOrder(kTabMod, kTabAbout)]
 	[SettingsUIGroupOrder(kGroupMain, kGroupNet, kGroupObj, kGroupZone, kGroupReset, kGroupAbout)]
 	[SettingsUIShowGroupName(kGroupMain, kGroupNet, kGroupObj, kGroupZone, kGroupReset)]
-	public class Setting : ModSetting
+	public class ToolModeMemorySettings : ModSetting
 	{
 		public const string kTabMod = "ModSettings";
 		public const string kTabAbout = "About";
@@ -36,19 +36,19 @@ namespace ToolModeMemory
 		/// <summary>关于页底部信息板块（不显示板块名）。</summary>
 		public const string kGroupAbout = "AboutInfo";
 
-		public const int kScopeGroup = 0;
-		public const int kScopeMenu = 1;
-		public const int kScopeCategory = 2;
-		public const int kScopeGlobalShared = 3;
-		public const int kScopeGlobalUnique = 4;
+		public static ToolModeMemorySettings Instance;
 
-		public static Setting Instance;
+		/// <summary>
+		/// LoadSettings 是用属性 setter 反序列化的；在配置读入完成前必须屏蔽
+		/// Sync/Persist，否则开局就会触发十几次设置落盘任务。
+		/// </summary>
+		public static bool Ready;
 
 		private bool m_Enabled;
 		private readonly Dictionary<string, bool> m_ItemEnabled = new Dictionary<string, bool>(StringComparer.Ordinal);
 		private readonly Dictionary<string, int> m_ItemScope = new Dictionary<string, int>(StringComparer.Ordinal);
 
-		public Setting(IMod mod) : base(mod)
+		public ToolModeMemorySettings(IMod mod) : base(mod)
 		{
 			InitItemDefaults();
 		}
@@ -72,6 +72,7 @@ namespace ToolModeMemory
 			{
 				m_Enabled = value;
 				Sync();
+				Persist();
 			}
 		}
 
@@ -83,7 +84,7 @@ namespace ToolModeMemory
 		// ---------- 工具项：启用 + 范围（由宏展开式手写，保证框架反射可见） ----------
 
 		[SettingsUISection(kTabMod, kGroupNet)]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsMasterOff))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
 		public bool NetDrawEnabled
 		{
 			get { return GetEnabled(ToolItemCatalog.kNetDraw); }
@@ -91,9 +92,9 @@ namespace ToolModeMemory
 		}
 
 		[SettingsUISection(kTabMod, kGroupNet)]
-		[SettingsUIDropdown(typeof(Setting), nameof(GetNetDrawScopeItems))]
-		[SettingsUIValueVersion(typeof(Setting), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsNetDrawScopeDisabled))]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetNetDrawScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsNetDrawScopeDisabled))]
 		public int NetDrawScope
 		{
 			get { return GetScope(ToolItemCatalog.kNetDraw); }
@@ -103,7 +104,7 @@ namespace ToolModeMemory
 		public bool IsNetDrawScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kNetDraw); }
 
 		[SettingsUISection(kTabMod, kGroupNet)]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsMasterOff))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
 		public bool NetSnapEnabled
 		{
 			get { return GetEnabled(ToolItemCatalog.kNetSnap); }
@@ -111,9 +112,9 @@ namespace ToolModeMemory
 		}
 
 		[SettingsUISection(kTabMod, kGroupNet)]
-		[SettingsUIDropdown(typeof(Setting), nameof(GetNetSnapScopeItems))]
-		[SettingsUIValueVersion(typeof(Setting), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsNetSnapScopeDisabled))]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetNetSnapScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsNetSnapScopeDisabled))]
 		public int NetSnapScope
 		{
 			get { return GetScope(ToolItemCatalog.kNetSnap); }
@@ -123,7 +124,7 @@ namespace ToolModeMemory
 		public bool IsNetSnapScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kNetSnap); }
 
 		[SettingsUISection(kTabMod, kGroupNet)]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsMasterOff))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
 		public bool NetParallelEnabled
 		{
 			get { return GetEnabled(ToolItemCatalog.kNetParallel); }
@@ -131,9 +132,9 @@ namespace ToolModeMemory
 		}
 
 		[SettingsUISection(kTabMod, kGroupNet)]
-		[SettingsUIDropdown(typeof(Setting), nameof(GetNetParallelScopeItems))]
-		[SettingsUIValueVersion(typeof(Setting), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsNetParallelScopeDisabled))]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetNetParallelScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsNetParallelScopeDisabled))]
 		public int NetParallelScope
 		{
 			get { return GetScope(ToolItemCatalog.kNetParallel); }
@@ -143,7 +144,7 @@ namespace ToolModeMemory
 		public bool IsNetParallelScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kNetParallel); }
 
 		[SettingsUISection(kTabMod, kGroupNet)]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsMasterOff))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
 		public bool NetUndergroundEnabled
 		{
 			get { return GetEnabled(ToolItemCatalog.kNetUnderground); }
@@ -151,9 +152,9 @@ namespace ToolModeMemory
 		}
 
 		[SettingsUISection(kTabMod, kGroupNet)]
-		[SettingsUIDropdown(typeof(Setting), nameof(GetNetUndergroundScopeItems))]
-		[SettingsUIValueVersion(typeof(Setting), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsNetUndergroundScopeDisabled))]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetNetUndergroundScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsNetUndergroundScopeDisabled))]
 		public int NetUndergroundScope
 		{
 			get { return GetScope(ToolItemCatalog.kNetUnderground); }
@@ -163,7 +164,7 @@ namespace ToolModeMemory
 		public bool IsNetUndergroundScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kNetUnderground); }
 
 		[SettingsUISection(kTabMod, kGroupNet)]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsMasterOff))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
 		public bool NetElevationEnabled
 		{
 			get { return GetEnabled(ToolItemCatalog.kNetElevation); }
@@ -171,9 +172,9 @@ namespace ToolModeMemory
 		}
 
 		[SettingsUISection(kTabMod, kGroupNet)]
-		[SettingsUIDropdown(typeof(Setting), nameof(GetNetElevationScopeItems))]
-		[SettingsUIValueVersion(typeof(Setting), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsNetElevationScopeDisabled))]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetNetElevationScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsNetElevationScopeDisabled))]
 		public int NetElevationScope
 		{
 			get { return GetScope(ToolItemCatalog.kNetElevation); }
@@ -183,7 +184,7 @@ namespace ToolModeMemory
 		public bool IsNetElevationScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kNetElevation); }
 
 		[SettingsUISection(kTabMod, kGroupObj)]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsMasterOff))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
 		public bool ObjPlaceEnabled
 		{
 			get { return GetEnabled(ToolItemCatalog.kObjPlace); }
@@ -191,9 +192,9 @@ namespace ToolModeMemory
 		}
 
 		[SettingsUISection(kTabMod, kGroupObj)]
-		[SettingsUIDropdown(typeof(Setting), nameof(GetObjPlaceScopeItems))]
-		[SettingsUIValueVersion(typeof(Setting), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsObjPlaceScopeDisabled))]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetObjPlaceScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsObjPlaceScopeDisabled))]
 		public int ObjPlaceScope
 		{
 			get { return GetScope(ToolItemCatalog.kObjPlace); }
@@ -203,7 +204,7 @@ namespace ToolModeMemory
 		public bool IsObjPlaceScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kObjPlace); }
 
 		[SettingsUISection(kTabMod, kGroupObj)]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsMasterOff))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
 		public bool ObjAlignEnabled
 		{
 			get { return GetEnabled(ToolItemCatalog.kObjAlign); }
@@ -211,9 +212,9 @@ namespace ToolModeMemory
 		}
 
 		[SettingsUISection(kTabMod, kGroupObj)]
-		[SettingsUIDropdown(typeof(Setting), nameof(GetObjAlignScopeItems))]
-		[SettingsUIValueVersion(typeof(Setting), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsObjAlignScopeDisabled))]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetObjAlignScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsObjAlignScopeDisabled))]
 		public int ObjAlignScope
 		{
 			get { return GetScope(ToolItemCatalog.kObjAlign); }
@@ -223,7 +224,7 @@ namespace ToolModeMemory
 		public bool IsObjAlignScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kObjAlign); }
 
 		[SettingsUISection(kTabMod, kGroupObj)]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsMasterOff))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
 		public bool ObjUndergroundEnabled
 		{
 			get { return GetEnabled(ToolItemCatalog.kObjUnderground); }
@@ -231,9 +232,9 @@ namespace ToolModeMemory
 		}
 
 		[SettingsUISection(kTabMod, kGroupObj)]
-		[SettingsUIDropdown(typeof(Setting), nameof(GetObjUndergroundScopeItems))]
-		[SettingsUIValueVersion(typeof(Setting), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsObjUndergroundScopeDisabled))]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetObjUndergroundScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsObjUndergroundScopeDisabled))]
 		public int ObjUndergroundScope
 		{
 			get { return GetScope(ToolItemCatalog.kObjUnderground); }
@@ -242,28 +243,8 @@ namespace ToolModeMemory
 
 		public bool IsObjUndergroundScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kObjUnderground); }
 
-		[SettingsUISection(kTabMod, kGroupObj)]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsMasterOff))]
-		public bool UpgradeModeEnabled
-		{
-			get { return GetEnabled(ToolItemCatalog.kUpgradeMode); }
-			set { SetEnabled(ToolItemCatalog.kUpgradeMode, value); }
-		}
-
-		[SettingsUISection(kTabMod, kGroupObj)]
-		[SettingsUIDropdown(typeof(Setting), nameof(GetUpgradeModeScopeItems))]
-		[SettingsUIValueVersion(typeof(Setting), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsUpgradeModeScopeDisabled))]
-		public int UpgradeModeScope
-		{
-			get { return GetScope(ToolItemCatalog.kUpgradeMode); }
-			set { SetScope(ToolItemCatalog.kUpgradeMode, value); }
-		}
-
-		public bool IsUpgradeModeScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kUpgradeMode); }
-
 		[SettingsUISection(kTabMod, kGroupZone)]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsMasterOff))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
 		public bool ZoneModeEnabled
 		{
 			get { return GetEnabled(ToolItemCatalog.kZoneMode); }
@@ -271,9 +252,9 @@ namespace ToolModeMemory
 		}
 
 		[SettingsUISection(kTabMod, kGroupZone)]
-		[SettingsUIDropdown(typeof(Setting), nameof(GetZoneModeScopeItems))]
-		[SettingsUIValueVersion(typeof(Setting), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsZoneModeScopeDisabled))]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetZoneModeScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsZoneModeScopeDisabled))]
 		public int ZoneModeScope
 		{
 			get { return GetScope(ToolItemCatalog.kZoneMode); }
@@ -283,7 +264,7 @@ namespace ToolModeMemory
 		public bool IsZoneModeScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kZoneMode); }
 
 		[SettingsUISection(kTabMod, kGroupZone)]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsMasterOff))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
 		public bool AreaModeEnabled
 		{
 			get { return GetEnabled(ToolItemCatalog.kAreaMode); }
@@ -291,9 +272,9 @@ namespace ToolModeMemory
 		}
 
 		[SettingsUISection(kTabMod, kGroupZone)]
-		[SettingsUIDropdown(typeof(Setting), nameof(GetAreaModeScopeItems))]
-		[SettingsUIValueVersion(typeof(Setting), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsAreaModeScopeDisabled))]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetAreaModeScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsAreaModeScopeDisabled))]
 		public int AreaModeScope
 		{
 			get { return GetScope(ToolItemCatalog.kAreaMode); }
@@ -303,7 +284,7 @@ namespace ToolModeMemory
 		public bool IsAreaModeScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kAreaMode); }
 
 		[SettingsUISection(kTabMod, kGroupZone)]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsMasterOff))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
 		public bool WaterModeEnabled
 		{
 			get { return GetEnabled(ToolItemCatalog.kWaterMode); }
@@ -311,9 +292,9 @@ namespace ToolModeMemory
 		}
 
 		[SettingsUISection(kTabMod, kGroupZone)]
-		[SettingsUIDropdown(typeof(Setting), nameof(GetWaterModeScopeItems))]
-		[SettingsUIValueVersion(typeof(Setting), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsWaterModeScopeDisabled))]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetWaterModeScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsWaterModeScopeDisabled))]
 		public int WaterModeScope
 		{
 			get { return GetScope(ToolItemCatalog.kWaterMode); }
@@ -323,27 +304,7 @@ namespace ToolModeMemory
 		public bool IsWaterModeScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kWaterMode); }
 
 		[SettingsUISection(kTabMod, kGroupZone)]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsMasterOff))]
-		public bool TerrainModeEnabled
-		{
-			get { return GetEnabled(ToolItemCatalog.kTerrainMode); }
-			set { SetEnabled(ToolItemCatalog.kTerrainMode, value); }
-		}
-
-		[SettingsUISection(kTabMod, kGroupZone)]
-		[SettingsUIDropdown(typeof(Setting), nameof(GetTerrainModeScopeItems))]
-		[SettingsUIValueVersion(typeof(Setting), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsTerrainModeScopeDisabled))]
-		public int TerrainModeScope
-		{
-			get { return GetScope(ToolItemCatalog.kTerrainMode); }
-			set { SetScope(ToolItemCatalog.kTerrainMode, value); }
-		}
-
-		public bool IsTerrainModeScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kTerrainMode); }
-
-		[SettingsUISection(kTabMod, kGroupZone)]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsMasterOff))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
 		public bool BulldozeModeEnabled
 		{
 			get { return GetEnabled(ToolItemCatalog.kBulldozeMode); }
@@ -351,9 +312,9 @@ namespace ToolModeMemory
 		}
 
 		[SettingsUISection(kTabMod, kGroupZone)]
-		[SettingsUIDropdown(typeof(Setting), nameof(GetBulldozeModeScopeItems))]
-		[SettingsUIValueVersion(typeof(Setting), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(Setting), nameof(IsBulldozeModeScopeDisabled))]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetBulldozeModeScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsBulldozeModeScopeDisabled))]
 		public int BulldozeModeScope
 		{
 			get { return GetScope(ToolItemCatalog.kBulldozeMode); }
@@ -366,7 +327,7 @@ namespace ToolModeMemory
 
 		[SettingsUISection(kTabAbout, kGroupReset)]
 		[SettingsUIButton]
-		[SettingsUIConfirmation(null, "CONFIRM_RESET")]
+		[SettingsUIConfirmation("CONFIRM_RESET", null)]
 		public bool ResetMemory
 		{
 			set { DoResetMemory(); }
@@ -379,12 +340,12 @@ namespace ToolModeMemory
 			set { DoOpenMemoryFolder(); }
 		}
 
+		// 只读 string 才会被 AutomaticSettings 认成 MultilineText；带 setter 会变成 WidgetType.None
 		[SettingsUISection(kTabAbout, kGroupAbout)]
 		[SettingsUIMultilineText]
 		public string ModVersion
 		{
 			get { return ToolModeMemoryMod.kVersion; }
-			set { }
 		}
 
 		[SettingsUISection(kTabAbout, kGroupAbout)]
@@ -392,7 +353,6 @@ namespace ToolModeMemory
 		public string ModAuthor
 		{
 			get { return "yuexian"; }
-			set { }
 		}
 
 		[SettingsUISection(kTabAbout, kGroupAbout)]
@@ -445,9 +405,7 @@ namespace ToolModeMemory
 		public DropdownItem<int>[] GetZoneModeScopeItems() { return BuildScopeItems(ToolItemCatalog.kZoneMode); }
 		public DropdownItem<int>[] GetAreaModeScopeItems() { return BuildScopeItems(ToolItemCatalog.kAreaMode); }
 		public DropdownItem<int>[] GetWaterModeScopeItems() { return BuildScopeItems(ToolItemCatalog.kWaterMode); }
-		public DropdownItem<int>[] GetTerrainModeScopeItems() { return BuildScopeItems(ToolItemCatalog.kTerrainMode); }
 		public DropdownItem<int>[] GetBulldozeModeScopeItems() { return BuildScopeItems(ToolItemCatalog.kBulldozeMode); }
-		public DropdownItem<int>[] GetUpgradeModeScopeItems() { return BuildScopeItems(ToolItemCatalog.kUpgradeMode); }
 
 		private DropdownItem<int>[] BuildScopeItems(string itemId)
 		{
@@ -472,9 +430,11 @@ namespace ToolModeMemory
 
 		public MemoryScope GetItemScope(string id)
 		{
+			ToolItemDef def = ToolItemCatalog.Find(id);
+			int fallback = def != null ? def.RecommendedScope : (int)MemoryScope.Group;
 			int v;
-			if (!m_ItemScope.TryGetValue(id, out v)) return MemoryScope.Group;
-			if (v < 0 || v > 4) return MemoryScope.Group;
+			if (!m_ItemScope.TryGetValue(id, out v)) return (MemoryScope)fallback;
+			if (v < 0 || v > (int)MemoryScope.GlobalUnique) return (MemoryScope)fallback;
 			return (MemoryScope)v;
 		}
 
@@ -488,6 +448,7 @@ namespace ToolModeMemory
 		{
 			m_ItemEnabled[id] = value;
 			Sync();
+			Persist();
 		}
 
 		private int GetScope(string id)
@@ -500,23 +461,36 @@ namespace ToolModeMemory
 		{
 			m_ItemScope[id] = value;
 			Sync();
+			Persist();
 		}
 
-		/// <summary>设置变更后立刻作用到运行中的工具。</summary>
+		/// <summary>
+		/// 落盘走基类 ApplyAndSave()：框架的 GetTargetSetting 是按
+		/// fragment.source.GetType().Name 匹配的（AssetDatabase.cs:830），
+		/// 传注册名 "ToolModeMemory" 反而找不到目标、只剩一条 warn。
+		/// 类名必须全局唯一——别的模组若也叫 "Setting" 会抢占匹配，
+		/// 我们的配置就永远存不下去。这就是本类叫 ToolModeMemorySettings 而不是 Setting 的原因。
+		/// </summary>
+		private void Persist()
+		{
+			if (!Ready) return;
+			try { ApplyAndSave(); } catch { }
+		}
+
+		/// <summary>设置变更后立刻作用到运行中的工具；总开关为关时绝不写回。</summary>
 		public void Sync()
 		{
+			if (!Ready) return;
 			try
 			{
+				ToolModeMemoryMod.RefreshActive();
+				if (!m_Enabled) return;
 				Systems.ToolMemorySystem sys = null;
 				if (Unity.Entities.World.DefaultGameObjectInjectionWorld != null)
 				{
 					sys = Unity.Entities.World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<Systems.ToolMemorySystem>();
 				}
-				if (sys != null)
-				{
-					sys.RequestApply();
-					sys.RequestDiagnostics();
-				}
+				if (sys != null && sys.MasterEnabled) sys.RequestApply();
 			}
 			catch { }
 		}
@@ -531,6 +505,11 @@ namespace ToolModeMemory
 				if (inGame)
 				{
 					store.ResetCurrentSave();
+					// 只删文件不够：把当前面板退回出厂值，否则下一帧 CaptureNow 又记回现值
+					Systems.ToolMemorySystem sys = Unity.Entities.World.DefaultGameObjectInjectionWorld != null
+						? Unity.Entities.World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<Systems.ToolMemorySystem>()
+						: null;
+					if (sys != null) sys.ResetActiveTool();
 					ToolModeMemoryMod.log.Info("Reset memory for current save.");
 				}
 				else

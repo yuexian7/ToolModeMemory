@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>StoreHarness</AssemblyName>
+    <RootNamespace>ToolModeMemory.Tests</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 只编译被测文件 + UnityEngine 桩，不引用游戏 DLL -->
+    <Compile Include="..\UnityEngineStub.cs" Link="UnityEngineStub.cs" />
+    <Compile Include="..\..\Memory\MemoryStore.cs" Link="MemoryStore.cs" />
+    <Compile Include="..\..\Memory\MemoryKeys.cs" Link="MemoryKeys.cs" />
+    <Compile Include="..\..\Memory\SaveIdentity.cs" Link="SaveIdentity.cs" />
+    <Compile Include="..\..\ToolItemCatalog.cs" Link="ToolItemCatalog.cs" />
+    <Compile Include="StoreHarness.cs" />
+  </ItemGroup>
+
+</Project>

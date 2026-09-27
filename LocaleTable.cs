@@ -70,8 +70,8 @@ namespace ToolModeMemory
 		private static DropdownItem<int> Item(int value, string baseKey, ToolItemDef def, Dictionary<string, string> d)
 		{
 			string name = d[baseKey];
-			int van = def.VanillaScope;
-			int rec = def.RecommendedScope;
+			int van = def != null ? def.VanillaScope : ToolItemCatalog.kVanillaNone;
+			int rec = def != null ? def.RecommendedScope : 0;
 			bool isVan = van == value;
 			bool isRec = rec == value;
 			string tag;
@@ -82,19 +82,19 @@ namespace ToolModeMemory
 			return new DropdownItem<int> { value = value, displayName = name + tag };
 		}
 
-		public static Dictionary<string, string> BuildEntries(Setting setting, string locale)
+		public static Dictionary<string, string> BuildEntries(ToolModeMemorySettings setting, string locale)
 		{
 			Dictionary<string, string> d = Build(locale);
 			PatchAbout(d, locale);
 			Dictionary<string, string> o = new Dictionary<string, string>();
 			o[setting.GetSettingsLocaleID()] = d["mod.name"];
-			o[setting.GetOptionTabLocaleID(Setting.kTabMod)] = d["tab.mod"];
-			o[setting.GetOptionTabLocaleID(Setting.kTabAbout)] = d["tab.about"];
-			o[setting.GetOptionGroupLocaleID(Setting.kGroupMain)] = d["group.main"];
-			o[setting.GetOptionGroupLocaleID(Setting.kGroupNet)] = d["group.net"];
-			o[setting.GetOptionGroupLocaleID(Setting.kGroupObj)] = d["group.obj"];
-			o[setting.GetOptionGroupLocaleID(Setting.kGroupZone)] = d["group.zone"];
-			o[setting.GetOptionGroupLocaleID(Setting.kGroupReset)] = d["group.reset"];
+			o[setting.GetOptionTabLocaleID(ToolModeMemorySettings.kTabMod)] = d["tab.mod"];
+			o[setting.GetOptionTabLocaleID(ToolModeMemorySettings.kTabAbout)] = d["tab.about"];
+			o[setting.GetOptionGroupLocaleID(ToolModeMemorySettings.kGroupMain)] = d["group.main"];
+			o[setting.GetOptionGroupLocaleID(ToolModeMemorySettings.kGroupNet)] = d["group.net"];
+			o[setting.GetOptionGroupLocaleID(ToolModeMemorySettings.kGroupObj)] = d["group.obj"];
+			o[setting.GetOptionGroupLocaleID(ToolModeMemorySettings.kGroupZone)] = d["group.zone"];
+			o[setting.GetOptionGroupLocaleID(ToolModeMemorySettings.kGroupReset)] = d["group.reset"];
 			o[setting.GetOptionLabelLocaleID("Enabled")] = d["enabled.label"];
 			o[setting.GetOptionDescLocaleID("Enabled")] = d["enabled.desc"];
 
@@ -107,6 +107,9 @@ namespace ToolModeMemory
 			o[setting.GetOptionLabelLocaleID("OpenRainbowSite")] = d["about.rainbow"];
 			o[setting.GetOptionDescLocaleID("OpenRainbowSite")] = d["about.rainbow.desc"];
 
+			// v0.1.2：terrain.mode / upgrade.mode 已从功能里移除（TerrainToolSystem 与
+			// UpgradeToolSystem 都没有 mode 属性，它们的「模式」就是选中的资产本身），
+			// 所以这里不再为它们注册词条；下方 keys 里的两条保留作占位，避免 12 语言位置参数错位。
 			AddItem(o, setting, "NetDrawEnabled", "NetDrawScope", d, "item.net.draw");
 			AddItem(o, setting, "NetSnapEnabled", "NetSnapScope", d, "item.net.snap");
 			AddItem(o, setting, "NetParallelEnabled", "NetParallelScope", d, "item.net.parallel");
@@ -118,9 +121,7 @@ namespace ToolModeMemory
 			AddItem(o, setting, "ZoneModeEnabled", "ZoneModeScope", d, "item.zone.mode");
 			AddItem(o, setting, "AreaModeEnabled", "AreaModeScope", d, "item.area.mode");
 			AddItem(o, setting, "WaterModeEnabled", "WaterModeScope", d, "item.water.mode");
-			AddItem(o, setting, "TerrainModeEnabled", "TerrainModeScope", d, "item.terrain.mode");
 			AddItem(o, setting, "BulldozeModeEnabled", "BulldozeModeScope", d, "item.bulldoze.mode");
-			AddItem(o, setting, "UpgradeModeEnabled", "UpgradeModeScope", d, "item.upgrade.mode");
 
 			o[setting.GetOptionLabelLocaleID("ResetMemory")] = d["reset.label"];
 			o[setting.GetOptionDescLocaleID("ResetMemory")] = d["reset.desc"];
@@ -131,7 +132,7 @@ namespace ToolModeMemory
 			return o;
 		}
 
-		private static void AddItem(Dictionary<string, string> o, Setting s, string en, string sc, Dictionary<string, string> d, string key)
+		private static void AddItem(Dictionary<string, string> o, ToolModeMemorySettings s, string en, string sc, Dictionary<string, string> d, string key)
 		{
 			o[s.GetOptionLabelLocaleID(en)] = d[key + ".label"];
 			o[s.GetOptionDescLocaleID(en)] = d[key + ".desc"];
@@ -139,8 +140,8 @@ namespace ToolModeMemory
 			o[s.GetOptionDescLocaleID(sc)] = d["scope.desc"];
 		}
 
-		// 兼容 Build(Setting,locale) 入口
-		public static Dictionary<string, string> BuildForSource(Setting setting, string locale)
+		// 兼容 Build(ToolModeMemorySettings,locale) 入口
+		public static Dictionary<string, string> BuildForSource(ToolModeMemorySettings setting, string locale)
 		{
 			return BuildEntries(setting, locale);
 		}
@@ -676,10 +677,10 @@ namespace ToolModeMemory
 
 	internal class LocaleSource : IDictionarySource
 	{
-		private readonly Setting m_Setting;
+		private readonly ToolModeMemorySettings m_Setting;
 		private readonly Dictionary<string, string> m_Entries;
 
-		public LocaleSource(Setting setting, string locale)
+		public LocaleSource(ToolModeMemorySettings setting, string locale)
 		{
 			m_Setting = setting;
 			m_Entries = LocaleTable.BuildEntries(setting, locale);
