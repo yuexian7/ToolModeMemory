@@ -1,35 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--Tool Mode Memory 发布元数据。首发（PublishNewMod）成功后把返回的 ModId 回填到 <ModId Value="..." />。
-    本轮用户要求：官方平台不要公开（private / 不公开）。-->
+<!--Tool Mode Memory 发布元数据。
+    2026-09-27：本文件已与线上 ModId 160529 逐字段对齐（线上编辑页读出的实际值），
+    因为 NewVersion 会把这里的全套元数据覆盖到平台。对齐内容：
+      - ShortDescription 含线上后加的中文尾巴
+      - LongDescription 已删掉线上的两句 "Zero Harmony..." / 「零 Harmony...」
+      - 新增线上已配置的 ForumLink 与 Type="x" 外链
+    本次唯一改动：ModVersion 0.1.1 -> 0.1.2 与 ChangeLog。
+    2026-09-27 14:21：NewVersion 发布成功（ModId 160529，Private，见 state/publish-newversion-0.1.2.log）。
+    注意：服务端要求 userModVersion 必须与线上现有值不同，所以本文件已发布后不要再原地重跑
+    NewVersion——重跑只会收到 "Invalid UserModVersion..." 而不会改动线上。下次发版先改 <ModVersion>。
+    ExternalLink 的 Type 只认 ModPublisher.ExternalType 里的值（discord/github/youtube/twitch/x/
+    paypal/patreon/buymeacoffee/kofi/crowdin/gofundme），不认的值会被静默丢弃而不是报错。-->
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
 	<ModId Value="160529" />
-	<ModVersion Value="0.1.1" />
+	<ModVersion Value="0.1.2" />
 	<GameVersion Value="1.6.*" />
 	<!--Private = 不公开（用户要求）。若平台拒绝此值再改 Unlisted。-->
 	<AccessLevel Value="Private" />
 	<DisplayName Value="Tool Mode Memory" />
-	<ShortDescription Value="Remembers tool panel settings per savegame (draw mode, snap, height...) with configurable sharing scope." />
-	<LongDescription Value="## **English**&#xA;&#xA;Tired of redoing the same tool options every time you enter a save? **Tool Mode Memory** remembers how you left the tool panel — draw mode, snapping, parallel roads, height, placement modes and more — and brings those choices back when you return.&#xA;&#xA;Every savegame gets its own memory file. Leave a save, come back later, and your setup is still there.&#xA;&#xA;**Sharing scope** is configurable per tool item:&#xA;&#xA;- Same group (e.g. all small roads)&#xA;- Same menu (roads, education, ...)&#xA;- Same asset type (alley, metro track, ...)&#xA;- Shared globally&#xA;- Per asset (not shared)&#xA;&#xA;Turn the master switch **off** for 100% vanilla behaviour. Memory management (reset / open folder) and links live on the About tab.&#xA;&#xA;Zero Harmony. Does not modify game files.&#xA;&#xA;## **中文**&#xA;&#xA;每次进档都要把工具选项重设一遍？**Tool Mode Memory** 会记住你离开时的工具选项——绘制模式、吸附、平行道路、高度、放置模式等——下次进入该存档自动恢复。&#xA;&#xA;每个存档单独一份记忆，退出覆盖保存。&#xA;&#xA;**共用范围**可按工具项配置：同组 / 同菜单 / 同类资产 / 全局共用 / 全局不共用。&#xA;&#xA;总开关关闭 = 完全原版行为。重置记忆、打开记忆文件夹与链接在「关于」页。&#xA;&#xA;零 Harmony，不修改游戏文件。" />
+	<ShortDescription Value="Remembers tool panel settings per savegame (draw mode, snap, height...) with configurable sharing scope.　工具面板设置模式自动记忆" />
+	<LongDescription Value="## **English**&#xA;&#xA;Tired of redoing the same tool options every time you enter a save? **Tool Mode Memory** remembers how you left the tool panel — draw mode, snapping, parallel roads, height, placement modes and more — and brings those choices back when you return.&#xA;&#xA;Every savegame gets its own memory file. Leave a save, come back later, and your setup is still there.&#xA;&#xA;**Sharing scope** is configurable per tool item:&#xA;&#xA;- Same group (e.g. all small roads)&#xA;- Same menu (roads, education, ...)&#xA;- Same asset type (alley, metro track, ...)&#xA;- Shared globally&#xA;- Per asset (not shared)&#xA;&#xA;Turn the master switch **off** for 100% vanilla behaviour. Memory management (reset / open folder) and links live on the About tab.&#xA;&#xA;## **中文**&#xA;&#xA;每次进档都要把工具选项重设一遍？**Tool Mode Memory** 会记住你离开时的工具选项——绘制模式、吸附、平行道路、高度、放置模式等——下次进入该存档自动恢复。&#xA;&#xA;每个存档单独一份记忆，退出覆盖保存。&#xA;&#xA;**共用范围**可按工具项配置：同组 / 同菜单 / 同类资产 / 全局共用 / 全局不共用。&#xA;&#xA;总开关关闭 = 完全原版行为。重置记忆、打开记忆文件夹与链接在「关于」页。" />
 	<Thumbnail Value="Properties/Thumbnail.jpg" />
+	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/tool-mode-memory.1942676/" />
 	<Tag Value="Code Mod" />
 	<ExternalLink Type="github" Url="https://github.com/yuexian7/ToolModeMemory" />
 	<ExternalLink Type="kofi" Url="https://ko-fi.com/yuexian7" />
+	<ExternalLink Type="x" Url="https://x.com/yuexian777/status/2101942150447702427?s=20" />
 	<ChangeLog>
-v0.1.1
+v0.1.2
 
-- Per-save tool mode memory (draw mode, snap, height, place modes...).
-- Configurable sharing scope per tool item (group / menu / asset type / global / per-asset).
-- Master switch (default off = vanilla). About tab: version, author, links.
-- Fixed height not staying per-asset (desired-elevation sync).
-- Official Chinese terminology alignment.
+Fixed: memory could be written to the WRONG savegame. Starting a new city, or
+loading another save from the list, reused the name of the city you last saved
+with - so it restored that one's settings and then overwrote its memory file.
+Autosave could also take over the file name. This is now verified against the
+save actually loaded.
+
+- "Same menu" scope now really covers the whole menu (it behaved like "Same group").
+- Memory no longer breaks after adding or removing DLC / workshop assets.
+- Water tool memory now works.
+- Removed the Terrain and Upgrade items: those tools have nothing to remember
+  (their "mode" is simply the asset you picked).
+- Settings now save immediately instead of only on a clean game exit.
+- Corrupted memory files are left alone instead of being overwritten.
+
+Note: after updating, the first visit to each save starts empty once - the old
+records used a format that could not be carried over.
 
 中文
 
-- 按存档记忆工具选项（绘制模式、吸附、高度、放置模式等）。
-- 每个工具项可配置共用范围（同组 / 同菜单 / 同类资产 / 全局共用 / 全局不共用）。
-- 总开关默认关闭（原版行为）。关于页：版本、作者、链接。
-- 修复高度无法按资产独立记忆。
-- 中文文案对齐官方用词。
+修复：记忆可能写到错误的存档上。新建城市、或从存档列表载入另一个档时，会沿用你
+上一次保存过的那个档的名字，于是不但恢复了别人的设置，还会把别人的记忆文件覆盖掉；
+自动存档也会把文件名抢走。现在以真正载入的存档为准。
+
+- 「同菜单」范围现在真的按整个菜单共用（以前等同于「同组」）。
+- 加装 / 移除 DLC、创意工坊资产后记忆不再错乱。
+- 水体工具的记忆现在生效。
+- 移除「地形」「升级」两项：这两个工具没有可记的面板状态（所谓模式就是你选的资产本身）。
+- 设置改为即时保存，不再只在正常退出时落盘。
+- 记忆文件损坏时不再被覆盖，保留原件供手工修复。
+
+提示：更新后每个存档第一次进入会是空记忆（一次性的），旧记录用的键格式无法沿用。
 	</ChangeLog>
 </PublishConfiguration>
