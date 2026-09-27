@@ -366,7 +366,8 @@ namespace ToolModeMemory
 		[SettingsUIButton]
 		public bool OpenForum
 		{
-			set { OpenUrl("https://forum.paradoxplaza.com/forum/threads/access-anarchy.1941285/latest"); }
+			// 这里曾经是模板（AccessAnarchy）的帖子地址，v0.1.2 起指向本模组的帖子。
+			set { OpenUrl("https://forum.paradoxplaza.com/forum/threads/tool-mode-memory.1942676/"); }
 		}
 
 		[SettingsUISection(kTabAbout, kGroupAbout)]
