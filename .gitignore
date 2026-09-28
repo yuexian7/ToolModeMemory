@@ -7,3 +7,5 @@ state/publish-*.log
 .vs/
 # 反编译产物与本地脚本，绝不入库/进包
 research/
+__pycache__/
+*.pyc

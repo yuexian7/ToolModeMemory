@@ -17,24 +17,25 @@ namespace ToolModeMemory
 {
 	/// <summary>
 	/// Tool Mode Memory 选项页。
-	/// v0.2.0 结构：模组设置 = 总开关 + 单一「工具记忆模式设置」板块（11 项按序号排列，
-	/// 每项 = 是否恢复 + 共用范围）；关于 = 记忆管理 + 兼容性 + 版本/作者/链接按钮。
+	/// v0.2.1 结构：模组设置 = 一个「工具记忆模式设置」板块（总开关 + 11 项按序号排列，
+	/// 每项 = 是否恢复 + 共用范围，五种共用范围的定义写在每一项自己的共用范围说明里）；
+	/// 关于 = 记忆管理 + 兼容性 + 版本/作者/链接按钮。
 	/// 全部改动实时生效（setter 内 Sync + Persist）。
 	/// </summary>
 	[FileLocation(nameof(ToolModeMemory))]
 	[SettingsUITabOrder(kTabMod, kTabAbout)]
-	[SettingsUIGroupOrder(kGroupMain, kGroupItems, kGroupScopeInfo, kGroupMemory, kGroupCompat, kGroupInfo)]
-	[SettingsUIShowGroupName(kGroupMain, kGroupItems, kGroupScopeInfo, kGroupMemory, kGroupCompat)]
+	[SettingsUIGroupOrder(kGroupItems, kGroupMemory, kGroupCompat, kGroupInfo)]
+	[SettingsUIShowGroupName(kGroupItems, kGroupMemory, kGroupCompat)]
 	public class ToolModeMemorySettings : ModSetting
 	{
 		public const string kTabMod = "ModSettings";
 		public const string kTabAbout = "About";
 
-		public const string kGroupMain = "Main";
-		/// <summary>需求 5：所有工具项合并在一个板块里，不再按道路/建筑/其他分块。</summary>
+		/// <summary>
+		/// 需求 5：模组设置页只有一个板块，总开关和所有工具项都在里面，不再按
+		/// 道路/建筑/其他分块，也不再单列一个「共用范围说明」板块。
+		/// </summary>
 		public const string kGroupItems = "ToolItems";
-		/// <summary>需求 4：共用范围的定义说明只出现在这里，下拉项只留短名。</summary>
-		public const string kGroupScopeInfo = "ScopeInfo";
 		public const string kGroupMemory = "MemoryFiles";
 		/// <summary>需求 9：关于页中间的兼容性板块。</summary>
 		public const string kGroupCompat = "Compatibility";
@@ -49,14 +50,20 @@ namespace ToolModeMemory
 		/// </summary>
 		public static bool Ready;
 
-		private bool m_Enabled;
-		private bool m_CompatOtherMods;
+		private bool m_Enabled = true;
+		private bool m_CompatOtherMods = true;
 		private readonly Dictionary<string, bool> m_ItemEnabled = new Dictionary<string, bool>(StringComparer.Ordinal);
 		private readonly Dictionary<string, int> m_ItemScope = new Dictionary<string, int>(StringComparer.Ordinal);
 
+		/// <summary>
+		/// 模组设置不走 SharedSettings.Reset()：框架只把「当前实例」交给
+		/// AssetDatabase.LoadSettings(name, obj, defaultObj)（AssetDatabase.cs:611），
+		/// 没有存档文件时没人会调用 SetDefaults()。所以出厂默认必须在构造函数里就落好，
+		/// 这也让「总开关默认打开」真的成立（原版 GameplaySettings 的写法一致）。
+		/// </summary>
 		public ToolModeMemorySettings(IMod mod) : base(mod)
 		{
-			InitItemDefaults();
+			SetDefaults();
 		}
 
 		private void InitItemDefaults()
@@ -69,8 +76,8 @@ namespace ToolModeMemory
 			}
 		}
 
-		/// <summary>总开关。关闭 = 停止记忆 + 完全原版行为。</summary>
-		[SettingsUISection(kTabMod, kGroupMain)]
+		/// <summary>总开关。关闭 = 停止记忆 + 完全原版行为。默认打开。</summary>
+		[SettingsUISection(kTabMod, kGroupItems)]
 		public bool Enabled
 		{
 			get { return m_Enabled; }
@@ -80,17 +87,6 @@ namespace ToolModeMemory
 				Sync();
 				Persist();
 			}
-		}
-
-		/// <summary>
-		/// 需求 4：共用范围定义作为一段说明文本放在工具项下方（MultilineText 行只会显示
-		/// 它的 label 文本，所以说明文字注册在 label 键上，值本身是空的）。
-		/// </summary>
-		[SettingsUISection(kTabMod, kGroupScopeInfo)]
-		[SettingsUIMultilineText]
-		public string ScopeDefinitions
-		{
-			get { return ""; }
 		}
 
 		public bool IsMasterOff()
@@ -263,13 +259,21 @@ namespace ToolModeMemory
 			set
 			{
 				m_CompatOtherMods = value;
-				ToolMemoryBridge.LiveHierarchy = value;
 				Sync();
 				Persist();
 			}
 		}
 
 		public bool CompatEnabled { get { return m_CompatOtherMods; } }
+
+		/// <summary>
+		/// 读盘完成（Ready 已置真）后调用一次：LoadSettings 是用属性 setter 反序列化的，
+		/// 期间 Sync 被屏蔽，所以这里补一次，让存进文件的兼容开关真的生效。
+		/// </summary>
+		public void AfterLoaded()
+		{
+			Sync();
+		}
 
 		// ---------- 关于页：版本 / 作者 / 链接 ----------
 
@@ -330,7 +334,7 @@ namespace ToolModeMemory
 			}
 		}
 
-		// ---------- 范围下拉（短名，定义见 ScopeDefinitions 行） ----------
+		// ---------- 范围下拉（只显示短名；五种范围的定义写在每一项自己的说明里） ----------
 
 		public DropdownItem<int>[] GetAnarchyScopeItems() { return BuildScopeItems(ToolItemCatalog.kAnarchy); }
 		public DropdownItem<int>[] GetToolModeScopeItems() { return BuildScopeItems(ToolItemCatalog.kToolMode); }
@@ -422,6 +426,8 @@ namespace ToolModeMemory
 			if (!Ready) return;
 			try
 			{
+				// 兼容开关的唯一落地位置：setter、重置按钮、读盘完成都经过这里
+				ToolMemoryBridge.LiveHierarchy = m_CompatOtherMods;
 				ToolModeMemoryMod.RefreshActive();
 				if (!m_Enabled) return;
 				Systems.ToolMemorySystem sys = null;
@@ -434,14 +440,12 @@ namespace ToolModeMemory
 			catch { }
 		}
 
-		/// <summary>需求 1：退回出厂推荐值（不含总开关本身，避免用户把自己关在外面）。</summary>
+		/// <summary>需求 1：退回出厂推荐值（含总开关与兼容开关，两者默认都是开）。</summary>
 		private void DoResetAllSettings()
 		{
 			try
 			{
-				InitItemDefaults();
-				m_CompatOtherMods = true;
-				ToolMemoryBridge.LiveHierarchy = true;
+				SetDefaults();
 				Sync();
 				if (Ready)
 				{
@@ -502,9 +506,15 @@ namespace ToolModeMemory
 			}
 		}
 
+		/// <summary>
+		/// 出厂默认：总开关开、兼容开关开、每一项按 ToolItemCatalog 的推荐值。
+		/// 「重置所有设置项」按钮也走这里（需求 1 + 本轮「默认打开」）。
+		/// 这里不碰 ToolMemoryBridge：构造期（LoadSettings 之前）不该触发它的静态反射初始化，
+		/// 由 Sync() 统一把开关推给它。
+		/// </summary>
 		public override void SetDefaults()
 		{
-			m_Enabled = false;
+			m_Enabled = true;
 			m_CompatOtherMods = true;
 			InitItemDefaults();
 		}

@@ -21,7 +21,7 @@ namespace ToolModeMemory
 	/// </summary>
 	public class ToolModeMemoryMod : IMod
 	{
-		public const string kVersion = "0.2.0";
+		public const string kVersion = "0.2.1";
 
 		public static ILog log = LogManager.GetLogger(nameof(ToolModeMemory)).SetShowsErrorsInUI(false);
 
@@ -84,6 +84,8 @@ namespace ToolModeMemory
 			}
 			// 反序列化是用属性 setter 写值的，读盘完成前必须屏蔽 Sync/Persist
 			ToolModeMemorySettings.Ready = true;
+			// 补一次 Sync：让文件里的兼容开关真正传给 ToolMemoryBridge
+			m_Setting.AfterLoaded();
 
 			// 生命周期事件
 			try
@@ -114,7 +116,7 @@ namespace ToolModeMemory
 			}
 
 			RefreshActive();
-			log.Info("Tool Mode Memory v" + kVersion + " loaded. Master switch default=OFF (vanilla).");
+			log.Info("Tool Mode Memory v" + kVersion + " loaded. Master switch default=ON.");
 		}
 
 		/// <summary>
