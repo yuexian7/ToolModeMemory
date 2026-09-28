@@ -17,7 +17,11 @@ namespace ToolModeMemory.Memory
 	/// </summary>
 	public sealed class MemoryStore
 	{
-		public const int kVersion = 2;
+		/// <summary>
+		/// v3：0.2.0 换了工具项 id、并且键加了资产/功能域前缀（A| / F|），
+		/// 旧 v1/v2 记录不再有任何一项能对上，读入时直接丢弃未知项，只保留本版本认识的。
+		/// </summary>
+		public const int kVersion = 3;
 
 		private readonly Dictionary<string, Dictionary<string, int>> m_Items =
 			new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal);
@@ -30,6 +34,14 @@ namespace ToolModeMemory.Memory
 
 		public string SaveName { get { return m_SaveName; } }
 		public bool Dirty { get { return m_Dirty; } }
+
+		/// <summary>
+		/// 每次真正发生数据变更自增。调用方（实时落盘防抖）靠它区分「新改动」和
+		/// 「一直脏着没写」，否则 Dirty 在写成功前恒为 true，没法判断该不该重置计时。
+		/// </summary>
+		public long ChangeSerial { get { return m_ChangeSerial; } }
+
+		private long m_ChangeSerial;
 
 		/// <summary>当前是否使用占位文件名（未命名新档，或存档名无法确证）。</summary>
 		public bool IsPlaceholder { get { return m_Placeholder; } }
@@ -181,6 +193,7 @@ namespace ToolModeMemory.Memory
 			if (bag.TryGetValue(key, out old) && old == value) return;
 			bag[key] = value;
 			m_Dirty = true;
+			m_ChangeSerial++;
 		}
 
 		public void ClearRuntime()
@@ -197,47 +210,107 @@ namespace ToolModeMemory.Memory
 
 		/// <summary>
 		/// 载入当前名字对应的记忆。返回 false = 文件存在但读不懂（调用方应停止写盘并提示）。
+		/// 主文件损坏时先试上一次实时写入留下的 .tmp：闪退最常正好打断在主文件上，
+		/// tmp 读得懂就恢复它（置脏，马上重新写一次正式文件）而不是放弃整份记忆。
 		/// </summary>
 		public bool LoadForCurrentSave()
 		{
 			m_Items.Clear();
 			m_WriteBlocked = false;
 			m_Dirty = false;
+			m_RecoveredFromTemp = false;
 			string path = CurrentFilePath();
 			if (path == null) return true;
-			if (!File.Exists(path)) return true;
+			if (!File.Exists(path))
+			{
+				// 主文件不存在但上一次实时写留下的 tmp 在：照样救回来
+				return LoadFromTemp(path) || true;
+			}
 			Dictionary<string, Dictionary<string, int>> parsed =
 				new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal);
+			bool ok = false;
+			int version = 0;
 			try
 			{
 				string text = File.ReadAllText(path, Encoding.UTF8);
-				int version;
-				if (!Parse(text, parsed, out version))
-				{
-					m_WriteBlocked = true;
-					return false;
-				}
-				if (version > kVersion)
-				{
-					// 未来版本文件：不认识就不动，避免降级覆盖
-					m_WriteBlocked = true;
-					return false;
-				}
-				foreach (KeyValuePair<string, Dictionary<string, int>> kv in parsed)
-				{
-					m_Items[kv.Key] = kv.Value;
-				}
+				ok = Parse(text, parsed, out version);
 			}
-			catch
+			catch { ok = false; }
+			if (!ok)
 			{
+				if (LoadFromTemp(path)) return true;
 				m_Items.Clear();
 				m_WriteBlocked = true;
 				return false;
 			}
+			if (version > kVersion)
+			{
+				// 未来版本文件：不认识就不动，避免降级覆盖
+				m_WriteBlocked = true;
+				return false;
+			}
+			CommitParsed(parsed);
+			TryDeleteTemp(path);
 			return true;
 		}
 
-		/// <summary>写盘。onlyIfDirty 时保持「无改动不产生文件」。</summary>
+		private void CommitParsed(Dictionary<string, Dictionary<string, int>> parsed)
+		{
+			foreach (KeyValuePair<string, Dictionary<string, int>> kv in parsed)
+			{
+				// 只接受当前目录里存在的工具项：0.2.0 改了 id 集合与键格式，
+				// 旧版本残留的键不应被再写回文件里越积越多。
+				if (ToolItemCatalog.Find(kv.Key) == null) continue;
+				m_Items[kv.Key] = kv.Value;
+			}
+		}
+
+		private bool LoadFromTemp(string path)
+		{
+			string tmp = TempPathFor(path);
+			if (!File.Exists(tmp)) return false;
+			Dictionary<string, Dictionary<string, int>> parsed =
+				new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal);
+			int version = 0;
+			try
+			{
+				string text = File.ReadAllText(tmp, Encoding.UTF8);
+				if (!Parse(text, parsed, out version)) return false;
+			}
+			catch { return false; }
+			if (version > kVersion) return false;
+			m_Items.Clear();
+			CommitParsed(parsed);
+			m_Dirty = true;
+			m_RecoveredFromTemp = true;
+			return true;
+		}
+
+		/// <summary>本次进档是否从 .tmp 救回过（调用方据此打日志）。</summary>
+		public bool RecoveredFromTemp { get { return m_RecoveredFromTemp; } }
+
+		private bool m_RecoveredFromTemp;
+
+		private static string TempPathFor(string path)
+		{
+			return path + ".tmp";
+		}
+
+		private static void TryDeleteTemp(string path)
+		{
+			try
+			{
+				string tmp = TempPathFor(path);
+				if (File.Exists(tmp)) File.Delete(tmp);
+			}
+			catch { }
+		}
+
+		/// <summary>
+		/// 写盘。onlyIfDirty 时保持「无改动不产生文件」。
+		/// 实时保存会反复调用，所以走 tmp + 替换：崩溃最坏只留下旧主文件，不会出现半截 JSON。
+		/// 目标文件读不懂时（WriteBlocked）一律不写。
+		/// </summary>
 		public bool SaveToDisk(bool onlyIfDirty = false)
 		{
 			if (onlyIfDirty && !m_Dirty) return false;
@@ -245,15 +318,31 @@ namespace ToolModeMemory.Memory
 			EnsureSessionName();
 			string path = CurrentFilePath();
 			if (path == null) return false;
+			string tmp = TempPathFor(path);
 			try
 			{
 				Directory.CreateDirectory(DataDirectory);
-				File.WriteAllText(path, Serialize(), new UTF8Encoding(false));
+				File.WriteAllText(tmp, Serialize(), new UTF8Encoding(false));
+				if (File.Exists(path))
+				{
+					try { File.Replace(tmp, path, null); }
+					catch
+					{
+						// 跨卷 / 权限等异常：退化成删掉再移
+						File.Delete(path);
+						File.Move(tmp, path);
+					}
+				}
+				else
+				{
+					File.Move(tmp, path);
+				}
 				m_Dirty = false;
 				return true;
 			}
 			catch
 			{
+				// 保持脏标记，下一轮重试；tmp 坏了也不影响主文件
 				return false;
 			}
 		}
@@ -268,10 +357,12 @@ namespace ToolModeMemory.Memory
 			m_Items.Clear();
 			m_Dirty = false;
 			m_WriteBlocked = false;
+			m_RecoveredFromTemp = false;
 			string path = CurrentFilePath();
 			try
 			{
 				if (path != null && File.Exists(path)) File.Delete(path);
+				TryDeleteTemp(path ?? "");
 			}
 			catch { }
 		}
@@ -282,19 +373,26 @@ namespace ToolModeMemory.Memory
 			m_Items.Clear();
 			m_Dirty = false;
 			m_WriteBlocked = false;
+			m_RecoveredFromTemp = false;
 			try
 			{
 				string dir = DataDirectory;
 				if (Directory.Exists(dir))
 				{
-					string[] files = Directory.GetFiles(dir, "*.json");
-					for (int i = 0; i < files.Length; i++)
-					{
-						try { File.Delete(files[i]); } catch { }
-					}
+					DeleteAll(dir, "*.json");
+					DeleteAll(dir, "*.json.tmp");
 				}
 			}
 			catch { }
+		}
+
+		private static void DeleteAll(string dir, string pattern)
+		{
+			string[] files = Directory.GetFiles(dir, pattern);
+			for (int i = 0; i < files.Length; i++)
+			{
+				try { File.Delete(files[i]); } catch { }
+			}
 		}
 
 		public static string SanitizeFileName(string name)

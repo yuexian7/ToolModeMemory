@@ -21,7 +21,7 @@ namespace ToolModeMemory
 	/// </summary>
 	public class ToolModeMemoryMod : IMod
 	{
-		public const string kVersion = "0.1.3";
+		public const string kVersion = "0.2.0";
 
 		public static ILog log = LogManager.GetLogger(nameof(ToolModeMemory)).SetShowsErrorsInUI(false);
 
@@ -42,7 +42,7 @@ namespace ToolModeMemory
 
 		public void OnLoad(UpdateSystem updateSystem)
 		{
-			log.Info("Tool Mode Memory v" + kVersion + " loading (local build, not published)...");
+			log.Info("Tool Mode Memory v" + kVersion + " loading...");
 			s_Instance = this;
 
 			Store = new MemoryStore();

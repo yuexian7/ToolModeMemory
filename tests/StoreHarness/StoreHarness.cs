@@ -7,9 +7,11 @@ using ToolModeMemory.Memory;
 namespace ToolModeMemory.Tests
 {
 	/// <summary>
-	/// v0.1.2 存档记忆存储回归测试（离线，无游戏程序集）。
-	/// 运行： dotnet run -c Release --project tests\StoreHarness
-	/// 覆盖：JSON 往返、坏文件保护、占位文件改名迁移、正式存档名之间绝不搬文件。
+	/// v0.2.0 存档记忆存储回归测试（离线，无游戏程序集）。
+	/// 运行： cd tests\StoreHarness && dotnet run -c Release
+	/// 覆盖：JSON 往返、坏文件保护、占位文件改名迁移、正式存档名绝不搬文件、
+	///       实时落盘与崩溃恢复（tmp + File.Replace）、v3 键的资产/功能域与枚举家族分离、
+	///       v0.2.0 目录形状（11 项 / Subs 子字段 / Anarchy 归属）、旧版本文件的未知项过滤。
 	/// </summary>
 	internal static class StoreHarness
 	{
@@ -37,6 +39,116 @@ namespace ToolModeMemory.Tests
 			return MemoryStore.DataDirectory;
 		}
 
+		/// <summary>
+		/// 生产环境的完整键 = 域 + 层级 + '$' + 枚举家族（ToolMemoryBridge.Finish）。
+		/// '$' 与 "A|" / "F|" 都不会出现在 prefab 名 / PrefabID 里。
+		/// </summary>
+		private static string K(string levelKey, bool isFunction, string family)
+		{
+			return MemoryKeys.WithDomain(levelKey, isFunction) + "$" + family;
+		}
+
+		private static readonly string kSmallRoads = MemoryKeys.Group("Roads", "SmallRoads");
+		private static readonly string kAlleyAsset = MemoryKeys.Asset("Game.Prefabs.NetPrefab:Alley");
+
+		/// <summary>
+		/// v0.2.0 实时落盘 + 崩溃恢复：tmp 原子替换、坏主文件从 tmp 救回、序号防抖基线。
+		/// </summary>
+		private static void LiveWriteAndCrashRecovery()
+		{
+			Console.WriteLine("[15] 实时落盘与崩溃恢复");
+			FreshDir("livewrite");
+
+			MemoryStore a = new MemoryStore();
+			a.UseSaveName("CityLive");
+			string modeKey = K(kSmallRoads, false, "net");
+			long s0 = a.ChangeSerial;
+			a.Set(ToolItemCatalog.kToolMode, modeKey, 2);
+			Check(a.ChangeSerial == s0 + 1, "改动递增序号");
+			a.Set(ToolItemCatalog.kToolMode, modeKey, 2);
+			Check(a.ChangeSerial == s0 + 1, "同值不改序号（防抖不被空改动重置）");
+
+			Check(a.SaveToDisk(true), "写盘成功");
+			string main = a.CurrentFilePath();
+			Check(File.Exists(main), "主文件存在");
+			Check(!File.Exists(main + ".tmp"), "写完不留 .tmp");
+			Check(Directory.GetFiles(DirOf(a), "*.tmp").Length == 0, "目录里没有残留 tmp");
+
+			// 再改两次并落盘，拿到「新内容」的完整副本，然后模拟闪退打断主文件
+			a.Set(ToolItemCatalog.kToolMode, modeKey, 5);
+			Check(a.SaveToDisk(true), "第二次写盘");
+			a.Set(ToolItemCatalog.kToolMode, modeKey, 9);
+			Check(a.SaveToDisk(true), "第三次写盘");
+			// 同值重复写既不置脏也不推进序号：实时保存每帧都在跑，不能靠 Dirty 判新改动
+			a.Set(ToolItemCatalog.kToolMode, modeKey, 9);
+			Check(a.ChangeSerial == s0 + 3 && !a.Dirty, "现值未变 -> 序号与脏标记都不动");
+			string newest = File.ReadAllText(main, Encoding.UTF8);
+
+			// 场景 1：主文件被写坏（半截 JSON），tmp 是上一次的完整副本
+			File.WriteAllText(main, "{\"v\":2,\"items\":{", Encoding.UTF8);
+			File.WriteAllText(main + ".tmp", newest, Encoding.UTF8);
+			MemoryStore b = new MemoryStore();
+			b.UseSaveName("CityLive");
+			Check(b.LoadForCurrentSave(), "坏主文件 + 可读 tmp -> 载入成功");
+			Check(b.RecoveredFromTemp, "标记为从 tmp 恢复");
+			bool found;
+			Check(b.Get(ToolItemCatalog.kToolMode, modeKey, out found) == 9 && found, "救回的是最新值");
+			Check(b.Dirty, "恢复后置脏，等着重新写正式文件");
+			Check(b.SaveToDisk(true), "重新写正式文件");
+			Check(!File.Exists(main + ".tmp"), "修好后清掉 tmp");
+			Check(File.ReadAllText(main, Encoding.UTF8) == newest, "主文件内容复原");
+
+			// 场景 2：只有 tmp（主文件从没写成功过）
+			FreshDir("onlytmp");
+			MemoryStore c = new MemoryStore();
+			c.UseSaveName("CityOnlyTmp");
+			c.Set(ToolItemCatalog.kElevation, K(kSmallRoads, false, "net"), 1000);
+			string cMain = c.CurrentFilePath();
+			File.WriteAllText(cMain + ".tmp", c.Serialize(), Encoding.UTF8);
+			MemoryStore c2 = new MemoryStore();
+			c2.UseSaveName("CityOnlyTmp");
+			Check(c2.LoadForCurrentSave(), "无主文件、有 tmp -> 成功");
+			Check(c2.RecoveredFromTemp && c2.Get(ToolItemCatalog.kElevation,
+				K(kSmallRoads, false, "net"), out found) == 1000 && found, "从 tmp 拿到高度记忆");
+
+			// 场景 3：主文件和 tmp 都是垃圾 -> 保持写禁，两个都不许覆盖
+			FreshDir("bothbad");
+			MemoryStore d = new MemoryStore();
+			d.UseSaveName("CityBad");
+			d.Set(ToolItemCatalog.kToolMode, "S", 1);
+			d.SaveToDisk(true);
+			string dMain = d.CurrentFilePath();
+			File.WriteAllText(dMain, "not json", Encoding.UTF8);
+			File.WriteAllText(dMain + ".tmp", "also not json", Encoding.UTF8);
+			MemoryStore d2 = new MemoryStore();
+			d2.UseSaveName("CityBad");
+			Check(!d2.LoadForCurrentSave(), "两处都读不懂 -> 判定失败");
+			Check(d2.WriteBlocked && !d2.SaveToDisk(), "写禁生效，不覆盖任何一份");
+			Check(File.ReadAllText(dMain, Encoding.UTF8) == "not json", "坏主文件原样保留供手工修复");
+
+			// 场景 4：重置记忆把 tmp 一起删掉，别留孤儿文件
+			FreshDir("resetall");
+			MemoryStore e = new MemoryStore();
+			e.UseSaveName("CityReset");
+			e.Set(ToolItemCatalog.kToolMode, "S", 1);
+			e.SaveToDisk(true);
+			e.Set(ToolItemCatalog.kToolMode, "S", 2);
+			File.WriteAllText(e.CurrentFilePath() + ".tmp", e.Serialize(), Encoding.UTF8);
+			e.ResetCurrentSave();
+			Check(!File.Exists(e.CurrentFilePath()) && !File.Exists(e.CurrentFilePath() + ".tmp"),
+				"重置同时删掉主文件与 tmp");
+
+			e.ResetAllSaves();
+			MemoryStore f = new MemoryStore();
+			f.UseSaveName("CityReset2");
+			f.Set(ToolItemCatalog.kToolMode, "S", 1);
+			f.SaveToDisk(true);
+			File.WriteAllText(f.CurrentFilePath() + ".tmp", "junk", Encoding.UTF8);
+			f.ResetAllSaves();
+			Check(Directory.GetFiles(DirOf(f), "*.json").Length == 0, "全量重置删光 json");
+			Check(Directory.GetFiles(DirOf(f), "*.json.tmp").Length == 0, "全量重置删光 json.tmp");
+		}
+
 		private static int Main()
 		{
 			s_Root = Path.Combine(Path.GetTempPath(), "tmm_store_harness");
@@ -44,6 +156,7 @@ namespace ToolModeMemory.Tests
 
 			JsonRoundTrip();
 			KeyFormat();
+			CatalogShape();
 			Identity();
 			IndexFile();
 			SessionHandover();
@@ -56,6 +169,9 @@ namespace ToolModeMemory.Tests
 			OnlyDirtyWrites();
 			BeginMainMenuClears();
 			FileNameSanitizer();
+			LiveWriteAndCrashRecovery();
+			DomainSeparation();
+			VersionFilter();
 
 			Console.WriteLine();
 			Console.WriteLine(s_Fails == 0
@@ -66,6 +182,165 @@ namespace ToolModeMemory.Tests
 
 		// ---------- 用例 ----------
 
+		/// <summary>
+		/// 域（A| 资产 / F| 功能）与枚举家族（net/obj/zone/…）分离：
+		/// 同一个层级键、同一个工具项，在资产上和功能上的值必须是两个互不影响的桶。
+		/// </summary>
+		private static void DomainSeparation()
+		{
+			Console.WriteLine("[17] 资产 / 功能域与枚举家族分离（0.2.0 键格式）");
+			FreshDir("domain");
+
+			Check(MemoryKeys.WithDomain(kSmallRoads, false) == "A|" + kSmallRoads, "资产域前缀 A|");
+			Check(MemoryKeys.WithDomain(kSmallRoads, true) == "F|" + kSmallRoads, "功能域前缀 F|");
+			Check(MemoryKeys.StripDomain(MemoryKeys.WithDomain(kSmallRoads, false)) == kSmallRoads,
+				"StripDomain 还原层级键（资产）");
+			Check(MemoryKeys.StripDomain(MemoryKeys.WithDomain(kSmallRoads, true)) == kSmallRoads,
+				"StripDomain 还原层级键（功能）");
+			Check(MemoryKeys.StripDomain(kSmallRoads) == kSmallRoads, "无域前缀（旧键）原样返回");
+			Check(MemoryKeys.StripDomain(null) == null, "StripDomain(null) 安全");
+			Check(MemoryKeys.WithDomain(null, true) == null && MemoryKeys.WithDomain("", true) == "",
+				"空键不拼出孤立前缀");
+			// 「全局共用」的定义：资产一份、功能另一份，两域任何范围下都不共用
+			Check(MemoryKeys.WithDomain(MemoryKeys.Shared(), false) != MemoryKeys.WithDomain(MemoryKeys.Shared(), true),
+				"连 S（全局共用）都分资产/功能两份");
+
+			string level = kSmallRoads;
+			string assetKey = K(level, false, "net");
+			string funcKey = K(level, true, "zone");
+			string sameKeyOtherFamily = K(level, false, "obj");
+
+			MemoryStore s = new MemoryStore();
+			s.UseSaveName("CityDomain");
+			s.Set(ToolItemCatalog.kToolMode, assetKey, 4);
+			s.Set(ToolItemCatalog.kToolMode, funcKey, 2);
+			s.Set(ToolItemCatalog.kToolMode, sameKeyOtherFamily, 5);
+
+			bool found;
+			Check(s.Get(ToolItemCatalog.kToolMode, assetKey, out found) == 4 && found, "资产值可读");
+			Check(s.Get(ToolItemCatalog.kToolMode, funcKey, out found) == 2 && found, "功能值未被资产值覆盖");
+			Check(s.Get(ToolItemCatalog.kToolMode, sameKeyOtherFamily, out found) == 5 && found,
+				"家族不同的另一个桶同样独立");
+			Check(s.Get(ToolItemCatalog.kToolMode, K(level, true, "net"), out found) == 0 && !found,
+				"同层级同家族的功能域 = 未命中，不会误读到资产那份");
+
+			// 覆盖式写入只在同一桶内生效
+			s.Set(ToolItemCatalog.kToolMode, assetKey, 6);
+			Check(s.Get(ToolItemCatalog.kToolMode, assetKey, out found) == 6 && found, "同桶覆盖生效");
+			Check(s.Get(ToolItemCatalog.kToolMode, funcKey, out found) == 2 && found, "覆盖资产不串到功能");
+
+			// 必须能经磁盘往返（序列化/解析都不许把 '$'、'|'、':' 弄坏）
+			Check(s.SaveToDisk(true), "写盘");
+			MemoryStore r = new MemoryStore();
+			r.UseSaveName("CityDomain");
+			Check(r.LoadForCurrentSave(), "读盘");
+			Check(r.Get(ToolItemCatalog.kToolMode, assetKey, out found) == 6 && found, "资产值经磁盘往返保持");
+			Check(r.Get(ToolItemCatalog.kToolMode, funcKey, out found) == 2 && found, "功能值经磁盘往返保持");
+			Check(r.Get(ToolItemCatalog.kToolMode, sameKeyOtherFamily, out found) == 5 && found,
+				"家族值经磁盘往返保持");
+			Check(File.ReadAllText(r.CurrentFilePath(), Encoding.UTF8).Contains("A|G:Roads/SmallRoads$net"),
+				"文件里就是生产键格式");
+
+			// 子字段（Subs）共用同一份范围与键，各自一个桶：并列模式 = count + offset
+			string parKey = K(MemoryKeys.Menu("Roads"), false, "net");
+			s.Set("parallel.count", parKey, 3);
+			s.Set("parallel.offset", parKey, 250);
+			Check(s.Get("parallel.count", parKey, out found) == 3 && found, "parallel.count 独立成桶");
+			Check(s.Get("parallel.offset", parKey, out found) == 250 && found, "parallel.offset 独立成桶");
+			Check(s.Get(ToolItemCatalog.kParallel, parKey, out found) == 0 && !found,
+				"父项 id 本身不是桶（读它必然未命中，写回走子字段）");
+
+			// 「其它」：配色三通道 + 笔刷，都是子字段
+			string colorKey = K(kAlleyAsset, false, "net");
+			s.Set("other.color0", colorKey, 0x112233);
+			s.Set("other.color1", colorKey, 0x445566);
+			s.Set("other.color2", colorKey, 0x778899);
+			s.Set("other.brushSize", colorKey, 1234);
+			s.Set("other.brushStrength", colorKey, 5000);
+			Check(s.Get("other.color0", colorKey, out found) == 0x112233 && found
+				&& s.Get("other.color1", colorKey, out found) == 0x445566 && found
+				&& s.Get("other.color2", colorKey, out found) == 0x778899 && found, "配色三通道互不覆盖");
+			Check(s.Get("other.brushSize", colorKey, out found) == 1234 && found
+				&& s.Get("other.brushStrength", colorKey, out found) == 5000 && found, "笔刷大小/强度独立");
+
+			// Anarchy「左侧和右侧」：两侧各一份
+			string lrKey = K(MemoryKeys.Category("Roads"), false, "net");
+			s.Set("leftRight.left", lrKey, 0b0011);
+			s.Set("leftRight.right", lrKey, 0b1100);
+			Check(s.Get("leftRight.left", lrKey, out found) == 0b0011 && found
+				&& s.Get("leftRight.right", lrKey, out found) == 0b1100 && found, "左右两侧位掩码各自一份");
+
+			// 子字段必须活过读档过滤（CommitParsed 用 Find 认回父项）
+			Check(s.SaveToDisk(true), "含子字段的写盘");
+			MemoryStore r2 = new MemoryStore();
+			r2.UseSaveName("CityDomain");
+			Check(r2.LoadForCurrentSave(), "含子字段的读盘");
+			Check(r2.Get("parallel.count", parKey, out found) == 3 && found, "子字段 parallel.count 读档后仍在");
+			Check(r2.Get("other.brushSize", colorKey, out found) == 1234 && found, "子字段 other.brushSize 读档后仍在");
+			Check(r2.Get("leftRight.right", lrKey, out found) == 0b1100 && found, "子字段 leftRight.right 读档后仍在");
+		}
+
+		/// <summary>
+		/// v3：读旧版本（v2 时代）文件时，本版本不认识的工具项整桶丢弃，
+		/// 认识的保留，且丢弃的不会在下次写盘时复活。
+		/// </summary>
+		private static void VersionFilter()
+		{
+			Console.WriteLine("[16] v3 版本号与旧文件未知项过滤");
+			FreshDir("vfilter");
+
+			Check(MemoryStore.kVersion == 3, "MemoryStore.kVersion == 3");
+
+			// v2 时代的真实键：项 id 已删、键也没有域前缀
+			string legacy = "{\"v\":2,\"save\":\"CityOld\",\"items\":{"
+				+ "\"net.draw\":{\"G:Roads/SmallRoads\":6},"
+				+ "\"net.snap\":{\"M:Roads\":3},"
+				+ "\"obj.place\":{\"C:Tunnels\":1},"
+				+ "\"toolMode\":{\"A|S$net\":4},"
+				+ "\"parallel.count\":{\"A|S$net\":2}}}";
+
+			Dictionary<string, Dictionary<string, int>> into =
+				new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal);
+			int v;
+			Check(MemoryStore.Parse(legacy, into, out v) && v == 2, "旧文本能解析（v2）");
+			Check(into.ContainsKey("net.draw"), "解析阶段不判断项是否存在（过滤在读档提交时）");
+
+			string path = Path.Combine(MemoryStore.DataDirectory, "CityOld.json");
+			File.WriteAllText(path, legacy, Encoding.UTF8);
+			MemoryStore s = new MemoryStore();
+			s.UseSaveName("CityOld");
+			Check(s.LoadForCurrentSave(), "v2 文件仍算可读（不是坏文件）");
+			Check(!s.WriteBlocked, "低版本不触发写禁");
+			bool found;
+			Check(s.Get("net.draw", "G:Roads/SmallRoads", out found) == 0 && !found, "v2 项 net.draw 被丢弃");
+			Check(s.Get("net.snap", "M:Roads", out found) == 0 && !found, "v2 项 net.snap 被丢弃");
+			Check(s.Get("obj.place", "C:Tunnels", out found) == 0 && !found, "v2 项 obj.place 被丢弃");
+			Check(s.Get("toolMode", "A|S$net", out found) == 4 && found, "认识的新项保留");
+			Check(s.Get("parallel.count", "A|S$net", out found) == 2 && found, "认识的子字段保留");
+
+			// 丢弃的项不许在下次写盘时回到文件里（否则老键会永远堆在记忆文件里）
+			s.Set(ToolItemCatalog.kSnap, K(MemoryKeys.Menu("Roads"), false, "net"), 7);
+			Check(s.SaveToDisk(true), "写盘升级为 v3");
+			string text = File.ReadAllText(path, Encoding.UTF8);
+			Check(text.Contains("\"v\":" + MemoryStore.kVersion), "文件版本升为 3");
+			Check(!text.Contains("net.draw") && !text.Contains("obj.place"), "旧项 id 已从文件消失");
+			Check(text.Contains("\"toolMode\"") && text.Contains("A|S$net"), "保留项写出");
+
+			// 未来版本仍然整体拒绝（不许降级覆盖）
+			MemoryStore n = new MemoryStore();
+			n.UseSaveName("CityOld");
+			File.WriteAllText(path, "{\"v\":4,\"items\":{\"toolMode\":{\"A|S$net\":1}}}", Encoding.UTF8);
+			Check(!n.LoadForCurrentSave() && n.WriteBlocked, "v4（未来版本）拒绝载入并写禁");
+
+			// 同版本再读一次：确认 v3 文件自读自写闭环
+			File.WriteAllText(path, "{\"v\":3,\"items\":{\"elevation\":{\"F|S$zone\":-100}}}", Encoding.UTF8);
+			MemoryStore m = new MemoryStore();
+			m.UseSaveName("CityOld");
+			Check(m.LoadForCurrentSave(), "v3 功能域文件可读");
+			Check(m.Get(ToolItemCatalog.kElevation, "F|S$zone", out found) == -100 && found, "功能域负值读回");
+			Check(m.SaveToDisk() && File.ReadAllText(path).Contains("F|S$zone"), "再写盘键格式不变");
+		}
+
 		private static void SessionHandover()
 		{
 			Console.WriteLine("[14] game→game 直接切换与只读保护（残留的沿用旧名路径）");
@@ -73,17 +348,17 @@ namespace ToolModeMemory.Tests
 
 			MemoryStore a = new MemoryStore();
 			a.UseSaveName("CityA");
-			a.Set("net.draw", "G:Roads/Small", 6);
+			a.Set(ToolItemCatalog.kToolMode, K(kSmallRoads, false, "net"), 6);
 			Check(a.SaveToDisk(true), "CityA.json 建立");
 			string aPath = a.CurrentFilePath();
 
 			// 不经过 BeginMainMenu，直接进一个身份未确证的档（新建城市 / game->game 切换）
 			a.StartUnnamedSession();
 			Check(a.IsPlaceholder && a.SaveName != "CityA", "强制换成新占位名");
-			a.Set("net.snap", "M:Roads", 3);
+			a.Set(ToolItemCatalog.kSnap, K(MemoryKeys.Menu("Roads"), false, "net"), 3);
 			Check(a.SaveToDisk(true), "写到自己的占位文件");
 			Check(a.CurrentFilePath() != aPath, "没有沿用 CityA 的文件");
-			Check(File.ReadAllText(aPath).Contains("G:Roads/Small"), "CityA 内容未被改写");
+			Check(File.ReadAllText(aPath).Contains("A|G:Roads/SmallRoads$net"), "CityA 内容未被改写");
 
 			// EnsureSessionName 在已有名字时确实空转（所以必须用 StartUnnamedSession）
 			MemoryStore b = new MemoryStore();
@@ -94,7 +369,7 @@ namespace ToolModeMemory.Tests
 			// 只读保护不许被改名绕过
 			MemoryStore c = new MemoryStore();
 			c.UseSaveName("CityC");
-			c.Set("net.draw", "G:x", 1);
+			c.Set(ToolItemCatalog.kToolMode, K(MemoryKeys.Group(null, "Tunnels"), false, "net"), 1);
 			c.SaveToDisk(true);
 			string cPath = c.CurrentFilePath();
 			File.WriteAllText(cPath, "{ broken", Encoding.UTF8);
@@ -212,50 +487,169 @@ namespace ToolModeMemory.Tests
 				&& MemoryKeys.PrefixFor(MemoryScope.GlobalUnique) == "P:"
 				&& MemoryKeys.PrefixFor(MemoryScope.GlobalShared) == "S", "每档前缀唯一");
 
+			// 域 + 家族：层级键之上再套两层，任何范围下都不跨资产/功能共用
+			Check(MemoryKeys.WithDomain(MemoryKeys.Tool("Water Tool"), true) == "F|T:Water Tool",
+				"兜底键同样带域");
+			Check(MemoryKeys.StripDomain(MemoryKeys.WithDomain(group, false)) == group, "域前缀可剥回层级键");
+			Check(K(group, false, "net") == "A|G:Roads/SmallRoads$net", "生产键 = 域 + 层级 + 家族");
+			Check(K(shared, true, "zone") == "F|S$zone", "功能区的全局共用键");
+			Check(K(group, false, "net") != K(group, true, "net"), "资产/功能绝不共用同一桶");
+			Check(K(group, false, "net") != K(group, false, "obj"), "不同枚举家族绝不共用同一桶");
+		}
+
+		/// <summary>0.2.0 工具目录：项数、项 id、来源归属、子字段与范围推荐。</summary>
+		private static void CatalogShape()
+		{
+			Console.WriteLine("[18] 工具目录形状（11 项 / 来源 / Subs）");
+
 			ToolItemDef[] items = ToolItemCatalog.Items;
-			Check(items.Length == 12, "v0.1.2 = 12 个工具项（terrain.mode / upgrade.mode 已删）");
+			Check(items.Length == 11, "v0.2.0 = 11 个工具项（数据包/地区主题推迟到 0.2.1）");
+			Check(ToolItemCatalog.Count == items.Length, "Count 与数组一致");
+
+			string[] expectIds =
+			{
+				ToolItemCatalog.kAnarchy, ToolItemCatalog.kToolMode, ToolItemCatalog.kElevation,
+				ToolItemCatalog.kParallel, ToolItemCatalog.kSnap, ToolItemCatalog.kTopography,
+				ToolItemCatalog.kElevationStep, ToolItemCatalog.kLeftRight, ToolItemCatalog.kGeneral,
+				ToolItemCatalog.kUnderground, ToolItemCatalog.kOther
+			};
+			bool idsInOrder = expectIds.Length == items.Length;
+			for (int i = 0; i < items.Length && i < expectIds.Length; i++)
+			{
+				if (items[i].Id != expectIds[i] || items[i].Number != i + 1) idsInOrder = false;
+			}
+			Check(idsInOrder, "项 id 与设置页序号 1..11 逐一对应");
+
 			bool ok = true;
+			bool noToolbarFilter = true;
 			for (int i = 0; i < items.Length; i++)
 			{
 				int v = items[i].RecommendedScope;
-				if (v < 0 || v > (int)MemoryScope.GlobalUnique) ok = false;
+				// 0.2.0 起允许 -1（kNoRecommendation，「无推荐，跟原版走」）
+				if (v != ToolItemCatalog.kNoRecommendation && (v < 0 || v > (int)MemoryScope.GlobalUnique)) ok = false;
 				if (string.IsNullOrEmpty(items[i].Id)) ok = false;
 				if (ToolItemCatalog.Find(items[i].Id) == null) ok = false;
 				if (items[i].VanillaScope != ToolItemCatalog.kVanillaNone
 					&& (items[i].VanillaScope < 0 || items[i].VanillaScope > (int)MemoryScope.GlobalUnique)) ok = false;
+				if (items[i].Source == ItemSource.Toolbar) noToolbarFilter = false;
+				// 「-1 = 无推荐」时 EffectiveRecommendedScope 必须落到合法档
+				int eff = items[i].EffectiveRecommendedScope();
+				if (eff < 0 || eff > (int)MemoryScope.GlobalUnique) ok = false;
 			}
-			Check(ok, "推荐/原版档位都在枚举范围内");
-			Check(ToolItemCatalog.Find(ToolItemCatalog.kNetElevation).VanillaScope == (int)MemoryScope.GlobalShared,
-				"高程原版档 = 全局共用（整个会话只有一个值）");
-			Check(ToolItemCatalog.Find(ToolItemCatalog.kObjPlace).VanillaScope == ToolItemCatalog.kVanillaNone,
-				"放置模式原版不记忆");
-			Check(ToolItemCatalog.Find(ToolItemCatalog.kNetDraw).VanillaScope == (int)MemoryScope.Group,
-				"绘制模式原版档 = 同组（NetToolPreferences 按 m_Group）");
+			Check(ok, "推荐/原版档位都在枚举范围内（含 -1 哨兵）");
+			Check(noToolbarFilter, "目录里没有工具栏筛选项（数据包/地区主题已推迟）");
+
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kElevation).VanillaScope == (int)MemoryScope.GlobalShared,
+				"高度原版档 = 全局共用（整个会话只有一个值）");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kToolMode).VanillaScope == (int)MemoryScope.Group,
+				"工具模式原版档 = 同组（原版按 m_Group 记忆）");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kUnderground).VanillaScope == (int)MemoryScope.Group
+				&& ToolItemCatalog.Find(ToolItemCatalog.kUnderground).RecommendedScope == (int)MemoryScope.Group
+				&& !ToolItemCatalog.Find(ToolItemCatalog.kUnderground).DefaultEnabled,
+				"地下模式推荐 == 原版 -> 出厂不开");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kOther).VanillaScope == ToolItemCatalog.kVanillaNone,
+				"「其它」（配色/笔刷）原版不记忆");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kOther).RecommendedScope == ToolItemCatalog.kNoRecommendation
+				&& ToolItemCatalog.Find(ToolItemCatalog.kOther).EffectiveRecommendedScope() == (int)MemoryScope.Group,
+				"「其它」无推荐 -> 出厂退到同组");
+
+			// 1、8、9 三项属于 Anarchy（74604），不是 Extra Networks：见 research/extra/anarchy
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kAnarchy).Source == ItemSource.AnarchyMod
+				&& ToolItemCatalog.Find(ToolItemCatalog.kLeftRight).Source == ItemSource.AnarchyMod
+				&& ToolItemCatalog.Find(ToolItemCatalog.kGeneral).Source == ItemSource.AnarchyMod,
+				"anarchy / 左侧和右侧 / 常规 = Anarchy 项");
+			bool noneFromExtra = true;
+			for (int i = 0; i < items.Length; i++)
+			{
+				if (items[i].Source == ItemSource.ExtraNetworksMod) noneFromExtra = false;
+			}
+			Check(noneFromExtra, "没有任何项来自 Extra Networks（两块面板反编译确认属 Anarchy）");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kAnarchy).VanillaScope == ToolItemCatalog.kVanillaNone
+				&& ToolItemCatalog.Find(ToolItemCatalog.kLeftRight).VanillaScope == ToolItemCatalog.kVanillaNone
+				&& ToolItemCatalog.Find(ToolItemCatalog.kGeneral).VanillaScope == ToolItemCatalog.kVanillaNone,
+				"Anarchy 三项原版无记忆");
+
+			// 子字段：一项覆盖多个游戏值 -> 每个值一个独立记忆桶
+			string[] par = ToolItemCatalog.Find(ToolItemCatalog.kParallel).Subs;
+			Check(par != null && par.Length == 2 && par[0] == "parallel.count" && par[1] == "parallel.offset",
+				"并列模式 = count + offset 两个子字段");
+			string[] lr = ToolItemCatalog.Find(ToolItemCatalog.kLeftRight).Subs;
+			Check(lr != null && lr.Length == 2 && lr[0] == "leftRight.left" && lr[1] == "leftRight.right",
+				"左侧和右侧 = 左右两个子字段");
+			string[] other = ToolItemCatalog.Find(ToolItemCatalog.kOther).Subs;
+			Check(other != null && other.Length == 6
+				&& other[0] == "other.color0" && other[1] == "other.color1" && other[2] == "other.color2"
+				&& other[4] == "other.brushSize" && other[5] == "other.brushStrength",
+				"其它 = 配色 3+1 通道 / 笔刷大小 / 笔刷强度");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kToolMode).Subs == null
+				&& ToolItemCatalog.Find(ToolItemCatalog.kSnap).Subs == null
+				&& ToolItemCatalog.Find(ToolItemCatalog.kElevation).Subs == null,
+				"单值项 Subs = null（值直接存项 id 下）");
+
+			// 读档过滤靠 Find 认回父项：子字段认不回来就每次进档都会被丢掉
+			Check(ToolItemCatalog.Find("parallel.count").Id == ToolItemCatalog.kParallel
+				&& ToolItemCatalog.Find("parallel.offset").Id == ToolItemCatalog.kParallel,
+				"parallel.* 子字段认回父项");
+			Check(ToolItemCatalog.Find("leftRight.left").Id == ToolItemCatalog.kLeftRight
+				&& ToolItemCatalog.Find("leftRight.right").Id == ToolItemCatalog.kLeftRight,
+				"leftRight.* 认回父项");
+			Check(ToolItemCatalog.Find("other.color2").Id == ToolItemCatalog.kOther
+				&& ToolItemCatalog.Find("other.brushStrength").Id == ToolItemCatalog.kOther,
+				"other.* 认回父项");
+
+			// 旧 id 一律不认识（0.2.0 换 id 就是为了让 v2 文件整体失效）
+			Check(ToolItemCatalog.Find("net.draw") == null && ToolItemCatalog.Find("net.snap") == null
+				&& ToolItemCatalog.Find("net.elevation") == null && ToolItemCatalog.Find("obj.place") == null
+				&& ToolItemCatalog.Find("terrain.mode") == null && ToolItemCatalog.Find("upgrade.mode") == null,
+				"v0.1.x 的项 id 全部不再认识");
+			Check(ToolItemCatalog.Find("nope.unknown") == null && ToolItemCatalog.Find(null) == null
+				&& ToolItemCatalog.Find("") == null && ToolItemCatalog.Find(".count") == null,
+				"未知/畸形 id 返回 null（Find 不许抛）");
+
+			// 桶 id（项 id + 子字段 id）全局唯一
+			HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+			bool unique = true;
+			for (int i = 0; i < items.Length; i++)
+			{
+				if (!seen.Add(items[i].Id)) unique = false;
+				string[] subs = items[i].Subs;
+				if (subs == null) continue;
+				for (int j = 0; j < subs.Length; j++)
+				{
+					if (!seen.Add(subs[j])) unique = false;
+				}
+			}
+			Check(unique && seen.Count == 11 + 2 + 2 + 6, "项 id 与子字段 id 全局唯一（共 21 个桶）");
 		}
 
 		private static void JsonRoundTrip()
 		{
-			Console.WriteLine("[1] JSON 往返（新键格式）");
+			Console.WriteLine("[1] JSON 往返（v3 键格式）");
 			UnityEngine.Application.TestDir = FreshDir("json");
 			MemoryStore a = new MemoryStore();
 			a.UseSaveName("My City");
-			a.Set("net.draw", "G:Roads/SmallRoads", 2);
-			a.Set("net.snap", "M:Roads", 15);
-			a.Set("net.elevation", "P:Game.Prefabs.NetPrefab:Alley", -320);
-			a.Set("obj.place", "C:Tunnels", 1);
+			string groupKey = K(kSmallRoads, false, "net");
+			string menuKey = K(MemoryKeys.Menu("Roads"), false, "net");
+			string assetKey = K(kAlleyAsset, false, "net");
+			string catKey = K(MemoryKeys.Category("Tunnels"), true, "zone");
+			a.Set(ToolItemCatalog.kToolMode, groupKey, 2);
+			a.Set(ToolItemCatalog.kSnap, menuKey, 15);
+			a.Set(ToolItemCatalog.kElevation, assetKey, -320);
+			a.Set(ToolItemCatalog.kUnderground, catKey, 1);
 			string json = a.Serialize();
 			Check(json.Contains("\"v\":" + MemoryStore.kVersion), "写入当前版本");
-			Check(json.Contains("G:Roads/SmallRoads"), "Group 键含菜单+分类");
+			Check(json.Contains("A|G:Roads/SmallRoads$net"), "键含资产域 + 菜单/分类 + 家族");
+			Check(json.Contains("F|C:Tunnels$zone"), "功能域键与家族都写进文件");
 
 			Dictionary<string, Dictionary<string, int>> into = new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal);
 			int v;
 			bool ok = MemoryStore.Parse(json, into, out v);
 			Check(ok, "解析成功");
 			Check(v == MemoryStore.kVersion, "版本号读回");
-			Check(into["net.draw"]["G:Roads/SmallRoads"] == 2, "net.draw 值回读");
-			Check(into["net.snap"]["M:Roads"] == 15, "net.snap 值回读");
-			Check(into["net.elevation"]["P:Game.Prefabs.NetPrefab:Alley"] == -320, "负高程回读");
-			Check(into["obj.place"]["C:Tunnels"] == 1, "Category 键回读");
+			Check(into[ToolItemCatalog.kToolMode][groupKey] == 2, "toolMode 值回读");
+			Check(into[ToolItemCatalog.kSnap][menuKey] == 15, "snap 值回读");
+			Check(into[ToolItemCatalog.kElevation][assetKey] == -320, "负高程回读");
+			Check(into[ToolItemCatalog.kUnderground][catKey] == 1, "Category 键回读");
 
 			// 磁盘往返
 			Check(a.SaveToDisk(true), "写盘");
@@ -263,7 +657,8 @@ namespace ToolModeMemory.Tests
 			b.UseSaveName("My City");
 			Check(b.LoadForCurrentSave(), "读盘不报错");
 			bool found;
-			Check(b.Get("net.draw", "G:Roads/SmallRoads", out found) == 2 && found, "跨实例读回");
+			Check(b.Get(ToolItemCatalog.kToolMode, groupKey, out found) == 2 && found, "跨实例读回");
+			Check(b.Get(ToolItemCatalog.kUnderground, catKey, out found) == 1 && found, "功能域跨实例读回");
 			Check(!b.Dirty, "读回后不脏");
 			Check(!b.IsPlaceholder, "正式存档名不算占位");
 		}
@@ -277,6 +672,7 @@ namespace ToolModeMemory.Tests
 			{
 				"", "{", "not json", "{}", "{\"v\":2}", "{\"items\":{", "{\"v\":2,\"items\":{\"a\":{\"K:1\"}}}",
 				"{\"v\":2,\"items\":{\"a\":{\"K:1\":}}}","{\"v\":2,\"items\":{\"a\":{\"K:1\":99999999999999}}}",
+				"{\"v\":3,\"items\":{\"toolMode\":{\"A|G:道路/小型道路$net\":}}}",
 			};
 			bool threw = false;
 			try
@@ -295,6 +691,9 @@ namespace ToolModeMemory.Tests
 			into.Clear();
 			Check(MemoryStore.Parse("{\"v\":2,\"other\":{\"x\":1},\"items\":{\"a\":{\"K:1\":3}}}", into, out int v2)
 				&& v2 == 2 && into["a"]["K:1"] == 3, "未知顶层字段被跳过且不影响 items");
+			into.Clear();
+			Check(MemoryStore.Parse("{\"v\":3,\"items\":{\"toolMode\":{\"A|G:道路/小型道路$net\":7}}}", into, out int v3)
+				&& v3 == 3 && into["toolMode"]["A|G:道路/小型道路$net"] == 7, "键里的中文/|/$ 都能解析");
 		}
 
 		private static void BadFileIsNotOverwritten()
@@ -308,8 +707,9 @@ namespace ToolModeMemory.Tests
 			s.UseSaveName("Broken");
 			Check(!s.LoadForCurrentSave(), "载入报告失败");
 			Check(s.WriteBlocked, "进入只读保护");
-			s.Set("net.draw", "G:Roads/Small", 4);
+			s.Set(ToolItemCatalog.kToolMode, K(kSmallRoads, false, "net"), 4);
 			Check(!s.SaveToDisk(), "拒绝覆盖");
+			Check(!s.SaveToDisk(false), "实时保存也拒绝覆盖");
 			Check(File.ReadAllText(path).Contains("not valid"), "磁盘原文未被改写");
 		}
 
@@ -318,12 +718,12 @@ namespace ToolModeMemory.Tests
 			Console.WriteLine("[4] 更高版本文件不被降级覆盖");
 			UnityEngine.Application.TestDir = FreshDir("future");
 			string path = Path.Combine(MemoryStore.DataDirectory, "New.json");
-			File.WriteAllText(path, "{\"v\":99,\"save\":\"New\",\"items\":{\"net.draw\":{\"G:x\":1}}}", Encoding.UTF8);
+			File.WriteAllText(path, "{\"v\":99,\"save\":\"New\",\"items\":{\"toolMode\":{\"A|x$net\":1}}}", Encoding.UTF8);
 			MemoryStore s = new MemoryStore();
 			s.UseSaveName("New");
 			Check(!s.LoadForCurrentSave(), "v99 判为不可用");
 			Check(s.WriteBlocked, "只读保护");
-			s.Set("net.draw", "G:x", 7);
+			s.Set(ToolItemCatalog.kToolMode, "A|x$net", 7);
 			Check(!s.SaveToDisk(), "不写盘");
 			Check(File.ReadAllText(path).Contains("\"v\":99"), "原文保留");
 		}
@@ -335,7 +735,7 @@ namespace ToolModeMemory.Tests
 			MemoryStore s = new MemoryStore();
 			s.EnsureSessionName();
 			Check(s.IsPlaceholder, "占位标记");
-			s.Set("net.draw", "G:Roads/Small", 3);
+			s.Set(ToolItemCatalog.kToolMode, K(kSmallRoads, false, "net"), 3);
 			Check(s.SaveToDisk(true), "会话内落盘到占位文件");
 			string placeholder = s.CurrentFilePath();
 			Check(File.Exists(placeholder), "占位文件存在");
@@ -344,7 +744,7 @@ namespace ToolModeMemory.Tests
 			Check(!s.IsPlaceholder, "改名后不再是占位");
 			Check(!File.Exists(placeholder), "占位文件已搬走");
 			Check(File.Exists(s.CurrentFilePath()), "新文件存在");
-			Check(s.Get("net.draw", "G:Roads/Small", out bool f) == 3 && f, "数据随文件保留");
+			Check(s.Get(ToolItemCatalog.kToolMode, K(kSmallRoads, false, "net"), out bool f) == 3 && f, "数据随文件保留");
 		}
 
 		private static void NamedSaveNeverMovesPreviousFile()
@@ -353,7 +753,7 @@ namespace ToolModeMemory.Tests
 			UnityEngine.Application.TestDir = FreshDir("crosssave");
 			MemoryStore a = new MemoryStore();
 			a.UseSaveName("CityA");
-			a.Set("net.draw", "G:Roads/Small", 9);
+			a.Set(ToolItemCatalog.kToolMode, K(kSmallRoads, false, "net"), 9);
 			Check(a.SaveToDisk(true), "CityA.json 写出");
 			string aPath = a.CurrentFilePath();
 
@@ -364,10 +764,15 @@ namespace ToolModeMemory.Tests
 			live.UseSaveName("CityB");
 			Check(File.Exists(aPath), "CityA.json 仍然存在（未被改名）");
 			Check(!File.Exists(Path.Combine(DirOf(live), "CityB.json")), "CityB 未被伪造");
-			live.Set("net.snap", "M:Roads", 2);
+			live.Set(ToolItemCatalog.kSnap, K(MemoryKeys.Menu("Roads"), false, "net"), 2);
 			Check(live.SaveToDisk(true), "CityB 写自己的文件");
 			Check(File.ReadAllText(aPath).Contains("\"v\":" + MemoryStore.kVersion), "CityA 内容未变");
-			Check(File.ReadAllText(aPath).Contains("G:Roads/Small"), "CityA 键未丢");
+			Check(File.ReadAllText(aPath).Contains("A|G:Roads/SmallRoads$net"), "CityA 键未丢");
+			// 载入 CityA 时确实拿到了数据（否则这条回归就变成空壳）
+			MemoryStore check = new MemoryStore();
+			check.UseSaveName("CityA");
+			Check(check.LoadForCurrentSave() && check.Get(ToolItemCatalog.kToolMode,
+				K(kSmallRoads, false, "net"), out bool f) == 9 && f, "CityA 记忆仍可正常读回");
 		}
 
 		private static void AdoptKeepsExistingTargetFile()
@@ -376,14 +781,14 @@ namespace ToolModeMemory.Tests
 			UnityEngine.Application.TestDir = FreshDir("adopt");
 			MemoryStore s = new MemoryStore();
 			s.EnsureSessionName();
-			s.Set("net.draw", "G:Roads/Small", 5);
+			s.Set(ToolItemCatalog.kToolMode, K(kSmallRoads, false, "net"), 5);
 			s.SaveToDisk(true);
 			string placeholder = s.CurrentFilePath();
 
 			// 目标已存在（该名字 previously 玩过）
 			MemoryStore other = new MemoryStore();
 			other.UseSaveName("Renamed");
-			other.Set("net.snap", "M:Roads", 11);
+			other.Set(ToolItemCatalog.kSnap, K(MemoryKeys.Menu("Roads"), false, "net"), 11);
 			other.SaveToDisk(true);
 			string target = other.CurrentFilePath();
 
@@ -401,14 +806,19 @@ namespace ToolModeMemory.Tests
 			Check(!s.Dirty, "新建不脏");
 			Check(!s.SaveToDisk(true), "onlyIfDirty 不写");
 			Check(Directory.GetFiles(MemoryStore.DataDirectory, "*.json").Length == 0, "目录仍为空");
-			s.Set("net.snap", "S", 1);
+			s.Set(ToolItemCatalog.kSnap, "S", 1);
 			Check(s.Dirty, "写入后置脏");
-			Check(s.Get("net.snap", "S", out bool f) == 1 && f, "读回");
-			s.Set("net.snap", "S", 1);
+			Check(s.Get(ToolItemCatalog.kSnap, "S", out bool f) == 1 && f, "读回");
+			s.Set(ToolItemCatalog.kSnap, "S", 1);
 			Check(s.Dirty, "同值不重复置脏（仍为之前的脏）");
 			Check(s.SaveToDisk(true), "写盘");
 			Check(!s.Dirty, "写盘后干净");
 			Check(s.SaveToDisk(true) == false, "干净时不再写");
+			// 空键不许写进任何桶（范围解析失败时的兜底必须留在调用方）
+			long before = s.ChangeSerial;
+			s.Set(ToolItemCatalog.kSnap, null, 9);
+			s.Set(ToolItemCatalog.kSnap, "", 9);
+			Check(s.ChangeSerial == before && !s.Dirty, "空键被忽略：不置脏也不推进序号");
 		}
 
 		private static void BeginMainMenuClears()
@@ -417,7 +827,7 @@ namespace ToolModeMemory.Tests
 			UnityEngine.Application.TestDir = FreshDir("menu");
 			MemoryStore s = new MemoryStore();
 			s.UseSaveName("City");
-			s.Set("net.draw", "G:a", 1);
+			s.Set(ToolItemCatalog.kToolMode, "A|a", 1);
 			s.SaveToDisk(true);
 			s.BeginMainMenu();
 			Check(s.SaveName == null, "名字清空");
@@ -425,11 +835,18 @@ namespace ToolModeMemory.Tests
 			Check(!s.SaveToDisk(true), "主菜单不写盘");
 
 			s.UseSaveName("City");
-			s.Set("net.draw", "G:a", 1);
+			s.Set(ToolItemCatalog.kToolMode, "A|a", 1);
 			s.ResetCurrentSave();
 			Check(!File.Exists(s.CurrentFilePath()), "文件被删");
 			Check(!s.Dirty, "重置后不脏");
 			Check(!s.SaveToDisk(true), "重置后不会立刻复活文件");
+
+			// 运行时清空（「重置所有设置项」用）：清掉数据但保持脏，等实时落盘写回空文件
+			s.Set(ToolItemCatalog.kSnap, "A|a$net", 2);
+			s.ClearRuntime();
+			Check(s.Dirty, "ClearRuntime 清数据并保持脏");
+			Check(s.SaveToDisk(true) && !File.ReadAllText(s.CurrentFilePath()).Contains("\"snap\""),
+				"清空后落盘为无项文件");
 		}
 
 		private static void FileNameSanitizer()

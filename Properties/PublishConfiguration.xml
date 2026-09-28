@@ -13,17 +13,23 @@
     paypal/patreon/buymeacoffee/kofi/crowdin/gofundme），不认的值会被静默丢弃而不是报错。
     2026-09-27 晚：v0.1.3 只改模组内「论坛页面」按钮指向（原为模板 AccessAnarchy 的帖子）。
     发版前已用登录态浏览器回读线上：name / short / long description / changelog / 论坛与外链 /
-    Private 状态均与本文件一致，故 NewVersion 覆盖元数据不会冲掉用户线上手改。-->
+    Private 状态均与本文件一致，故 NewVersion 覆盖元数据不会冲掉用户线上手改。
+    2026-09-28（v0.2.0 发版前）：再次用登录态浏览器逐字段回读线上（编辑页 ?version=3；
+    注意 ?version=4 不存在，SPA 会退回显示上一个编辑过的模组，别拿它当数据源）。
+    结果：DisplayName / ShortDescription / GameVersion / Tag / ForumLink / 三条外链 /
+    AccessLevel=private / 无必填 DLC 与前置模组 / 缩略图（同一张图，CDN 重编码）全部一致；
+    唯一差异是 LongDescription 的列表符号被平台规范化成 "*   "，本文件已跟随线上。
+    本次改动仅 ModVersion 0.1.3 -> 0.2.0 与 ChangeLog。-->
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
 	<ModId Value="160529" />
-	<ModVersion Value="0.1.3" />
+	<ModVersion Value="0.2.0" />
 	<GameVersion Value="1.6.*" />
 	<!--Private = 不公开（用户要求）。若平台拒绝此值再改 Unlisted。-->
 	<AccessLevel Value="Private" />
 	<DisplayName Value="Tool Mode Memory" />
 	<ShortDescription Value="Remembers tool panel settings per savegame (draw mode, snap, height...) with configurable sharing scope.　工具面板设置模式自动记忆" />
-	<LongDescription Value="## **English**&#xA;&#xA;Tired of redoing the same tool options every time you enter a save? **Tool Mode Memory** remembers how you left the tool panel — draw mode, snapping, parallel roads, height, placement modes and more — and brings those choices back when you return.&#xA;&#xA;Every savegame gets its own memory file. Leave a save, come back later, and your setup is still there.&#xA;&#xA;**Sharing scope** is configurable per tool item:&#xA;&#xA;- Same group (e.g. all small roads)&#xA;- Same menu (roads, education, ...)&#xA;- Same asset type (alley, metro track, ...)&#xA;- Shared globally&#xA;- Per asset (not shared)&#xA;&#xA;Turn the master switch **off** for 100% vanilla behaviour. Memory management (reset / open folder) and links live on the About tab.&#xA;&#xA;## **中文**&#xA;&#xA;每次进档都要把工具选项重设一遍？**Tool Mode Memory** 会记住你离开时的工具选项——绘制模式、吸附、平行道路、高度、放置模式等——下次进入该存档自动恢复。&#xA;&#xA;每个存档单独一份记忆，退出覆盖保存。&#xA;&#xA;**共用范围**可按工具项配置：同组 / 同菜单 / 同类资产 / 全局共用 / 全局不共用。&#xA;&#xA;总开关关闭 = 完全原版行为。重置记忆、打开记忆文件夹与链接在「关于」页。" />
+	<LongDescription Value="## **English**&#xA;&#xA;Tired of redoing the same tool options every time you enter a save? **Tool Mode Memory** remembers how you left the tool panel — draw mode, snapping, parallel roads, height, placement modes and more — and brings those choices back when you return.&#xA;&#xA;Every savegame gets its own memory file. Leave a save, come back later, and your setup is still there.&#xA;&#xA;**Sharing scope** is configurable per tool item:&#xA;&#xA;*   Same group (e.g. all small roads)&#xA;*   Same menu (roads, education, ...)&#xA;*   Same asset type (alley, metro track, ...)&#xA;*   Shared globally&#xA;*   Per asset (not shared)&#xA;&#xA;Turn the master switch **off** for 100% vanilla behaviour. Memory management (reset / open folder) and links live on the About tab.&#xA;&#xA;## **中文**&#xA;&#xA;每次进档都要把工具选项重设一遍？**Tool Mode Memory** 会记住你离开时的工具选项——绘制模式、吸附、平行道路、高度、放置模式等——下次进入该存档自动恢复。&#xA;&#xA;每个存档单独一份记忆，退出覆盖保存。&#xA;&#xA;**共用范围**可按工具项配置：同组 / 同菜单 / 同类资产 / 全局共用 / 全局不共用。&#xA;&#xA;总开关关闭 = 完全原版行为。重置记忆、打开记忆文件夹与链接在「关于」页。" />
 	<Thumbnail Value="Properties/Thumbnail.jpg" />
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/tool-mode-memory.1942676/" />
 	<Tag Value="Code Mod" />
@@ -31,15 +37,24 @@
 	<ExternalLink Type="kofi" Url="https://ko-fi.com/yuexian7" />
 	<ExternalLink Type="x" Url="https://x.com/yuexian777/status/2101942150447702427?s=20" />
 	<ChangeLog>
-v0.1.3
+v0.2.0
 
-- Fixed the "Forum page" button on the mod's About tab: it opened the wrong
-  forum thread. It now points at this mod's own thread.
-- Nothing else changed. Your saved tool settings and memory files are untouched.
+*   The option list now follows the game's own option panel: the same rows, in the same order, with the game's own wording, so what you switch on here is what you look for in the city.
+*   Sharing scope has clearer names (Same group, Same menu, Same asset type, Shared globally, Not shared at all), and what each one means is now spelled out on a single explanation line instead of being scattered over the page.
+*   Settings are saved the moment you change them, so a game crash no longer costs you the options you just set.
+*   Every row keeps being remembered even while its own restore switch is off, so switching it back on picks up where you left off. Only the master switch stops memory and returns every tool to vanilla behaviour.
+*   Options added by the Anarchy mod can now be remembered too; those rows only do anything when that mod is installed.
+*   The mod's own name now appears in your game language on the mod options screen (中文: 工具模式区分记忆), and every option name uses the game's official translations in all 12 languages.
+*   One-time change after updating: remembered settings start empty in each save and fill back in as you build, because remembered choices are now labelled differently. Your cities are untouched.
 
 中文
 
-- 修正「关于」页里「论坛页面」按钮打开错误帖子的问题，现在指向本模组自己的帖子。
-- 其他行为没有任何变化，已记住的工具设置与记忆文件不受影响。
+*   选项列表按游戏内选项面板重做：同样的行、同样的顺序、同样的官方叫法，这里开什么，进城后就找什么。
+*   共用范围换成更好懂的说法（同组 / 同菜单 / 同类资产 / 全局共用 / 全部不共用），每一档的含义集中写在一条说明里，不用在页面上来回找。
+*   改完即刻保存：游戏崩溃也不会再丢掉刚设好的选项。
+*   每一项即使关掉自己的恢复开关也仍在继续记忆，重新打开就是之前记住的状态；只有总开关会停止记忆并把所有工具还原成原版。
+*   现在也能记住 Anarchy 模组提供的选项；没装那个模组时这几项不做任何事。
+*   模组名称在设置界面按你的游戏语言显示（English: Tool Mode Memory），各项名称在 12 种语言里全部采用游戏官方译名。
+*   更新后的一次性变化：每个存档里已记住的设置会从空重新开始，边建边重新记起来，因为记忆项的标记方式改了。已建好的城市与建筑不受影响。
 	</ChangeLog>
 </PublishConfiguration>

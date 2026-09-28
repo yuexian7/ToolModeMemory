@@ -58,6 +58,30 @@ namespace ToolModeMemory.Memory
 			return PREFIX_TOOL + (string.IsNullOrEmpty(toolID) ? "null" : toolID);
 		}
 
+		/// <summary>
+		/// 资产 / 功能分隔前缀。二者的可选项集合完全不同（功能区只有填充/滚动/刷涂，
+		/// 道路有直线/曲线/网格/替换…），所以任何范围下都不允许跨这一界共用，
+		/// 「全局共用」的定义也因此是「所有支持该项的**资产**共用一份、**功能**共用另一份」。
+		/// </summary>
+		public const string DOMAIN_ASSET = "A|";
+		public const string DOMAIN_FUNCTION = "F|";
+
+		/// <summary>给任何键加资产/功能域；null 键原样返回。</summary>
+		public static string WithDomain(string key, bool isFunction)
+		{
+			if (string.IsNullOrEmpty(key)) return key;
+			return (isFunction ? DOMAIN_FUNCTION : DOMAIN_ASSET) + key;
+		}
+
+		/// <summary>从完整键里剥掉域前缀，得到层级部分（日志/测试/旧数据判用）。</summary>
+		public static string StripDomain(string key)
+		{
+			if (key == null) return null;
+			if (key.StartsWith(DOMAIN_ASSET, StringComparison.Ordinal)) return key.Substring(DOMAIN_ASSET.Length);
+			if (key.StartsWith(DOMAIN_FUNCTION, StringComparison.Ordinal)) return key.Substring(DOMAIN_FUNCTION.Length);
+			return key;
+		}
+
 		/// <summary>把范围翻成键前缀，供日志与测试用。</summary>
 		public static string PrefixFor(MemoryScope scope)
 		{
