@@ -19,7 +19,9 @@ namespace ToolModeMemory
 			d["mod.name"] = "Werkzeugmodus-Gedächtnis";
 			d["tab.mod"] = "Werkzeugmodus-Einstellungen";
 			d["tab.about"] = "Über";
-			d["group.items"] = "Werkzeuggedächtnis-Einstellungen";
+			d["group.master"] = "Werkzeugmodus-Gedächtnis";
+			d["group.official"] = "Einstellungen der offiziellen Werkzeuge";
+			d["group.anarchy"] = "Einstellungen der Anarchy-Werkzeuge";
 			d["group.reset"] = "Speicherverwaltung";
 			d["group.compat"] = "Kompatibilität";
 			d["group.about"] = "Informationen und Links";
@@ -59,11 +61,11 @@ namespace ToolModeMemory
 
 			d["about.version"] = "Mod-Version";
 			d["about.author"] = "Autor";
-			d["about.kofi"] = "Kauf mir einen Kaffee";
+			d["about.kofi"] = "Buy me a Coffee";
 			d["about.kofi.desc"] = "Unterstütze den Autor auf Ko-fi.";
-			d["about.forum"] = "Forenseite";
+			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Den Thread im Paradox-Forum öffnen.";
-			d["about.rainbow"] = "RAINBOW-Website";
+			d["about.rainbow"] = "RAINBOW官网";
 			d["about.rainbow.desc"] = "Die Website der Rainbow-Reihe öffnen.";
 
 			// ---------- 1 Anarchy ----------
@@ -71,6 +73,17 @@ namespace ToolModeMemory
 			d["item.anarchy.ex.group"] = "zum Beispiel schaltest du Anarchy für eine zweispurige kleine Straße ein, andere kleine Straßen haben Anarchy ebenfalls an, eine große Straße dagegen nicht";
 			d["item.anarchy.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, hat Anarchy an, im Menü Strom dagegen nicht";
 			d["item.anarchy.ex.category"] = "wechselt man zu einer großen Straße, bleibt Anarchy an, aber eine Brücke geht wieder aus und braucht eine eigene Einstellung, obwohl beide im Menü Straßen liegen";
+
+			d["item.themes.label"] = "Thema";
+			d["item.themes.desc"] = "Merkt, welche Einträge im Filter „Thema“ der Werkzeugleiste angehakt sind. Diese Zeile erscheint nur, wenn die aktuelle Kategorie wirklich Assets enthält, die Themen verwenden, und ein Haken beschränkt die Liste der Werkzeugleiste auf Assets, die diese Themen unterstützen. Das Original setzt den Filter erst beim Laden eines Spielstands auf das Standardthema zurück, deshalb ist dieser Punkt ab Werk deaktiviert.";
+			d["item.themes.ex.group"] = "zum Beispiel hakt du ein Thema nur unter Straßen/Kleine Straßen ein, eine große Straße filtert dann nicht danach";
+			d["item.themes.ex.menu"] = "ein im Menü Straßen angehaktes Thema gilt im Menü Strom nicht und ist wieder da, wenn du zurückkehrst";
+			d["item.themes.ex.category"] = "ebenso zählen Gassen und U-Bahn-Gleise als derselbe Asset-Typ, das angehakte Thema wird daher über die Menüs hinweg geteilt";
+			d["item.packs.label"] = "Paket";
+			d["item.packs.desc"] = "Merkt, welche Einträge im Filter „Paket“ der Werkzeugleiste angehakt sind; ein Haken beschränkt die Liste der Werkzeugleiste auf Assets, die zu diesen Paketen gehören. Das Original leert die Auswahl jedes Mal, wenn du das Menü oder die Kategorie wechselst, das getrennte Merken pro Menü und Kategorie passt also zu dem, was du siehst - auch dieser Punkt ist ab Werk deaktiviert.";
+			d["item.packs.ex.group"] = "zum Beispiel hakt du ein Paket unter Straßen/Kleine Straßen ein, das Original leert es bei einer großen Straße, und es ist wieder da, wenn du zurückkehrst";
+			d["item.packs.ex.menu"] = "die im Menü Straßen angehakten Pakete und die im Menü Strom angehakten werden getrennt gemerkt";
+			d["item.packs.ex.category"] = "ebenso stehen Gassen sowohl im Menü Straßen als auch im Menü Bezirke unter demselben Namen, die angehakten Pakete sind daher eine gemeinsame Auswahl";
 
 			// ---------- 2 Werkzeugmodus ----------
 			d["item.toolMode.label"] = "Werkzeugmodus";
@@ -81,7 +94,7 @@ namespace ToolModeMemory
 
 			// ---------- 3 Höhe ----------
 			d["item.elevation.label"] = "Höhe";
-			d["item.elevation.desc"] = "Merkt die Höhe, mit der ein Werkzeug verlassen wurde, einschließlich des Ergebnisses von Erhöhen und Absenken. Die Höhe von Kreuzungen ist nicht enthalten.";
+			d["item.elevation.desc"] = "Merkt die Höhe, mit der ein Werkzeug verlassen wurde, einschließlich des Ergebnisses von Erhöhen und Absenken. Der Höhenunterschied (wie weit dich ein einzelner Druck versetzt; Anarchy nennt diese Zeile Höhenschritt) wird zusammen mit der Höhe gemerkt und nutzt denselben gemeinsamen Bereich. Die Höhe von Kreuzungen ist nicht enthalten.";
 			d["item.elevation.ex.group"] = "zum Beispiel hebst du eine zweispurige kleine Straße auf 10 m, andere kleine Straßen gehen ebenfalls auf 10 m, eine große Straße aber nicht auf 10 m";
 			d["item.elevation.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, liegt auf 10 m, im Menü Strom dagegen nicht auf 10 m";
 			d["item.elevation.ex.category"] = "wechselt man zu einer großen Straße, bleibt es bei 10 m, aber eine Brücke geht zurück auf 0 m und braucht eine eigene Einstellung, obwohl beide im Menü Straßen liegen";
@@ -107,12 +120,6 @@ namespace ToolModeMemory
 			d["item.topography.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, zeigt Höhenlinien, im Menü Strom dagegen nicht";
 			d["item.topography.ex.category"] = "wechselt man zu einer großen Straße, bleiben die Höhenlinien sichtbar, aber bei einer Brücke ist die Zeile aus und sie braucht eine eigene Einstellung, obwohl beide im Menü Straßen liegen";
 
-			// ---------- 7 Höhenunterschied ----------
-			d["item.elevationStep.label"] = "Höhenunterschied";
-			d["item.elevationStep.desc"] = "Merkt den Wert von Höhenunterschied: wie viel ein einzelnes Erhöhen oder Absenken verschiebt. Die Zeile, die Anarchy Höhenschritt nennt, ist derselbe Wert.";
-			d["item.elevationStep.ex.group"] = "zum Beispiel stellst du den Höhenunterschied einer zweispurigen kleinen Straße auf 1 m, andere kleine Straßen verschieben sich ebenfalls um 1 m, eine große Straße dagegen nicht";
-			d["item.elevationStep.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, springt in Schritten von 1 m, im Menü Strom dagegen nicht";
-			d["item.elevationStep.ex.category"] = "wechselt man zu einer großen Straße, bleiben es 1-m-Schritte, aber eine Brücke geht auf die Standardstufe zurück und braucht eine eigene Einstellung, obwohl beide im Menü Straßen liegen";
 
 			// ---------- 8 Links und Rechts (Anarchy) ----------
 			d["item.leftRight.label"] = "Links und Rechts";
@@ -152,7 +159,9 @@ namespace ToolModeMemory
 			d["mod.name"] = "Memoria de herramientas";
 			d["tab.mod"] = "Ajustes del modo de herramienta";
 			d["tab.about"] = "Acerca de";
-			d["group.items"] = "Ajustes de la memoria de herramientas";
+			d["group.master"] = "Memoria de herramientas";
+			d["group.official"] = "Ajustes de las herramientas oficiales";
+			d["group.anarchy"] = "Ajustes de las herramientas de Anarchy";
 			d["group.reset"] = "Gestión de la memoria";
 			d["group.compat"] = "Compatibilidad";
 			d["group.about"] = "Información y enlaces";
@@ -192,11 +201,11 @@ namespace ToolModeMemory
 
 			d["about.version"] = "Versión del mod";
 			d["about.author"] = "Autor";
-			d["about.kofi"] = "Invítame a un café";
+			d["about.kofi"] = "Buy me a Coffee";
 			d["about.kofi.desc"] = "Apoya al autor en Ko-fi.";
-			d["about.forum"] = "Página del foro";
+			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Abrir el hilo en el foro de Paradox.";
-			d["about.rainbow"] = "Sitio de RAINBOW";
+			d["about.rainbow"] = "RAINBOW官网";
 			d["about.rainbow.desc"] = "Abrir el sitio de la serie Rainbow.";
 
 			// ---------- 1 Anarchy ----------
@@ -204,6 +213,17 @@ namespace ToolModeMemory
 			d["item.anarchy.ex.group"] = "por ejemplo, activas Anarchy en una carretera pequeña de dos carriles y las otras carreteras pequeñas también lo tienen activado, mientras que una carretera grande no";
 			d["item.anarchy.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras tienen Anarchy activado, pero al pasar al menú de Electricidad ya no";
 			d["item.anarchy.ex.category"] = "cambiar a una carretera grande sigue teniéndolo activado, pero un puente vuelve a desactivado y necesita su propio ajuste, aunque los dos estén en el menú de Carreteras";
+
+			d["item.themes.label"] = "Temática";
+			d["item.themes.desc"] = "Recuerda qué casillas están marcadas en el filtro «Temática» de la barra de herramientas. Esa fila solo aparece cuando la categoría actual contiene de verdad assets que usan temas, y marcar una limita la lista de la barra a los assets que admiten esos temas. El juego original solo la restablece al tema predeterminado al cargar una partida, así que este elemento viene desactivado de serie.";
+			d["item.themes.ex.group"] = "por ejemplo, marcas un tema solo en Carreteras/Carreteras pequeñas, de modo que una carretera grande ya no filtra por él";
+			d["item.themes.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras siguen el tema marcado allí, pero al pasar al menú de Electricidad no";
+			d["item.themes.ex.category"] = "las callejas y las vías de metro cuentan como el mismo tipo de activo, así que el tema marcado se comparte entre menús";
+			d["item.packs.label"] = "Paquete";
+			d["item.packs.desc"] = "Recuerda qué casillas están marcadas en el filtro «Paquete» de la barra de herramientas; marcar una limita la lista de la barra a los assets de esos paquetes. El juego original los vacía cada vez que cambias de menú o de categoría, así que recordarlos por menú y categoría coincide con lo que ves, y este elemento también viene desactivado de serie.";
+			d["item.packs.ex.group"] = "por ejemplo, marcas un paquete en Carreteras/Carreteras pequeñas, el juego original lo borra en las carreteras grandes y vuelve al regresar";
+			d["item.packs.ex.menu"] = "los paquetes marcados en el menú de Carreteras y en el menú de Electricidad se recuerdan por separado";
+			d["item.packs.ex.category"] = "las callejas están en los menús de Carreteras y Distritos con el mismo nombre, así que los paquetes marcados forman un único conjunto compartido";
 
 			// ---------- 2 Herramientas ----------
 			d["item.toolMode.label"] = "Herramientas";
@@ -214,7 +234,7 @@ namespace ToolModeMemory
 
 			// ---------- 3 Elevación ----------
 			d["item.elevation.label"] = "Elevación";
-			d["item.elevation.desc"] = "Recuerda la elevación con la que dejaste la herramienta, incluido el resultado de Aumentar la elevación y Disminuir la elevación. No cubre la elevación de los intercambiadores.";
+			d["item.elevation.desc"] = "Recuerda la elevación con la que dejaste la herramienta, incluido el resultado de Aumentar la elevación y Disminuir la elevación. El Escalón de elevación (lo que avanza con una sola pulsación; Anarchy llama a esa fila Paso de Elevación) se recuerda junto con ella y usa el mismo ámbito compartido. No cubre la elevación de los intercambiadores.";
 			d["item.elevation.ex.group"] = "por ejemplo, subes una carretera de dos carriles a 10 m y las otras carreteras pequeñas también quedan a 10 m, mientras que una carretera grande no está a 10 m";
 			d["item.elevation.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras están a 10 m, pero al pasar al menú de Electricidad no están a 10 m";
 			d["item.elevation.ex.category"] = "cambiar a una carretera grande sigue dando 10 m, pero un puente vuelve a 0 m y necesita su propio ajuste, aunque los dos estén en el menú de Carreteras";
@@ -240,12 +260,6 @@ namespace ToolModeMemory
 			d["item.topography.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras muestran las líneas de contorno, pero al pasar al menú de Electricidad no";
 			d["item.topography.ex.category"] = "cambiar a una carretera grande sigue mostrándolas, pero un puente tiene la fila desactivada y necesita su propio ajuste, aunque los dos estén en el menú de Carreteras";
 
-			// ---------- 7 Escalón de elevación ----------
-			d["item.elevationStep.label"] = "Escalón de elevación";
-			d["item.elevationStep.desc"] = "Recuerda el valor de Escalón de elevación, la distancia que recorres con un pulsar de Aumentar la elevación o Disminuir la elevación. La fila que Anarchy llama Paso de Elevación es el mismo valor.";
-			d["item.elevationStep.ex.group"] = "por ejemplo, pones el escalón de elevación de una carretera pequeña de dos carriles en 1 m y las otras carreteras pequeñas también se mueven 1 m, mientras que una carretera grande no";
-			d["item.elevationStep.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras avanzan de 1 m en 1 m, pero al pasar al menú de Electricidad no";
-			d["item.elevationStep.ex.category"] = "cambiar a una carretera grande sigue avanzando 1 m, pero un puente vuelve al escalón predeterminado y necesita su propio ajuste, aunque los dos estén en el menú de Carreteras";
 
 			// ---------- 8 Izquierda y derecha (Anarchy) ----------
 			d["item.leftRight.label"] = "Izquierda y derecha";
@@ -285,7 +299,9 @@ namespace ToolModeMemory
 			d["mod.name"] = "Mémoire du mode d'outil";
 			d["tab.mod"] = "Réglages du mode d'outil";
 			d["tab.about"] = "À propos";
-			d["group.items"] = "Réglages de la mémoire d'outil";
+			d["group.master"] = "Mémoire du mode d'outil";
+			d["group.official"] = "Réglages des outils officiels";
+			d["group.anarchy"] = "Réglages des outils d'Anarchy";
 			d["group.reset"] = "Gestion de la mémoire";
 			d["group.compat"] = "Compatibilité";
 			d["group.about"] = "Informations et liens";
@@ -325,11 +341,11 @@ namespace ToolModeMemory
 
 			d["about.version"] = "Version du mod";
 			d["about.author"] = "Auteur";
-			d["about.kofi"] = "Offrez-moi un café";
+			d["about.kofi"] = "Buy me a Coffee";
 			d["about.kofi.desc"] = "Soutenez l'auteur sur Ko-fi.";
-			d["about.forum"] = "Page du forum";
+			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Ouvrir le fil sur le forum Paradox.";
-			d["about.rainbow"] = "Site RAINBOW";
+			d["about.rainbow"] = "RAINBOW官网";
 			d["about.rainbow.desc"] = "Ouvrir le site de la série Rainbow.";
 
 			// ---------- 1 Anarchy ----------
@@ -337,6 +353,17 @@ namespace ToolModeMemory
 			d["item.anarchy.ex.group"] = "par exemple, activez Anarchy sur une petite route à deux voies, les autres petites routes l'ont activé aussi, mais une grande route non";
 			d["item.anarchy.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes ont Anarchy activé, mais dans le menu Électricité ce n'est plus le cas";
 			d["item.anarchy.ex.category"] = "en passant à une grande route Anarchy reste activé, mais un pont revient à désactivé et réclame son propre réglage, bien que les deux soient dans le menu Routes";
+
+			d["item.themes.label"] = "Thème";
+			d["item.themes.desc"] = "Mémorise les entrées cochées dans le filtre « Thème » de la barre d'outils. Cette ligne n'apparaît que si la catégorie courante contient vraiment des assets utilisant des thèmes, et cocher un thème limite la liste de la barre aux assets qui prennent en charge ces thèmes. Le jeu d'origine ne remet ce filtre sur le thème par défaut qu'au chargement d'une sauvegarde, cet élément est donc désactivé par défaut.";
+			d["item.themes.ex.group"] = "par exemple, cochez un thème uniquement sous Routes/Petites routes, une grande route ne filtre donc plus selon lui";
+			d["item.themes.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes suivent le thème coché dans ce menu, mais dans le menu Électricité ce n'est plus le cas";
+			d["item.themes.ex.category"] = "les allées et les voies de métro comptent comme le même type d'actif, le thème coché est donc partagé d'un menu à l'autre";
+			d["item.packs.label"] = "Pack";
+			d["item.packs.desc"] = "Mémorise les entrées cochées dans le filtre « Pack » de la barre d'outils ; cocher un pack limite la liste de la barre aux assets appartenant à ces packs. Le jeu d'origine les efface à chaque changement de menu ou de catégorie, les mémoriser par menu et catégorie correspond donc à ce que vous voyez, et cet élément est lui aussi désactivé par défaut.";
+			d["item.packs.ex.group"] = "par exemple, cochez un pack sous Routes/Petites routes, le jeu d'origine l'efface sur une grande route et il revient quand vous y retournez";
+			d["item.packs.ex.menu"] = "les packs cochés dans le menu Routes et dans le menu Électricité sont mémorisés séparément";
+			d["item.packs.ex.category"] = "les allées figurent sous le même nom dans les menus Routes et Quartiers, les packs cochés forment donc un seul jeu partagé";
 
 			// ---------- 2 Mode Outil ----------
 			d["item.toolMode.label"] = "Mode Outil";
@@ -347,7 +374,7 @@ namespace ToolModeMemory
 
 			// ---------- 3 Élévation ----------
 			d["item.elevation.label"] = "Élévation";
-			d["item.elevation.desc"] = "Mémorise l'élévation laissée sur l'outil, y compris le résultat de Augmenter l'élévation et Diminuer l'élévation. L'élévation des croisements n'est pas concernée.";
+			d["item.elevation.desc"] = "Mémorise l'élévation laissée sur l'outil, y compris le résultat de Augmenter l'élévation et Diminuer l'élévation. L'Étape d'élévation (le déplacement d'une seule pression ; l'interface Anarchy nomme cette ligne Incrément d'élévation) est mémorisée avec elle et utilise la même portée de partage. L'élévation des croisements n'est pas concernée.";
 			d["item.elevation.ex.group"] = "par exemple, montez une route à deux voies à 10 m, les autres petites routes passent aussi à 10 m, mais une grande route n'est pas à 10 m";
 			d["item.elevation.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes sont à 10 m, mais dans le menu Électricité ils ne sont pas à 10 m";
 			d["item.elevation.ex.category"] = "passer à une grande route donne toujours 10 m, mais un pont repart à 0 m et réclame son propre réglage, bien que les deux soient dans le menu Routes";
@@ -373,12 +400,6 @@ namespace ToolModeMemory
 			d["item.topography.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes affichent les lignes de contour, mais dans le menu Électricité ce n'est plus le cas";
 			d["item.topography.ex.category"] = "en passant à une grande route les lignes de contour restent visibles, mais un pont a la ligne désactivée et réclame son propre réglage, bien que les deux soient dans le menu Routes";
 
-			// ---------- 7 Étape d'élévation ----------
-			d["item.elevationStep.label"] = "Étape d'élévation";
-			d["item.elevationStep.desc"] = "Mémorise la valeur Étape d'élévation, c'est-à-dire de combien bouge une seule pression de Augmenter l'élévation ou Diminuer l'élévation. La ligne que l'interface Anarchy nomme Incrément d'élévation porte la même valeur.";
-			d["item.elevationStep.ex.group"] = "par exemple, réglez l'étape d'élévation d'une petite route à deux voies sur 1 m, les autres petites routes se déplacent de 1 m aussi, mais une grande route non";
-			d["item.elevationStep.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes avancent par pas de 1 m, mais dans le menu Électricité ce n'est plus le cas";
-			d["item.elevationStep.ex.category"] = "passer à une grande route avance toujours par pas de 1 m, mais un pont revient au pas par défaut et réclame son propre réglage, bien que les deux soient dans le menu Routes";
 
 			// ---------- 8 Gauche et droite (Anarchy) ----------
 			d["item.leftRight.label"] = "Gauche et droite";
@@ -418,7 +439,9 @@ namespace ToolModeMemory
 			d["mod.name"] = "Memoria modalità strumento";
 			d["tab.mod"] = "Impostazioni modalità strumento";
 			d["tab.about"] = "Informazioni";
-			d["group.items"] = "Impostazioni memoria strumenti";
+			d["group.master"] = "Memoria modalità strumento";
+			d["group.official"] = "Impostazioni degli strumenti ufficiali";
+			d["group.anarchy"] = "Impostazioni degli strumenti di Anarchy";
 			d["group.reset"] = "Gestione memoria";
 			d["group.compat"] = "Compatibilità";
 			d["group.about"] = "Informazioni e collegamenti";
@@ -458,11 +481,11 @@ namespace ToolModeMemory
 
 			d["about.version"] = "Versione mod";
 			d["about.author"] = "Autore";
-			d["about.kofi"] = "Offrimi un caffè";
+			d["about.kofi"] = "Buy me a Coffee";
 			d["about.kofi.desc"] = "Supporta l'autore su Ko-fi.";
-			d["about.forum"] = "Pagina del forum";
+			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Apri la discussione sul forum Paradox.";
-			d["about.rainbow"] = "Sito RAINBOW";
+			d["about.rainbow"] = "RAINBOW官网";
 			d["about.rainbow.desc"] = "Apri il sito della serie Rainbow.";
 
 			// ---------- 1 Anarchy ----------
@@ -470,6 +493,17 @@ namespace ToolModeMemory
 			d["item.anarchy.ex.group"] = "per esempio, attivi Anarchy su una piccola strada a due corsie e anche le altre piccole strade ce l'hanno attivo, mentre una strada grande no";
 			d["item.anarchy.ex.menu"] = "tutti gli asset che clicchi nel menu Strade hanno Anarchy attivo, ma passando al menu Elettricità no";
 			d["item.anarchy.ex.category"] = "passando a una strada grande Anarchy resta attivo, ma un ponte torna a spento e necessita un'impostazione propria, benché entrambi siano nel menu Strade";
+
+			d["item.themes.label"] = "Tema";
+			d["item.themes.desc"] = "Ricorda quali voci sono spuntate nel filtro «Tema» della barra degli strumenti. Quella riga compare solo quando la categoria corrente contiene davvero asset che usano i temi, e spuntarne uno limita l'elenco della barra agli asset che supportano quei temi. L'originale reimposta il filtro sul tema predefinito solo al caricamento di un salvataggio, quindi questa voce è disattivata per impostazione predefinita.";
+			d["item.themes.ex.group"] = "per esempio, spunti un tema solo in Strade/Strade piccole, così una strada grande non filtra per quel tema";
+			d["item.themes.ex.menu"] = "tutti gli asset che clicchi nel menu Strade seguono il tema spuntato lì, ma passando al menu Elettricità no";
+			d["item.themes.ex.category"] = "i vicoli e i binari della metropolitana contano come lo stesso tipo di asset, quindi il tema spuntato è condiviso tra i menu";
+			d["item.packs.label"] = "Pacchetto";
+			d["item.packs.desc"] = "Ricorda quali voci sono spuntate nel filtro «Pacchetto» della barra degli strumenti; spuntarne una limita l'elenco della barra agli asset che appartengono a quei pacchetti. L'originale lo azzera ogni volta che cambi menu o categoria, quindi ricordarlo per menu e categoria corrisponde a ciò che vedi, e anche questa voce è disattivata per impostazione predefinita.";
+			d["item.packs.ex.group"] = "per esempio, spunti un pacchetto in Strade/Strade piccole, l'originale lo azzera sulle strade grandi e ritorna quando ci torni";
+			d["item.packs.ex.menu"] = "i pacchetti spuntati nel menu Strade e nel menu Elettricità vengono ricordati separatamente";
+			d["item.packs.ex.category"] = "i vicoli compaiono con lo stesso nome sia nel menu Strade che nel menu Quartieri, quindi i pacchetti spuntati sono un unico insieme condiviso";
 
 			// ---------- 2 Modalità strumento ----------
 			d["item.toolMode.label"] = "Modalità strumento";
@@ -480,7 +514,7 @@ namespace ToolModeMemory
 
 			// ---------- 3 Elevazione ----------
 			d["item.elevation.label"] = "Elevazione";
-			d["item.elevation.desc"] = "Ricorda l'elevazione a cui lasci lo strumento, incluso il risultato di Aumenta elevazione e Diminuisci elevazione. L'elevazione degli incroci non è inclusa.";
+			d["item.elevation.desc"] = "Ricorda l'elevazione a cui lasci lo strumento, incluso il risultato di Aumenta elevazione e Diminuisci elevazione. Il Livello elevazione (quanto sposta una singola pressione; Anarchy chiama questa riga Step di elevazione) viene ricordato insieme ad essa e usa lo stesso ambito di condivisione. L'elevazione degli incroci non è inclusa.";
 			d["item.elevation.ex.group"] = "per esempio, porti una strada a due corsie a 10 m e anche le altre piccole strade vanno a 10 m, mentre una strada grande non è a 10 m";
 			d["item.elevation.ex.menu"] = "tutti gli asset che clicchi nel menu Strade sono a 10 m, ma passando al menu Elettricità non sono a 10 m";
 			d["item.elevation.ex.category"] = "passando a una strada grande restano 10 m, ma un ponte riparte da 0 m e necessita un'impostazione propria, benché entrambi siano nel menu Strade";
@@ -506,12 +540,6 @@ namespace ToolModeMemory
 			d["item.topography.ex.menu"] = "tutti gli asset che clicchi nel menu Strade mostrano le linee di contorno, ma passando al menu Elettricità no";
 			d["item.topography.ex.category"] = "passando a una strada grande le linee restano, ma un ponte ha la riga spenta e necessita un'impostazione propria, benché entrambi siano nel menu Strade";
 
-			// ---------- 7 Livello elevazione ----------
-			d["item.elevationStep.label"] = "Livello elevazione";
-			d["item.elevationStep.desc"] = "Ricorda il valore Livello elevazione, quanto sposta una singola pressione di Aumenta elevazione o Diminuisci elevazione. La riga che Anarchy chiama Step di elevazione è lo stesso valore.";
-			d["item.elevationStep.ex.group"] = "per esempio, imposti il livello elevazione di una piccola strada a due corsie a 1 m e anche le altre piccole strade si spostano di 1 m, mentre una strada grande no";
-			d["item.elevationStep.ex.menu"] = "tutti gli asset che clicchi nel menu Strade si muovono di 1 m, ma passando al menu Elettricità no";
-			d["item.elevationStep.ex.category"] = "passando a una strada grande ci si muove ancora di 1 m, ma un ponte ritorna al livello predefinito e necessita un'impostazione propria, benché entrambi siano nel menu Strade";
 
 			// ---------- 8 Sinistra e destra (Anarchy) ----------
 			d["item.leftRight.label"] = "Sinistra e destra";

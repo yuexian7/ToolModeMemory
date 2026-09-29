@@ -172,6 +172,7 @@ namespace ToolModeMemory.Tests
 			LiveWriteAndCrashRecovery();
 			DomainSeparation();
 			VersionFilter();
+			FilterOptionMemory();
 
 			Console.WriteLine();
 			Console.WriteLine(s_Fails == 0
@@ -497,47 +498,56 @@ namespace ToolModeMemory.Tests
 			Check(K(group, false, "net") != K(group, false, "obj"), "不同枚举家族绝不共用同一桶");
 		}
 
-		/// <summary>0.2.0 工具目录：项数、项 id、来源归属、子字段与范围推荐。</summary>
+		/// <summary>0.2.2 工具目录：项数、项 id、板块归属、子字段与范围推荐。</summary>
 		private static void CatalogShape()
 		{
-			Console.WriteLine("[18] 工具目录形状（11 项 / 来源 / Subs）");
+			Console.WriteLine("[18] 工具目录形状（12 项 / 板块 / Subs）");
 
 			ToolItemDef[] items = ToolItemCatalog.Items;
-			Check(items.Length == 11, "v0.2.0 = 11 个工具项（数据包/地区主题推迟到 0.2.1）");
+			Check(items.Length == 12, "v0.2.2 = 12 个工具项（官方 9 + Anarchy 3）");
 			Check(ToolItemCatalog.Count == items.Length, "Count 与数组一致");
 
 			string[] expectIds =
 			{
-				ToolItemCatalog.kAnarchy, ToolItemCatalog.kToolMode, ToolItemCatalog.kElevation,
-				ToolItemCatalog.kParallel, ToolItemCatalog.kSnap, ToolItemCatalog.kTopography,
-				ToolItemCatalog.kElevationStep, ToolItemCatalog.kLeftRight, ToolItemCatalog.kGeneral,
-				ToolItemCatalog.kUnderground, ToolItemCatalog.kOther
+				ToolItemCatalog.kThemes, ToolItemCatalog.kPacks, ToolItemCatalog.kToolMode,
+				ToolItemCatalog.kElevation, ToolItemCatalog.kParallel, ToolItemCatalog.kSnap,
+				ToolItemCatalog.kTopography, ToolItemCatalog.kUnderground, ToolItemCatalog.kOther,
+				ToolItemCatalog.kAnarchy, ToolItemCatalog.kLeftRight, ToolItemCatalog.kGeneral
 			};
 			bool idsInOrder = expectIds.Length == items.Length;
 			for (int i = 0; i < items.Length && i < expectIds.Length; i++)
 			{
 				if (items[i].Id != expectIds[i] || items[i].Number != i + 1) idsInOrder = false;
 			}
-			Check(idsInOrder, "项 id 与设置页序号 1..11 逐一对应");
+			Check(idsInOrder, "项 id 与设置页序号 1..12 逐一对应（跨板块连续编号）");
 
+			// 板块归属由 Source 决定：Vanilla + Toolbar -> 「官方工具项设置」，AnarchyMod -> Anarchy 板块。
+			int official = 0;
+			int anarchyItems = 0;
+			int extra = 0;
 			bool ok = true;
-			bool noToolbarFilter = true;
 			for (int i = 0; i < items.Length; i++)
 			{
 				int v = items[i].RecommendedScope;
-				// 0.2.0 起允许 -1（kNoRecommendation，「无推荐，跟原版走」）
+				// -1 = kNoRecommendation（「无推荐，跟原版走」）
 				if (v != ToolItemCatalog.kNoRecommendation && (v < 0 || v > (int)MemoryScope.GlobalUnique)) ok = false;
 				if (string.IsNullOrEmpty(items[i].Id)) ok = false;
 				if (ToolItemCatalog.Find(items[i].Id) == null) ok = false;
 				if (items[i].VanillaScope != ToolItemCatalog.kVanillaNone
 					&& (items[i].VanillaScope < 0 || items[i].VanillaScope > (int)MemoryScope.GlobalUnique)) ok = false;
-				if (items[i].Source == ItemSource.Toolbar) noToolbarFilter = false;
+				if (items[i].Source == ItemSource.AnarchyMod) anarchyItems++;
+				else if (items[i].Source == ItemSource.ExtraNetworksMod) extra++;
+				else official++;
 				// 「-1 = 无推荐」时 EffectiveRecommendedScope 必须落到合法档
 				int eff = items[i].EffectiveRecommendedScope();
 				if (eff < 0 || eff > (int)MemoryScope.GlobalUnique) ok = false;
 			}
 			Check(ok, "推荐/原版档位都在枚举范围内（含 -1 哨兵）");
-			Check(noToolbarFilter, "目录里没有工具栏筛选项（数据包/地区主题已推迟）");
+			Check(official == 9 && anarchyItems == 3 && extra == 0,
+				"板块划分：官方 9 项 / Anarchy 3 项 / 没有 Extra Networks 项（两块面板反编译确认属 Anarchy）");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kThemes).Source == ItemSource.Toolbar
+				&& ToolItemCatalog.Find(ToolItemCatalog.kPacks).Source == ItemSource.Toolbar,
+				"地区主题 / 数据包 = 工具栏筛选项（进官方板块）");
 
 			Check(ToolItemCatalog.Find(ToolItemCatalog.kElevation).VanillaScope == (int)MemoryScope.GlobalShared,
 				"高度原版档 = 全局共用（整个会话只有一个值）");
@@ -553,17 +563,11 @@ namespace ToolModeMemory.Tests
 				&& ToolItemCatalog.Find(ToolItemCatalog.kOther).EffectiveRecommendedScope() == (int)MemoryScope.Group,
 				"「其它」无推荐 -> 出厂退到同组");
 
-			// 1、8、9 三项属于 Anarchy（74604），不是 Extra Networks：见 research/extra/anarchy
+			// 10、11、12 三项属于 Anarchy（74604）：见 research/extra/anarchy
 			Check(ToolItemCatalog.Find(ToolItemCatalog.kAnarchy).Source == ItemSource.AnarchyMod
 				&& ToolItemCatalog.Find(ToolItemCatalog.kLeftRight).Source == ItemSource.AnarchyMod
 				&& ToolItemCatalog.Find(ToolItemCatalog.kGeneral).Source == ItemSource.AnarchyMod,
 				"anarchy / 左侧和右侧 / 常规 = Anarchy 项");
-			bool noneFromExtra = true;
-			for (int i = 0; i < items.Length; i++)
-			{
-				if (items[i].Source == ItemSource.ExtraNetworksMod) noneFromExtra = false;
-			}
-			Check(noneFromExtra, "没有任何项来自 Extra Networks（两块面板反编译确认属 Anarchy）");
 			Check(ToolItemCatalog.Find(ToolItemCatalog.kAnarchy).VanillaScope == ToolItemCatalog.kVanillaNone
 				&& ToolItemCatalog.Find(ToolItemCatalog.kLeftRight).VanillaScope == ToolItemCatalog.kVanillaNone
 				&& ToolItemCatalog.Find(ToolItemCatalog.kGeneral).VanillaScope == ToolItemCatalog.kVanillaNone,
@@ -581,9 +585,22 @@ namespace ToolModeMemory.Tests
 				&& other[0] == "other.color0" && other[1] == "other.color1" && other[2] == "other.color2"
 				&& other[4] == "other.brushSize" && other[5] == "other.brushStrength",
 				"其它 = 配色 3+1 通道 / 笔刷大小 / 笔刷强度");
+
+			// 高度阶段不再是一项，而是「高度」的子字段：共用高度的开关、范围与记忆键，
+			// 字段 id 仍是 "elevation" / "elevationStep"，所以 0.2.1 及更早的记忆文件照旧读得回。
+			string[] ele = ToolItemCatalog.Find(ToolItemCatalog.kElevation).Subs;
+			Check(ele != null && ele.Length == 2 && ele[0] == "elevation" && ele[1] == "elevationStep",
+				"高度 = elevation + elevationStep 两个子字段（一起记忆）");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kElevation).Id == ToolItemCatalog.kElevation
+				&& ele[0] == ToolItemCatalog.kElevation,
+				"主子字段 id == 项 id（老记忆文件的 elevation 桶不换名）");
+			Check(ToolItemCatalog.Find("elevationStep").Id == ToolItemCatalog.kElevation,
+				"elevationStep 认回「高度」，不再是独立项");
 			Check(ToolItemCatalog.Find(ToolItemCatalog.kToolMode).Subs == null
 				&& ToolItemCatalog.Find(ToolItemCatalog.kSnap).Subs == null
-				&& ToolItemCatalog.Find(ToolItemCatalog.kElevation).Subs == null,
+				&& ToolItemCatalog.Find(ToolItemCatalog.kThemes).Subs == null
+				&& ToolItemCatalog.Find(ToolItemCatalog.kPacks).Subs == null
+				&& ToolItemCatalog.Find(ToolItemCatalog.kAnarchy).Subs == null,
 				"单值项 Subs = null（值直接存项 id 下）");
 
 			// 读档过滤靠 Find 认回父项：子字段认不回来就每次进档都会被丢掉
@@ -597,7 +614,7 @@ namespace ToolModeMemory.Tests
 				&& ToolItemCatalog.Find("other.brushStrength").Id == ToolItemCatalog.kOther,
 				"other.* 认回父项");
 
-			// 旧 id 一律不认识（0.2.0 换 id 就是为了让 v2 文件整体失效）
+			// 0.1.x 的项 id 一律不认识；0.2.2 里 elevationStep 只作为「高度」的子字段存在
 			Check(ToolItemCatalog.Find("net.draw") == null && ToolItemCatalog.Find("net.snap") == null
 				&& ToolItemCatalog.Find("net.elevation") == null && ToolItemCatalog.Find("obj.place") == null
 				&& ToolItemCatalog.Find("terrain.mode") == null && ToolItemCatalog.Find("upgrade.mode") == null,
@@ -606,20 +623,118 @@ namespace ToolModeMemory.Tests
 				&& ToolItemCatalog.Find("") == null && ToolItemCatalog.Find(".count") == null,
 				"未知/畸形 id 返回 null（Find 不许抛）");
 
-			// 桶 id（项 id + 子字段 id）全局唯一
+			// 记忆桶 = 每项实际使用的字段 id（单值项为项 id，多值项为 Subs）。
+			// 三条不变量：桶名不重复；每个桶都 Find 得回自己的父项；子字段不能占用别的项 id
+			//（Find 先匹配项 id，占用了就会把值记到别人头上）。
 			HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+			HashSet<string> itemIds = new HashSet<string>(StringComparer.Ordinal);
+			for (int i = 0; i < items.Length; i++) itemIds.Add(items[i].Id);
 			bool unique = true;
+			int buckets = 0;
 			for (int i = 0; i < items.Length; i++)
 			{
-				if (!seen.Add(items[i].Id)) unique = false;
 				string[] subs = items[i].Subs;
-				if (subs == null) continue;
-				for (int j = 0; j < subs.Length; j++)
+				int count = subs == null ? 1 : subs.Length;
+				for (int j = 0; j < count; j++)
 				{
-					if (!seen.Add(subs[j])) unique = false;
+					string fieldId = subs == null ? items[i].Id : subs[j];
+					buckets++;
+					if (!seen.Add(fieldId)) unique = false;
+					ToolItemDef owner = ToolItemCatalog.Find(fieldId);
+					if (owner == null || owner.Id != items[i].Id) unique = false;
+					if (fieldId != items[i].Id && itemIds.Contains(fieldId)) unique = false;
 				}
 			}
-			Check(unique && seen.Count == 11 + 2 + 2 + 6, "项 id 与子字段 id 全局唯一（共 21 个桶）");
+			Check(unique && itemIds.Count == 12 && seen.Count == 20 && buckets == 20,
+				"20 个记忆桶全部唯一且认得回父项（elevation 既是项 id 也是「高度」的字段 id，属同一桶）");
+		}
+
+		/// <summary>0.2.2 工具栏筛选项（地区主题 / 数据包）：一选项一键 + 计数哨兵。</summary>
+		private static void FilterOptionMemory()
+		{
+			Console.WriteLine("[19] 筛选项记忆（选项键 / 哨兵 / 往返）");
+
+			string group = MemoryKeys.Group("Roads", "SmallRoads");
+			string shared = MemoryKeys.Shared();
+			string optKey = MemoryKeys.FilterOption(shared, "Content.DLC.AlpsTheme");
+
+			Check(optKey == "S$Content.DLC.AlpsTheme", "选项键 = 层级键 + '$' + 选项名");
+			Check(MemoryKeys.FilterOption(null, "x") == null && MemoryKeys.FilterOption("S", null) == null
+				&& MemoryKeys.FilterOption("S", "") == null, "缺任何一段都不拼键（返回 null）");
+			Check(MemoryKeys.FilterOptionName(shared, optKey) == "Content.DLC.AlpsTheme", "选项名可以反解回来");
+			Check(MemoryKeys.FilterOptionName(shared, shared) == null, "层级键本身不算选项键（不与哨兵冲突）");
+			Check(MemoryKeys.FilterOptionName("S", group + "$Alps") == null, "别的层级键下的选项不误认");
+			Check(MemoryKeys.FilterValue(true) == 1 && MemoryKeys.FilterValue(false) == 0, "勾选 1 / 取消 0");
+
+			// 桶名仍然是项 id（themes / packs），一个层级键下面每把可选项一个键
+			MemoryStore a = new MemoryStore();
+			a.UseSaveName("FilterCity");
+			string on = MemoryKeys.FilterOption(group, "Content.DLC.GreenCities");
+			string off = MemoryKeys.FilterOption(group, "Content.DLC.Removable");
+			a.Set(ToolItemCatalog.kPacks, on, MemoryKeys.FilterValue(true));
+			a.Set(ToolItemCatalog.kPacks, off, MemoryKeys.FilterValue(false));
+			a.Set(ToolItemCatalog.kPacks, group, 1);
+			a.Set(ToolItemCatalog.kThemes, shared, 0);
+			bool found;
+			Check(a.Get(ToolItemCatalog.kPacks, on, out found) == 1 && found, "勾选的数据包读回 1");
+			Check(a.Get(ToolItemCatalog.kPacks, off, out found) == 0 && found,
+				"取消的数据包读回 0（记过没选 != 从没记过）");
+			Check(a.Get(ToolItemCatalog.kPacks, group, out found) == 1 && found, "哨兵计数读回");
+			Check(a.Get(ToolItemCatalog.kThemes, shared, out found) == 0 && found, "空选择也记得住（哨兵 = 0）");
+			Check(a.Get(ToolItemCatalog.kThemes, MemoryKeys.FilterOption(shared, "Nope"), out found) == 0 && !found,
+				"没记过的选项 = 未命中");
+
+			Check(a.SaveToDisk(true), "筛选项写盘");
+			MemoryStore b = new MemoryStore();
+			b.UseSaveName("FilterCity");
+			Check(b.LoadForCurrentSave(), "筛选项读盘");
+			Check(b.Get(ToolItemCatalog.kPacks, on, out found) == 1 && found, "选项键跨磁盘往返");
+			Check(b.Get(ToolItemCatalog.kThemes, shared, out found) == 0 && found, "哨兵跨磁盘往返");
+
+			// 读档过滤只看桶名认不认得，不看键长什么样
+			string json = b.Serialize();
+			Check(json.Contains("Content.DLC.GreenCities"), "序列化里保留选项名");
+			Dictionary<string, Dictionary<string, int>> into = new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal);
+			int version;
+			bool parsed = MemoryStore.Parse(json, into, out version);
+			Check(parsed && into[ToolItemCatalog.kPacks].Count == 3 && into[ToolItemCatalog.kThemes].Count == 1,
+				"解析：packs 三把键 / themes 一把哨兵");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kPacks) != null
+				&& ToolItemCatalog.Find(ToolItemCatalog.kPacks).Subs == null
+				&& ToolItemCatalog.Find(ToolItemCatalog.kThemes).Subs == null,
+				"筛选项是单桶项（可选项用键区分，不占 Subs）");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kThemes).RecommendedScope == ToolItemCatalog.kNoRecommendation
+				&& ToolItemCatalog.Find(ToolItemCatalog.kPacks).RecommendedScope == ToolItemCatalog.kNoRecommendation
+				&& !ToolItemCatalog.Find(ToolItemCatalog.kThemes).DefaultEnabled
+				&& !ToolItemCatalog.Find(ToolItemCatalog.kPacks).DefaultEnabled,
+				"两项都无推荐、出厂不开（原版行为别被改掉）");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kThemes).VanillaScope == (int)MemoryScope.GlobalShared
+				&& ToolItemCatalog.Find(ToolItemCatalog.kPacks).VanillaScope == (int)MemoryScope.Group,
+				"原版行为：主题切菜单不清、数据包切菜单/分类即清（T:1147/1180）");
+
+			// 重新捕获：先清掉这一层级键下的旧勾选，哨兵与别的层级键都不误伤
+			long serialBefore = b.ChangeSerial;
+			int removed = b.RemoveOptionKeys(ToolItemCatalog.kPacks, group);
+			Check(removed == 2, "清掉小型道路下的两把选项键（含取消的那把）");
+			Check(b.Get(ToolItemCatalog.kPacks, on, out found) == 0 && !found, "旧勾选已从内存里没了");
+			Check(b.Get(ToolItemCatalog.kPacks, group, out found) == 1 && found, "哨兵键不被误删");
+			Check(b.Get(ToolItemCatalog.kThemes, shared, out found) == 0 && found, "另一项的哨兵照旧");
+			Check(b.RemoveOptionKeys(ToolItemCatalog.kPacks, MemoryKeys.Group("Electricity", "Power")) == 0,
+				"别的层级键下没有可删的（返回 0）");
+			Check(b.RemoveOptionKeys(ToolItemCatalog.kPacks, "G:Roads") == 0,
+				"前缀像但不是本层级键的不误删（'G:Roads' 不是 'G:Roads/…$x' 的键）");
+			Check(b.Get(ToolItemCatalog.kThemes, shared, out found) == 0 && found
+				&& b.RemoveOptionKeys(ToolItemCatalog.kThemes, shared) == 0,
+				"只有哨兵、没有选项键时什么都不删");
+			Check(b.ChangeSerial == serialBefore + 1 && b.Dirty, "只有真删了才涨序号并置脏");
+			b.Set(ToolItemCatalog.kPacks, group, 0);
+			Check(b.SaveToDisk(true), "清过后写盘");
+			MemoryStore c = new MemoryStore();
+			c.UseSaveName("FilterCity");
+			Check(c.LoadForCurrentSave(), "清过之后读盘");
+			Check(c.Get(ToolItemCatalog.kPacks, on, out found) == 0 && !found
+				&& c.Get(ToolItemCatalog.kPacks, group, out found) == 0 && found,
+				"磁盘上也只剩哨兵");
 		}
 
 		private static void JsonRoundTrip()

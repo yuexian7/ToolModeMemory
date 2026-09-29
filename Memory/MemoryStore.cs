@@ -196,6 +196,34 @@ namespace ToolModeMemory.Memory
 			m_ChangeSerial++;
 		}
 
+		/// <summary>
+		/// 删掉某个桶下 baseKey + '$' 开头的全部「可选项键」（工具栏筛选项用），
+		/// 哨兵键 baseKey 本身不动，别的层级键不误伤。返回删掉的个数。
+		/// 每次重新捕获筛选选择都先清一遍：否则上一次勾过、这次已经取消的项会留在文件里，
+		/// 恢复时又被勾回去。没有可删的就不置 Dirty、不涨序号（稳态零开销）。
+		/// </summary>
+		public int RemoveOptionKeys(string itemId, string baseKey)
+		{
+			if (string.IsNullOrEmpty(itemId) || string.IsNullOrEmpty(baseKey)) return 0;
+			Dictionary<string, int> bag;
+			if (!m_Items.TryGetValue(itemId, out bag)) return 0;
+			string prefix = baseKey + MemoryKeys.FILTER_SEP;
+			List<string> dead = null;
+			foreach (KeyValuePair<string, int> kv in bag)
+			{
+				if (kv.Key.StartsWith(prefix, StringComparison.Ordinal))
+				{
+					if (dead == null) dead = new List<string>();
+					dead.Add(kv.Key);
+				}
+			}
+			if (dead == null) return 0;
+			for (int i = 0; i < dead.Count; i++) bag.Remove(dead[i]);
+			m_Dirty = true;
+			m_ChangeSerial++;
+			return dead.Count;
+		}
+
 		public void ClearRuntime()
 		{
 			m_Items.Clear();

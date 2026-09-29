@@ -6,6 +6,7 @@ using Game.Prefabs;
 using Game.Rendering;
 using Game.Tools;
 using Game.UI.InGame;
+using Unity.Collections;
 using Unity.Entities;
 using ToolModeMemory.Memory;
 
@@ -72,6 +73,10 @@ namespace ToolModeMemory
 		private const string F_LR_LEFT = "leftRight.left";
 		private const string F_LR_RIGHT = "leftRight.right";
 		private const string F_GENERAL = "general";
+		// 这两项不是「一个整数」而是「一组可选项」，所以不走 TryCapture / TryApply 那条路，
+		// 由下面的工具栏筛选段单独处理（目录里 id 逐字一致）。
+		private const string F_THEMES = "themes";
+		private const string F_PACKS = "packs";
 
 		private const string FAM_NET = "net";
 		private const string FAM_OBJ = "obj";
@@ -219,6 +224,9 @@ namespace ToolModeMemory
 			s_AnarchyUiResolved = false;
 			s_NetworkUi = null;
 			s_NetworkUiResolved = false;
+			// 同理：工具栏 UI 系统也属于当前 World，换档必须重取实例
+			s_ToolbarUi = null;
+			s_ToolbarUiResolved = false;
 		}
 
 		// ============================ 键解析 ============================
@@ -227,6 +235,19 @@ namespace ToolModeMemory
 		/// 把一个共用范围翻成完整记忆键（域 + 层级 + 家族）。永不返回 null。
 		/// </summary>
 		public static string ResolveKey(MemoryScope scope, PrefabBase prefab, ToolBaseSystem tool,
+			PrefabSystem prefabSystem, EntityManager em)
+		{
+			return Finish(ResolveLevelKey(scope, prefab, tool, prefabSystem, em), prefab, tool);
+		}
+
+		/// <summary>
+		/// 只要层级键，不加域和家族。工具栏筛选项（地区主题 / 数据包）用得上：
+		/// 那份选择是 ToolbarUISystem 的**界面全局状态**，不属于某个资产/功能，也不属于
+		/// 某个枚举家族（原版切菜单、换工具都不重置它，只有读档重置，见 T:624-631），
+		/// 套上域/家族就等于把「全局共用」偷偷变成「每个家族各一份」。
+		/// 顺带把 prefabSystem / em 缓存下来，供筛选项的 ECS 读用。永不返回 null。
+		/// </summary>
+		public static string ResolveLevelKey(MemoryScope scope, PrefabBase prefab, ToolBaseSystem tool,
 			PrefabSystem prefabSystem, EntityManager em)
 		{
 			string levelKey;
@@ -239,7 +260,7 @@ namespace ToolModeMemory
 				switch (scope)
 				{
 					case MemoryScope.GlobalShared:
-						return Finish(MemoryKeys.Shared(), prefab, tool);
+						return MemoryKeys.Shared();
 					case MemoryScope.GlobalUnique:
 						levelKey = MemoryKeys.Asset(AssetName(prefab, tool, prefabSystem));
 						break;
@@ -268,19 +289,19 @@ namespace ToolModeMemory
 						break;
 					}
 					default:
-						return Finish(MemoryKeys.Shared(), prefab, tool);
+						return MemoryKeys.Shared();
 				}
 			}
 			catch
 			{
 				// 任何一步炸了都不能把异常抛给游戏主循环：退化成按工具隔离
-				return Finish(ToolIdentity(tool), prefab, tool);
+				return ToolIdentity(tool);
 			}
 
 			// 该层级解析不出来（资产不在工具栏层级里 / 没有选中资产）：退回按工具隔离，
 			// 绝不能让多个互不相干的工具共用一个桶。
 			if (levelKey == null) levelKey = ToolIdentity(tool);
-			return Finish(levelKey, prefab, tool);
+			return levelKey;
 		}
 
 		/// <summary>层级键 -> 完整键（加资产/功能域，再加家族）。</summary>
@@ -1235,6 +1256,361 @@ namespace ToolModeMemory
 			try
 			{
 				ToolModeMemoryMod.log.Warn("Anarchy system " + systemType.Name + " unavailable: "
+					+ ex.GetType().Name + " " + ex.Message);
+			}
+			catch { }
+		}
+
+		// ================= 工具栏筛选项：地区主题 / 数据包（v0.2.2） =================
+		//
+		// 反编译证据（Game.UI.InGame.ToolbarUISystem，切片存 research/ui2，行号记 T:）：
+		//  * 值 = 两个私有 List<Entity>：m_SelectedThemes(T:96) / m_SelectedAssetPacks(T:98)。
+		//    对外只有只读绑定 toolbar.selectedThemes / selectedAssetPacks(T:365,366)，没有可写 API。
+		//  * 唯一落点是私有 Apply(T:1248)：把新列表赋给字段、Update 两条选择绑定，并在
+		//    「新旧列表不等」时 UpdateAll 资产列表 + 重画主题/数据包行(T:1270-1300)。
+		//    原地改列表内容不触发任何重画 —— 所以写回必须换新实例再调 Apply。
+		//  * Apply 的 updateTool=true 会 ActivatePrefabTool 换工具(T:1250-1253)；我们只改筛选，
+		//    恒传 false，menu / category / asset 从各自绑定的公开 value 原样读回传回去，
+		//    免得把当前选中的菜单/分类/资产抹成 Entity.Null。
+		//  * 原版重置点：读档清空只留 defaultTheme(T:624-631)；切菜单(T:1147)、切分类(T:1180)
+		//    把数据包清成空表（主题不清）；点资产时若不匹配就按该资产反推选择(T:516-531)。
+		//    全是离散事件，不会每帧把我们写的值冲掉，所以「变化后下一帧补写」这套时序够用。
+		//  * 可选项集合与原版画勾的那份列表同源：主题 = 分类内资产的 ObjectRequirementElement 里
+		//    带 ThemeData 的那些(T:227-251)；数据包 = 分类内资产的 AssetPackElement 里带
+		//    AssetPackData 的那些(T:294-321)。只恢复「当前分类确实存在」的项，否则会把资产列表
+		//    筛成空（玩家自己勾不相关的主题原版也会筛空，但不该由我们主动制造）。
+		//  * 取实例只能 GetExistingSystemManaged：UI 系统由游戏创建，重复创建会把 "toolbar"
+		//    那组绑定注册两遍（对比上面 ViewSystem() 的注释）。
+
+		private static ToolbarUISystem s_ToolbarUi;
+		private static bool s_ToolbarUiResolved;
+		private static FieldInfo s_ThemesField;
+		private static FieldInfo s_PacksField;
+		private static FieldInfo s_MenuBindingField;
+		private static FieldInfo s_CategoryBindingField;
+		private static FieldInfo s_AssetBindingField;
+		private static PropertyInfo s_BindingValue;
+		private static MethodInfo s_ApplyMethod;
+		private static bool s_WarnedToolbarUi;
+
+		// 当前分类的可选项（实体 + 名）：单线程主循环内复用，避免每次调用都分配
+		private static readonly List<Entity> s_OptEntities = new List<Entity>(64);
+		private static readonly List<string> s_OptNames = new List<string>(64);
+
+		/// <summary>筛选项可用吗（拿得到工具栏 UI 系统且私有成员都对得上）。</summary>
+		public static bool ToolbarFilterReady()
+		{
+			return ToolbarUi() != null;
+		}
+
+		/// <summary>
+		/// 懒解析实例与私有成员。World 还没建好时不 latch（下一帧再试）；
+		/// 私有名/签名对不上（游戏更新改过）就 latch 成 no-op 并最多提示一条日志。
+		/// </summary>
+		private static ToolbarUISystem ToolbarUi()
+		{
+			if (s_ToolbarUiResolved) return s_ToolbarUi;
+			try
+			{
+				World world = World.DefaultGameObjectInjectionWorld;
+				if (world == null) return null;
+				ToolbarUISystem ui = world.GetExistingSystemManaged<ToolbarUISystem>();
+				if (ui == null) return null;
+
+				const BindingFlags NP = BindingFlags.Instance | BindingFlags.NonPublic;
+				Type t = typeof(ToolbarUISystem);
+				FieldInfo themes = t.GetField("m_SelectedThemes", NP);
+				FieldInfo packs = t.GetField("m_SelectedAssetPacks", NP);
+				MethodInfo apply = t.GetMethod("Apply", NP);
+				if (themes == null || packs == null || apply == null
+					|| themes.FieldType != typeof(List<Entity>) || packs.FieldType != typeof(List<Entity>))
+				{
+					s_ToolbarUiResolved = true;
+					s_ToolbarUi = null;
+					WarnToolbarUi(new MissingMemberException("ToolbarUISystem.m_SelectedThemes / m_SelectedAssetPacks / Apply"));
+					return null;
+				}
+				ParameterInfo[] pi = apply.GetParameters();
+				if (pi.Length != 6 || pi[0].ParameterType != typeof(List<Entity>)
+					|| pi[1].ParameterType != typeof(List<Entity>)
+					|| pi[2].ParameterType != typeof(Entity) || pi[5].ParameterType != typeof(bool))
+				{
+					s_ToolbarUiResolved = true;
+					s_ToolbarUi = null;
+					WarnToolbarUi(new MissingMethodException("ToolbarUISystem.Apply(List<Entity>, List<Entity>, Entity, Entity, Entity, bool)"));
+					return null;
+				}
+				s_ThemesField = themes;
+				s_PacksField = packs;
+				s_ApplyMethod = apply;
+				s_MenuBindingField = t.GetField("m_SelectedAssetMenuBinding", NP);
+				s_CategoryBindingField = t.GetField("m_SelectedAssetCategoryBinding", NP);
+				s_AssetBindingField = t.GetField("m_SelectedAssetBinding", NP);
+				s_ToolbarUi = ui;
+				s_ToolbarUiResolved = true;
+			}
+			catch (Exception ex)
+			{
+				s_ToolbarUi = null;
+				s_ToolbarUiResolved = true;
+				WarnToolbarUi(ex);
+			}
+			return s_ToolbarUi;
+		}
+
+		/// <summary>读私有选择列表（拿引用，不复制）。</summary>
+		private static List<Entity> SelectedList(string fieldId)
+		{
+			ToolbarUISystem ui = ToolbarUi();
+			if (ui == null) return null;
+			FieldInfo f = fieldId == F_THEMES ? s_ThemesField : (fieldId == F_PACKS ? s_PacksField : null);
+			if (f == null) return null;
+			try { return f.GetValue(ui) as List<Entity>; }
+			catch { return null; }
+		}
+
+		/// <summary>当前选中的可选项名（只读，不改任何状态）。</summary>
+		public static bool CaptureToolbarSelection(string fieldId, List<string> into)
+		{
+			into.Clear();
+			List<Entity> list = SelectedList(fieldId);
+			if (list == null) return false;
+			PrefabSystem ps = s_CachedPrefabSystem;
+			if (ps == null) return false;
+			for (int i = 0; i < list.Count; i++)
+			{
+				string name = OptionName(list[i], ps);
+				if (name != null && !into.Contains(name)) into.Add(name);
+			}
+			return true;
+		}
+
+		/// <summary>
+		/// 选择列表的廉价指纹：只有玩家真的动了筛选才会变。每帧只读引用和整数、零分配，
+		/// 指纹变了才去做「取名字 + 写桶」那套有分配的活。
+		/// </summary>
+		public static bool ToolbarSelectionSignature(string fieldId, out int signature)
+		{
+			List<Entity> list = SelectedList(fieldId);
+			signature = 0;
+			if (list == null) return false;
+			unchecked
+			{
+				int sig = list.Count;
+				for (int i = 0; i < list.Count; i++)
+				{
+					sig = sig * 31 + list[i].Index;
+					sig = sig * 7919 + list[i].Version;
+				}
+				signature = sig;
+			}
+			return true;
+		}
+
+		/// <summary>当前分类里可选的主题 / 数据包名（与原版画勾列表同源）。</summary>
+		public static bool ToolbarOptionNames(string fieldId, List<string> into)
+		{
+			into.Clear();
+			if (CollectOptions(fieldId) < 0) return false;
+			for (int i = 0; i < s_OptNames.Count; i++) into.Add(s_OptNames[i]);
+			return true;
+		}
+
+		/// <summary>
+		/// 把记忆里的选项名换成当前分类里真实存在的实体（认不出的名字直接丢掉）。
+		/// 返回匹配上的个数；-1 = 当前分类信息都拿不到。
+		/// </summary>
+		public static int ResolveToolbarOptions(string fieldId, List<string> names, List<Entity> into)
+		{
+			into.Clear();
+			if (names == null || names.Count == 0) return 0;
+			if (CollectOptions(fieldId) < 0) return -1;
+			for (int i = 0; i < names.Count; i++)
+			{
+				int at = s_OptNames.IndexOf(names[i]);
+				if (at >= 0 && at < s_OptEntities.Count && !into.Contains(s_OptEntities[at]))
+				{
+					into.Add(s_OptEntities[at]);
+				}
+			}
+			return into.Count;
+		}
+
+		/// <summary>
+		/// 写回筛选选择。names = null 表示「别动」；空列表表示「记得玩家一个都没勾」。
+		/// 已经是目标状态就直接返回，不调 Apply（Apply 会重画整个资产列表）。
+		/// </summary>
+		public static bool ApplyToolbarSelection(string fieldId, List<string> names)
+		{
+			if (names == null) return false;
+			ToolbarUISystem ui = ToolbarUi();
+			if (ui == null) return false;
+			List<Entity> current = SelectedList(fieldId);
+			if (current == null) return false;
+
+			List<Entity> built = new List<Entity>(names.Count);
+			if (names.Count > 0)
+			{
+				if (ResolveToolbarOptions(fieldId, names, built) <= 0)
+				{
+					// 记过的可选项当前分类里一个都没有（或者上下文还没拿到）：不硬写空表
+					return false;
+				}
+			}
+			else if (CollectOptions(fieldId) < 0)
+			{
+				// 要恢复的是「一个都没勾」，但连当前分类上下文都读不到：
+				// 这时候写空表会把玩家正勾着的东西调没，宁可不改
+				return false;
+			}
+
+			bool same = built.Count == current.Count;
+			if (same)
+			{
+				for (int i = 0; i < built.Count; i++)
+				{
+					if (!current.Contains(built[i]))
+					{
+						same = false;
+						break;
+					}
+				}
+			}
+			if (same) return true;
+
+			// 另一项原样带走，但一律换新实例：Apply 用 SequenceEqual 判有没有变，
+			// 传同一个引用会被判成「没变」，那一半的刷新就丢了。
+			string other = fieldId == F_THEMES ? F_PACKS : F_THEMES;
+			List<Entity> curOther = SelectedList(other);
+			List<Entity> copyOther = curOther == null ? new List<Entity>() : new List<Entity>(curOther);
+			List<Entity> themes = fieldId == F_THEMES ? built : copyOther;
+			List<Entity> packs = fieldId == F_PACKS ? built : copyOther;
+
+			Entity menu = BindingEntity(s_MenuBindingField, ui);
+			Entity category = BindingEntity(s_CategoryBindingField, ui);
+			Entity asset = BindingEntity(s_AssetBindingField, ui);
+			try
+			{
+				s_ApplyMethod.Invoke(ui, new object[] { themes, packs, menu, category, asset, false });
+				return true;
+			}
+			catch (Exception ex)
+			{
+				WarnToolbarUi(ex);
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// 当前分类的可选项集合（照抄原版算画勾的那段：T:227-251 / T:294-321）。
+		/// 返回个数；-1 = 这次拿不到（没有选中分类 / 工具栏还没建好 / 抛异常）。
+		/// </summary>
+		private static int CollectOptions(string fieldId)
+		{
+			s_OptEntities.Clear();
+			s_OptNames.Clear();
+			ToolbarUISystem ui = ToolbarUi();
+			EntityManager em = s_Em;
+			PrefabSystem ps = s_CachedPrefabSystem;
+			if (ui == null || em == null || ps == null) return -1;
+			try
+			{
+				Entity category = BindingEntity(s_CategoryBindingField, ui);
+				if (category == Entity.Null || !em.Exists(category)) return -1;
+				if (!em.HasComponent<UIAssetCategoryData>(category)) return -1;
+				if (!em.HasComponent<UIGroupElement>(category)) return 0;
+				DynamicBuffer<UIGroupElement> groups = em.GetBuffer<UIGroupElement>(category, isReadOnly: true);
+				bool themes = fieldId == F_THEMES;
+				for (int i = 0; i < groups.Length; i++)
+				{
+					Entity asset = groups[i].m_Prefab;
+					if (asset == Entity.Null || !em.Exists(asset)) continue;
+					if (themes)
+					{
+						if (!em.HasComponent<ObjectRequirementElement>(asset)) continue;
+						DynamicBuffer<ObjectRequirementElement> reqs =
+							em.GetBuffer<ObjectRequirementElement>(asset, isReadOnly: true);
+						for (int j = 0; j < reqs.Length; j++)
+						{
+							Entity opt = reqs[j].m_Requirement;
+							if (opt == Entity.Null || !em.Exists(opt) || !em.HasComponent<ThemeData>(opt)) continue;
+							AddOption(opt, ps);
+						}
+					}
+					else
+					{
+						if (!em.HasComponent<AssetPackElement>(asset)) continue;
+						DynamicBuffer<AssetPackElement> elem =
+							em.GetBuffer<AssetPackElement>(asset, isReadOnly: true);
+						for (int k = 0; k < elem.Length; k++)
+						{
+							Entity opt = elem[k].m_Pack;
+							if (opt == Entity.Null || !em.Exists(opt) || !em.HasComponent<AssetPackData>(opt)) continue;
+							AddOption(opt, ps);
+						}
+					}
+				}
+				return s_OptEntities.Count;
+			}
+			catch (Exception ex)
+			{
+				WarnToolbarUi(ex);
+				return -1;
+			}
+		}
+
+		private static void AddOption(Entity opt, PrefabSystem ps)
+		{
+			string name = OptionName(opt, ps);
+			if (name == null || s_OptNames.Contains(name)) return;
+			s_OptNames.Add(name);
+			s_OptEntities.Add(opt);
+		}
+
+		private static string OptionName(Entity opt, PrefabSystem ps)
+		{
+			if (ps == null) return null;
+			try
+			{
+				string n = ps.GetPrefabName(opt);
+				return string.IsNullOrEmpty(n) ? null : n;
+			}
+			catch { return null; }
+		}
+
+		/// <summary>
+		/// 读 ValueBinding&lt;Entity&gt;.value。绑定类型在 Colossal.UI.Binding 里，本项目不引用
+		/// 那个程序集，所以按反射取公开属性（PropertyInfo 缓存一次）。
+		/// </summary>
+		private static Entity BindingEntity(FieldInfo bindingField, ToolbarUISystem ui)
+		{
+			if (bindingField == null || ui == null) return Entity.Null;
+			try
+			{
+				object binding = bindingField.GetValue(ui);
+				if (binding == null) return Entity.Null;
+				PropertyInfo p = s_BindingValue;
+				if (p == null)
+				{
+					p = binding.GetType().GetProperty("value", BindingFlags.Instance | BindingFlags.Public);
+					s_BindingValue = p;
+				}
+				if (p == null) return Entity.Null;
+				object v = p.GetValue(binding, null);
+				if (v is Entity) return (Entity)v;
+			}
+			catch { }
+			return Entity.Null;
+		}
+
+		/// <summary>工具栏 UI 反射失败：最多提示一条，之后静默 no-op（不能让筛选项刷日志）。</summary>
+		private static void WarnToolbarUi(Exception ex)
+		{
+			if (s_WarnedToolbarUi) return;
+			s_WarnedToolbarUi = true;
+			try
+			{
+				ToolModeMemoryMod.log.Warn("Toolbar filter (themes / asset packs) unavailable: "
 					+ ex.GetType().Name + " " + ex.Message);
 			}
 			catch { }

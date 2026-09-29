@@ -64,20 +64,48 @@ def main():
     check(re.search(r"(?m)^\s*\[SettingsUIMultilineText\]\s*$", s) is None,
           "没有任何属性真的挂上 [SettingsUIMultilineText]")
 
-    # ---- 2. 模组设置页只有一个板块，总开关也在里面 ----
+    # ---- 2. v0.2.2 板块结构：总开关单独一块且不显示标题；官方一块；每个模组一块 ----
     order = re.search(r"\[SettingsUIGroupOrder\(([^\)]*)\)\]", s)
     show = re.search(r"\[SettingsUIShowGroupName\(([^\)]*)\)\]", s)
-    check(order is not None and "kGroupItems" in order.group(1),
-          "GroupOrder 里只剩一个设置页板块 kGroupItems")
-    check(show is not None and "kGroupItems" in show.group(1),
-          "ShowGroupName 里有 kGroupItems")
-    enabled_sec = re.search(r"\[SettingsUISection\(kTabMod, kGroupItems\)\]\s*(?:\[^\]]*\]\s*)*public bool Enabled", s)
-    check(enabled_sec is not None, "总开关 Enabled 就在「工具记忆模式设置」板块里")
+    check(order is not None and "kGroupMaster" in order.group(1) and "kGroupOfficial" in order.group(1)
+          and "kGroupAnarchy" in order.group(1),
+          "GroupOrder 依次是 总开关 / 官方工具项 / Anarchy工具项 / 关于页各块")
+    check(show is not None and "kGroupOfficial" in show.group(1) and "kGroupAnarchy" in show.group(1),
+          "显示标题的板块包含官方与 Anarchy 两块")
+    check(show is not None and "kGroupMaster" not in show.group(1),
+          "总开关板块不显示标题（用户要求）")
+    check(re.search(r"\[SettingsUISection\(kTabMod, kGroupMaster\)\]\s*public bool Enabled", s) is not None,
+          "总开关自己在一块里")
 
-    rows = len(re.findall(r"\[SettingsUISection\(kTabMod, kGroupItems\)\]", s))
-    items = len(re.findall(r"new ToolItemDef\(", cat))
-    check(rows == items * 2 + 1,
-          "设置页行数 = 总开关 1 + 每项 2（共 %d 行，目录 %d 项）" % (rows, items))
+    off_rows = len(re.findall(r"\[SettingsUISection\(kTabMod, kGroupOfficial\)\]", s))
+    an_rows = len(re.findall(r"\[SettingsUISection\(kTabMod, kGroupAnarchy\)\]", s))
+    items = re.findall(r"new ToolItemDef\((\w+),", cat)
+    src_official = len(re.findall(r"ItemSource\.(Vanilla|Toolbar)", cat))
+    src_anarchy = len(re.findall(r"ItemSource\.AnarchyMod", cat))
+    check(off_rows == src_official * 2,
+          "官方板块行数 = 官方项数×2（%d 行 / %d 项）" % (off_rows, src_official))
+    check(an_rows == src_anarchy * 2,
+          "Anarchy 板块行数 = Anarchy 项数×2（%d 行 / %d 项）" % (an_rows, src_anarchy))
+    check(len(items) == 12, "目录 12 项（地区主题/数据包/工具模式/高度/并列/对齐/地形/地下/其它 + Anarchy 三项）")
+    # 关闭总开关后，下面每一项都要变灰：每个 *Enabled 行都必须挂 IsMasterOff。
+    # 按行扫（属性三行一组：Section / DisableByCondition / 属性声明）。
+    slines = s.split("\n")
+    enabled_rows = []
+    for i, ln in enumerate(slines):
+        m = re.search(r"public bool (\w+)Enabled", ln)
+        if not m:
+            continue
+        window = "\n".join(slines[max(0, i - 4):i + 1])
+        if "kGroupOfficial" in window or "kGroupAnarchy" in window:
+            cond = re.findall(r"nameof\((\w+)\)\)\]\s*\n\s*public bool \w+Enabled", window)
+            enabled_rows.append((m.group(1), cond[0] if cond else ""))
+    check(len(enabled_rows) == 12 and all(g[1] == "IsMasterOff" for g in enabled_rows),
+          "全部 12 项的是否恢复开关都挂 IsMasterOff（总开关关闭即整块变灰）：%s"
+          % ([(n, c) for n, c in enabled_rows if c != "IsMasterOff"] or "无遗漏"))
+    scope_rows = re.findall(r"nameof\((Is\w+ScopeDisabled)\)\)\]", s)
+    check(len(scope_rows) == 12, "12 个共用范围行都有各自的变灰条件")
+    helpers = re.findall(r"public bool (Is\w+ScopeDisabled)\(\) \{ return IsMasterOff\(\) \|\| !GetEnabled", s)
+    check(len(helpers) == 12, "12 个变灰判定都是「总开关关 或 本项没开」")
 
     # ---- 3. 出厂默认：两个开关都是打开 ----
     defaults = body_of(s, "public override void SetDefaults()")

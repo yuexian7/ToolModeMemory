@@ -76,17 +76,26 @@ namespace ToolModeMemory
 	}
 
 	/// <summary>
-	/// 工具项目录。顺序 = 设置页顺序（1..11），文案见 LocaleTable。
-	/// 项名一律采用游戏官方语言包里的行名：工具模式 / 对齐 / 并列模式 / 高度 /
-	/// 高度阶段 / 地下模式 / 地形(Topography) / 颜色等归入「其它」。
-	/// 1、8、9 三项（Anarchy 开关、左侧和右侧、常规）来自 Anarchy 模组（74604），
-	/// 只在该模组存在时生效（见 ToolMemoryBridge 的 Anarchy 反射段）。
-	/// v0.2.0 起「数据包 / 地区主题」两项（工具栏筛选面板）推迟到 0.2.1：
-	/// 它们是 ToolbarUISystem 的私有 UI 状态（m_SelectedAssetPacks / m_SelectedThemes），
-	/// 不属于工具面板选项，没有可公开读写的成员。
+	/// 工具项目录。顺序 = 设置页顺序，**跨板块连续编号**：
+	/// 「官方工具项设置」1..9（地区主题 / 数据包 / 工具模式 / 高度 / 并列模式 / 对齐 /
+	/// 地形 / 地下模式 / 其它），「Anarchy工具项设置」10..12（Anarchy / 左侧和右侧 / 常规）。
+	/// 板块归属由 Source 决定：Vanilla 与 Toolbar 进官方板块，AnarchyMod 进 Anarchy 板块。
+	/// 项名一律采用对应语言包里的官方行名：原版项取游戏语言包（Toolbar.* / ToolOptions.*），
+	/// Anarchy 项取 Anarchy 自带语言包（Anarchy.SECTION_TITLE[...]），该语言缺失才自行翻译。
+	///
+	/// v0.2.2 变化：
+	///  * 新增 themes / packs（工具栏的「地区主题」「数据包」筛选行，原版是
+	///    ToolbarUISystem 的 UI 状态，之前版本没有实现）；
+	///  * 删掉独立的 elevationStep 项：它和「高度」是同一个面板上的连体设置，
+	///    用户要求「和高度要一起记忆」，所以 elevationStep 现在是 kElevation 的 Sub，
+	///    共用高度的开关与范围。字段 id 保持 "elevation" / "elevationStep" 不变，
+	///    所以旧记忆文件里的键照旧能读回来。
+	///  * 10、11、12 三项来自 Anarchy（74604），只在该模组存在时生效。
 	/// </summary>
 	public static class ToolItemCatalog
 	{
+		public const string kThemes = "themes";
+		public const string kPacks = "packs";
 		public const string kAnarchy = "anarchy";
 		public const string kToolMode = "toolMode";
 		public const string kElevation = "elevation";
@@ -101,6 +110,12 @@ namespace ToolModeMemory
 
 		public const int kVanillaNone = -1;
 		public const int kNoRecommendation = -1;
+
+		/// <summary>「高度」覆盖的两个游戏字段：elevation 与 elevationStep（高度阶段/调整幅度）。</summary>
+		private static readonly string[] s_ElevationSubs = new string[]
+		{
+			"elevation", "elevationStep"
+		};
 
 		/// <summary>「并列模式」的两个游戏字段：parallelCount / parallelOffset。</summary>
 		private static readonly string[] s_ParallelSubs = new string[]
@@ -130,20 +145,24 @@ namespace ToolModeMemory
 
 		public static readonly ToolItemDef[] Items = new ToolItemDef[]
 		{
+			// ---- 官方工具项设置（1..9）----
+			// 原版「地区主题」是全局共用，「数据包」按组显示并切组自动重置 -> 都无推荐，出厂不开
+			new ToolItemDef(kThemes, 1, ItemSource.Toolbar, (int)MemoryScope.GlobalShared, kNoRecommendation, false),
+			new ToolItemDef(kPacks, 2, ItemSource.Toolbar, (int)MemoryScope.Group, kNoRecommendation, false),
 			// 原版每个工具模式按分类记忆（NetToolPreferences），故推荐全局共用才有增益
-			new ToolItemDef(kAnarchy, 1, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, false),
-			new ToolItemDef(kToolMode, 2, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.GlobalShared, true),
-			// 高度：原版整个会话一个值（= 全局共用），推荐同组
-			new ToolItemDef(kElevation, 3, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.Group, true),
-			new ToolItemDef(kParallel, 4, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.GlobalUnique, true, s_ParallelSubs),
-			new ToolItemDef(kSnap, 5, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.Category, true),
-			new ToolItemDef(kTopography, 6, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.GlobalShared, false),
-			new ToolItemDef(kElevationStep, 7, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.Category, true),
-			new ToolItemDef(kLeftRight, 8, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Group, true, s_LeftRightSubs),
-			new ToolItemDef(kGeneral, 9, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, true),
+			new ToolItemDef(kToolMode, 3, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.GlobalShared, true),
+			new ToolItemDef(kElevation, 4, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.Group, true, s_ElevationSubs),
+			new ToolItemDef(kParallel, 5, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.GlobalUnique, true, s_ParallelSubs),
+			new ToolItemDef(kSnap, 6, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.Category, true),
+			new ToolItemDef(kTopography, 7, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.GlobalShared, false),
 			// 地下模式：推荐同组 == 原版同组 -> 默认关（用户定的规则）
-			new ToolItemDef(kUnderground, 10, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.Group, false),
-			new ToolItemDef(kOther, 11, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false, s_OtherSubs),
+			new ToolItemDef(kUnderground, 8, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.Group, false),
+			new ToolItemDef(kOther, 9, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false, s_OtherSubs),
+
+			// ---- Anarchy 工具项设置（10..12）----
+			new ToolItemDef(kAnarchy, 10, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, false),
+			new ToolItemDef(kLeftRight, 11, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Group, true, s_LeftRightSubs),
+			new ToolItemDef(kGeneral, 12, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, true),
 		};
 
 		public static ToolItemDef Find(string id)
@@ -152,11 +171,22 @@ namespace ToolModeMemory
 			{
 				if (Items[i].Id == id) return Items[i];
 			}
-			// 子字段 id（"parallel.count" / "other.color0" …）认回父项：
+			// 子字段 id 认回父项。两种形态都要认：
+			//   带点的（"parallel.count" / "other.color0" …）按前缀认；
+			//   不带点的（"elevationStep" —— 它自己本来就是个合法项名）在 Subs 里精确匹配。
 			// MemoryStore 读档时用 Find() 过滤「这一项还认识吗」，而每个子字段在记忆里
 			// 是一个独立桶（键 = 子字段 id），这里不认回来的话子字段每次进档都会被丢掉。
 			if (id != null)
 			{
+				for (int i = 0; i < Items.Length; i++)
+				{
+					string[] subs = Items[i].Subs;
+					if (subs == null) continue;
+					for (int j = 0; j < subs.Length; j++)
+					{
+						if (subs[j] == id) return Items[i];
+					}
+				}
 				int dot = id.IndexOf('.');
 				if (dot > 0)
 				{

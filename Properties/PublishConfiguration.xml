@@ -23,11 +23,17 @@
     2026-09-29（v0.2.1）：只改 ModVersion 与 ChangeLog（范围说明改为按工具项写、12 语言校对、
     Anarchy 归属改正、出厂默认两个开关都开）。LongDescription 里 "draw mode / parallel roads"、
     「绘制模式 / 平行道路」是过时叫法，改前必须先读线上编辑页确认这一整段没有用户线上手改，
-    再把术语换成官方行名（工具模式 / 对齐 / 并列模式 / 高度 / 地下模式）。-->
+    再把术语换成官方行名（工具模式 / 对齐 / 并列模式 / 高度 / 地下模式）。
+    2026-09-29（v0.2.2 发版前）：用登录态浏览器读线上编辑页
+    /mods/160529/Windows/edit?version=5（横幅 "Editing latest version · v0.2.1"），逐字段与本文件比对：
+    displayName / shortDescription / longDescription / changelog / version / userModVersion **全部一致**
+    （列表页 LAST UPDATED 仍停在 0.2.1 发布时间 00:41，线上没有被手改过），因此本次 NewVersion
+    覆盖元数据不会冲掉用户线上改动；本次只改 ModVersion 0.2.1 -> 0.2.2 与 ChangeLog。
+    注意：编辑页地址必须带平台段 /Windows，写成 /mods/160529/edit 会被 SPA 退回首页。-->
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
 	<ModId Value="160529" />
-	<ModVersion Value="0.2.1" />
+	<ModVersion Value="0.2.2" />
 	<GameVersion Value="1.6.*" />
 	<!--Private = 不公开（用户要求）。若平台拒绝此值再改 Unlisted。-->
 	<AccessLevel Value="Private" />
@@ -41,18 +47,20 @@
 	<ExternalLink Type="kofi" Url="https://ko-fi.com/yuexian7" />
 	<ExternalLink Type="x" Url="https://x.com/yuexian777/status/2101942150447702427?s=20" />
 	<ChangeLog>
-v0.2.1
+v0.2.2
 
-*   Each option now explains the sharing scopes on its own row, with an example that fits that option (tool mode, elevation, snapping, parallel mode, and so on), instead of one block at the bottom of the page.
-*   Wording was proofread in all 12 languages against the game's own translations. The two Anarchy rows, Left and Right and General, now name the right mod.
-*   The Other row states exactly what it remembers: road colours, brush size and brush strength.
-*   The mod starts enabled: the master switch and the compatibility switch are both on out of the box, and Reset all settings returns to that state.
+*   The options page is split into sections: the master switch on its own, the game's own tool options under Official Tool Settings, and Anarchy's rows in their own section.
+*   Two more things are remembered: the toolbar's Theme and Pack filters. Both start switched off.
+*   Elevation step is no longer a separate option: it is remembered together with Elevation and follows the same sharing scope.
+*   Option names now follow the wording the game (and, for those rows, Anarchy) uses in its own translations, in all 12 languages.
+*   About tab buttons renamed: Buy me a Coffee, Forum Page, RAINBOW官网.
 
 中文
 
-*   共用范围的五种含义改写在每一个工具项自己的说明里，例子也按该项来举（工具模式、高度、对齐、并列模式等），不再只在页面底部集中写一次。
-*   12 种语言的用词重新对照游戏官方译名校对；「左侧和右侧」「常规」两项已标明出自 Anarchy 模组。
-*   「其它」一项写清实际记忆内容：道路配色、笔刷粗细、笔刷强度。
-*   模组出厂即为开启：总开关与兼容开关默认打开，「重置所有设置项」也会恢复到这一状态。
+*   设置页改为分区显示：总开关单独一块，游戏本体的工具项集中在「官方工具项设置」，Anarchy 的项目单独一块。
+*   新增两项记忆：工具栏的「地区主题」和「数据包」筛选，两项出厂默认关闭。
+*   「高度阶段」不再单列一项，改为与「高度」一起记忆、共用同一个共用范围。
+*   12 种语言的项目名称一律改用游戏（模组自带的行则用该模组）自己语言包里的叫法。
+*   关于页三个按钮改为：请我喝杯咖啡、论坛页面、RAINBOW官网。
 </ChangeLog>
 </PublishConfiguration>

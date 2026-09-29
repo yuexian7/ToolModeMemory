@@ -75,7 +75,25 @@ namespace ToolModeMemory
 			Dictionary<string, string> d = Table(_activeLocale);
 			string value;
 			if (d.TryGetValue(key, out value)) return value;
-			return Table("en-US")[key];
+			return Val(Table("en-US"), key);
+		}
+
+		/// <summary>
+		/// 取词条，且**绝不抛 KeyNotFoundException**。
+		/// 一个缺键就足够把整页拖成原始 key：BuildEntries 是在注册语言包时跑的，
+		/// 中途抛出会让框架一条都没注册上，于是每一项都只能显示键名（0.2.2 开发中
+		/// 先加了 themes/packs 两行、文案还没写，就是这个现象）。
+		/// 顺序：本语言 -> en-US（FillGaps 之外的双保险）-> 原样返回键名。
+		/// 存在的键即使值是空串也照原样返回（tag.none 就是空后缀，不能当成缺键）。
+		/// </summary>
+		private static string Val(Dictionary<string, string> d, string key)
+		{
+			if (string.IsNullOrEmpty(key)) return "";
+			string value;
+			if (d != null && d.TryGetValue(key, out value)) return value;
+			Dictionary<string, string> en = Table("en-US");
+			if (!ReferenceEquals(d, en) && en.TryGetValue(key, out value)) return value;
+			return key;
 		}
 
 		/// <summary>范围下拉：短标签 + 按工具项标注（原版）（推荐）（推荐原版）。</summary>
@@ -94,16 +112,16 @@ namespace ToolModeMemory
 
 		private static DropdownItem<int> Item(int value, string baseKey, ToolItemDef def, Dictionary<string, string> d)
 		{
-			string name = d[baseKey];
+			string name = Val(d, baseKey);
 			int van = def != null ? def.VanillaScope : ToolItemCatalog.kVanillaNone;
 			int rec = def != null ? def.RecommendedScope : 0;
 			bool isVan = van == value;
 			bool isRec = rec == value;
 			string tag;
-			if (isVan && isRec) tag = d[kTagRecVanilla];
-			else if (isVan) tag = d[kTagVanilla];
-			else if (isRec) tag = d[kTagRecommended];
-			else tag = d[kTagNone];
+			if (isVan && isRec) tag = Val(d, kTagRecVanilla);
+			else if (isVan) tag = Val(d, kTagVanilla);
+			else if (isRec) tag = Val(d, kTagRecommended);
+			else tag = Val(d, kTagNone);
 			return new DropdownItem<int> { value = value, displayName = name + tag };
 		}
 
@@ -115,42 +133,42 @@ namespace ToolModeMemory
 			Dictionary<string, string> d = Table(locale);
 			Dictionary<string, string> o = new Dictionary<string, string>();
 
-			o[setting.GetSettingsLocaleID()] = d["mod.name"];
-			o[setting.GetOptionTabLocaleID(ToolModeMemorySettings.kTabMod)] = d["tab.mod"];
-			o[setting.GetOptionTabLocaleID(ToolModeMemorySettings.kTabAbout)] = d["tab.about"];
+			o[setting.GetSettingsLocaleID()] = Val(d, "mod.name");
+			o[setting.GetOptionTabLocaleID(ToolModeMemorySettings.kTabMod)] = Val(d, "tab.mod");
+			o[setting.GetOptionTabLocaleID(ToolModeMemorySettings.kTabAbout)] = Val(d, "tab.about");
 			AddTabAndGroupTitles(setting, d, o);
 
 			// 总开关 + 兼容开关（共用范围定义已并入每一项的 scope 说明，见 AddItems）
-			o[setting.GetOptionLabelLocaleID("Enabled")] = d["enabled.label"];
-			o[setting.GetOptionDescLocaleID("Enabled")] = d["enabled.desc"];
-			o[setting.GetOptionLabelLocaleID("CompatOtherMods")] = d["compat.label"];
-			o[setting.GetOptionDescLocaleID("CompatOtherMods")] = d["compat.desc"];
+			o[setting.GetOptionLabelLocaleID("Enabled")] = Val(d, "enabled.label");
+			o[setting.GetOptionDescLocaleID("Enabled")] = Val(d, "enabled.desc");
+			o[setting.GetOptionLabelLocaleID("CompatOtherMods")] = Val(d, "compat.label");
+			o[setting.GetOptionDescLocaleID("CompatOtherMods")] = Val(d, "compat.desc");
 
 			AddItems(setting, d, o);
 
 			// 记忆管理（关于页）
-			o[setting.GetOptionLabelLocaleID("ResetMemory")] = d["reset.label"];
-			o[setting.GetOptionDescLocaleID("ResetMemory")] = d["reset.desc"];
-			o[setting.GetOptionWarningLocaleID("ResetMemory")] = d["reset.warn"];
-			o["Options.WARNING[CONFIRM_RESET]"] = d["reset.confirm"];
+			o[setting.GetOptionLabelLocaleID("ResetMemory")] = Val(d, "reset.label");
+			o[setting.GetOptionDescLocaleID("ResetMemory")] = Val(d, "reset.desc");
+			o[setting.GetOptionWarningLocaleID("ResetMemory")] = Val(d, "reset.warn");
+			o["Options.WARNING[CONFIRM_RESET]"] = Val(d, "reset.confirm");
 
-			o[setting.GetOptionLabelLocaleID("ResetAllSettings")] = d["resetall.label"];
-			o[setting.GetOptionDescLocaleID("ResetAllSettings")] = d["resetall.desc"];
-			o[setting.GetOptionWarningLocaleID("ResetAllSettings")] = d["resetall.warn"];
-			o["Options.WARNING[CONFIRM_RESET_ALL]"] = d["resetall.confirm"];
+			o[setting.GetOptionLabelLocaleID("ResetAllSettings")] = Val(d, "resetall.label");
+			o[setting.GetOptionDescLocaleID("ResetAllSettings")] = Val(d, "resetall.desc");
+			o[setting.GetOptionWarningLocaleID("ResetAllSettings")] = Val(d, "resetall.warn");
+			o["Options.WARNING[CONFIRM_RESET_ALL]"] = Val(d, "resetall.confirm");
 
-			o[setting.GetOptionLabelLocaleID("OpenMemoryFolder")] = d["folder.label"];
-			o[setting.GetOptionDescLocaleID("OpenMemoryFolder")] = d["folder.desc"];
+			o[setting.GetOptionLabelLocaleID("OpenMemoryFolder")] = Val(d, "folder.label");
+			o[setting.GetOptionDescLocaleID("OpenMemoryFolder")] = Val(d, "folder.desc");
 
 			// 信息与链接
-			o[setting.GetOptionLabelLocaleID("ModVersion")] = d["about.version"];
-			o[setting.GetOptionLabelLocaleID("ModAuthor")] = d["about.author"];
-			o[setting.GetOptionLabelLocaleID("OpenKofi")] = d["about.kofi"];
-			o[setting.GetOptionDescLocaleID("OpenKofi")] = d["about.kofi.desc"];
-			o[setting.GetOptionLabelLocaleID("OpenForum")] = d["about.forum"];
-			o[setting.GetOptionDescLocaleID("OpenForum")] = d["about.forum.desc"];
-			o[setting.GetOptionLabelLocaleID("OpenRainbowSite")] = d["about.rainbow"];
-			o[setting.GetOptionDescLocaleID("OpenRainbowSite")] = d["about.rainbow.desc"];
+			o[setting.GetOptionLabelLocaleID("ModVersion")] = Val(d, "about.version");
+			o[setting.GetOptionLabelLocaleID("ModAuthor")] = Val(d, "about.author");
+			o[setting.GetOptionLabelLocaleID("OpenKofi")] = Val(d, "about.kofi");
+			o[setting.GetOptionDescLocaleID("OpenKofi")] = Val(d, "about.kofi.desc");
+			o[setting.GetOptionLabelLocaleID("OpenForum")] = Val(d, "about.forum");
+			o[setting.GetOptionDescLocaleID("OpenForum")] = Val(d, "about.forum.desc");
+			o[setting.GetOptionLabelLocaleID("OpenRainbowSite")] = Val(d, "about.rainbow");
+			o[setting.GetOptionDescLocaleID("OpenRainbowSite")] = Val(d, "about.rainbow.desc");
 			return o;
 		}
 
@@ -167,9 +185,9 @@ namespace ToolModeMemory
 			{
 				ToolItemDef def = items[i];
 				string pascal = PascalCase(def.Id);
-				o[setting.GetOptionLabelLocaleID(pascal + "Enabled")] = def.Number.ToString() + ". " + d["item." + def.Id + ".label"];
-				o[setting.GetOptionDescLocaleID(pascal + "Enabled")] = d["item." + def.Id + ".desc"];
-				o[setting.GetOptionLabelLocaleID(pascal + "Scope")] = d["scope.label"];
+				o[setting.GetOptionLabelLocaleID(pascal + "Enabled")] = def.Number.ToString() + ". " + Val(d, "item." + def.Id + ".label");
+				o[setting.GetOptionDescLocaleID(pascal + "Enabled")] = Val(d, "item." + def.Id + ".desc");
+				o[setting.GetOptionLabelLocaleID(pascal + "Scope")] = Val(d, "scope.label");
 				o[setting.GetOptionDescLocaleID(pascal + "Scope")] = ScopeDescription(def, d);
 			}
 		}
@@ -181,7 +199,7 @@ namespace ToolModeMemory
 		private static string ScopeDescription(ToolItemDef def, Dictionary<string, string> d)
 		{
 			StringBuilder sb = new StringBuilder();
-			sb.Append(d["scope.desc"]);
+			sb.Append(Val(d, "scope.desc"));
 			sb.Append('\n');
 			sb.Append(Line(d, kScopeLineGroup, Example(d, def.Id, "group")));
 			sb.Append('\n');
@@ -189,11 +207,11 @@ namespace ToolModeMemory
 			sb.Append('\n');
 			sb.Append(Line(d, kScopeLineCategory, Example(d, def.Id, "category")));
 			sb.Append('\n');
-			sb.Append(d[kScopeLineShared]);
+			sb.Append(Val(d, kScopeLineShared));
 			sb.Append('\n');
-			sb.Append(d[kScopeLineUnique]);
+			sb.Append(Val(d, kScopeLineUnique));
 			sb.Append('\n');
-			sb.Append(d[kScopeNote]);
+			sb.Append(Val(d, kScopeNote));
 			return sb.ToString();
 		}
 
@@ -211,7 +229,7 @@ namespace ToolModeMemory
 			return d.TryGetValue("item." + itemId + ".ex." + slot, out value) ? value : "";
 		}
 
-		/// <summary>id 形如 toolMode / elevationStep，设置类里的属性名是 ToolMode / ElevationStep。</summary>
+		/// <summary>id 形如 toolMode / leftRight，设置类里的属性名是 ToolMode / LeftRight。</summary>
 		private static string PascalCase(string id)
 		{
 			if (string.IsNullOrEmpty(id)) return id;
@@ -236,7 +254,7 @@ namespace ToolModeMemory
 				if (name.StartsWith("kTab", StringComparison.Ordinal))
 				{
 					bool aboutTab = name.IndexOf("About", StringComparison.OrdinalIgnoreCase) >= 0;
-					o[setting.GetOptionTabLocaleID(value)] = aboutTab ? d["tab.about"] : d["tab.mod"];
+					o[setting.GetOptionTabLocaleID(value)] = aboutTab ? Val(d, "tab.about") : Val(d, "tab.mod");
 				}
 				else if (name.StartsWith("kGroup", StringComparison.Ordinal))
 				{
@@ -246,30 +264,37 @@ namespace ToolModeMemory
 		}
 
 		/// <summary>
-		/// 分组语义判定：字段名优先（kGroupItems 是模组设置页唯一的板块），
-		/// 再看字段值里的关键词，最后默认归到工具项板块。
+		/// 分组语义判定。v0.2.2 的板块结构：
+		///   kGroupMaster  总开关（不显示标题，注册一个占位串就行）
+		///   kGroupOfficial 官方工具项设置
+		///   kGroupAnarchy  Anarchy工具项设置（模组名 + 「工具项设置」）
+		///   kGroupMemory / kGroupCompat / kGroupInfo 关于页三块
+		/// 设置类里的 kGroup* 常量会随重构改名，所以这里反射读取常量本身，按语义给标题。
 		/// </summary>
 		private static string GroupTitle(string field, string value, Dictionary<string, string> d)
 		{
 			string f = field.ToLowerInvariant();
+			if (f.EndsWith("master", StringComparison.Ordinal)) return Val(d, "group.master");
+			if (f.EndsWith("official", StringComparison.Ordinal)) return Val(d, "group.official");
+			if (f.IndexOf("anarchy", StringComparison.Ordinal) >= 0) return Val(d, "group.anarchy");
 			if (f.EndsWith("items", StringComparison.Ordinal) || f.EndsWith("main", StringComparison.Ordinal)
 				|| f.EndsWith("settings", StringComparison.Ordinal) || f.EndsWith("mod", StringComparison.Ordinal))
 			{
-				return d["group.items"];
+				return Val(d, "group.official");
 			}
 			string s = f + "|" + value.ToLowerInvariant();
-			if (s.IndexOf("compat", StringComparison.Ordinal) >= 0) return d["group.compat"];
+			if (s.IndexOf("compat", StringComparison.Ordinal) >= 0) return Val(d, "group.compat");
 			if (s.IndexOf("about", StringComparison.Ordinal) >= 0 || s.IndexOf("info", StringComparison.Ordinal) >= 0
 				|| s.IndexOf("link", StringComparison.Ordinal) >= 0)
 			{
-				return d["group.about"];
+				return Val(d, "group.about");
 			}
 			if (s.IndexOf("reset", StringComparison.Ordinal) >= 0 || s.IndexOf("memory", StringComparison.Ordinal) >= 0
 				|| s.IndexOf("folder", StringComparison.Ordinal) >= 0)
 			{
-				return d["group.reset"];
+				return Val(d, "group.reset");
 			}
-			return d["group.items"];
+			return Val(d, "group.official");
 		}
 
 		/// <summary>兼容旧的 Build(ToolModeMemorySettings,locale) 入口：等价于 BuildEntries。</summary>
@@ -340,7 +365,9 @@ namespace ToolModeMemory
 			d["mod.name"] = "工具模式区分记忆";
 			d["tab.mod"] = "工具模式记忆设置";
 			d["tab.about"] = "关于";
-			d["group.items"] = "工具记忆模式设置";
+			d["group.master"] = "工具模式记忆";
+			d["group.official"] = "官方工具项设置";
+			d["group.anarchy"] = "Anarchy工具项设置";
 			d["group.reset"] = "记忆管理";
 			d["group.compat"] = "兼容性";
 			d["group.about"] = "信息与链接";
@@ -395,6 +422,19 @@ namespace ToolModeMemory
 			d["item.anarchy.ex.menu"] = "点击道路菜单里面的所有资产，Anarchy 都是打开的，但切换到电力菜单就不是了";
 			d["item.anarchy.ex.category"] = "切换到大型道路也是打开的，但切换到桥梁就变成关闭（需单独设置），即使它们都在道路菜单下";
 
+			// 地区主题 / 数据包：工具栏筛选面板那两行，行名照原版语言包
+			// （Toolbar.THEME_PANEL_TITLE / Toolbar.ASSET_PACKS_PANEL_TITLE）。
+			d["item.themes.label"] = "地区主题";
+			d["item.themes.desc"] = "记忆工具栏筛选面板里「地区主题」勾选了哪些。只有当前分类里确实有资产用到主题时才会出现这一行，勾上之后工具栏只列出支持这些主题的资产。原版只在读档时把它重置回默认主题，所以这一项默认不开。";
+			d["item.themes.ex.group"] = "比如只在道路/小型道路里勾了某个主题，切换到大型道路就不按它筛选了";
+			d["item.themes.ex.menu"] = "在道路菜单里勾的主题，切换到电力菜单就不生效，回到道路菜单又还是那一套";
+			d["item.themes.ex.category"] = "小巷和地铁轨道都算同类分类，勾的主题跨菜单共用这一套";
+			d["item.packs.label"] = "数据包";
+			d["item.packs.desc"] = "记忆工具栏筛选面板里「数据包」勾选了哪些，勾上之后工具栏只列出属于这些数据包的资产。原版每次切换菜单或分类都会把它清空，所以按「同一菜单+分类」来记最贴近你看到的规律，这一项默认也不开。";
+			d["item.packs.ex.group"] = "比如在道路/小型道路勾了某个数据包，切到大型道路会被原版清空，回到小型道路又自动恢复";
+			d["item.packs.ex.menu"] = "在道路菜单勾的数据包，和电力菜单勾的各记各的";
+			d["item.packs.ex.category"] = "小巷在道路菜单和行政区菜单里都叫小巷，勾的数据包两边共用一份";
+
 			// ---------- 2 工具模式 ----------
 			d["item.toolMode.label"] = "工具模式";
 			d["item.toolMode.desc"] = "记忆每个工具所选的模式，可选项按工具不同：道路、轨道、管道为直线、简单曲线、复杂曲线、连续曲线、网格、替换、节点；建筑、装饰物、树木为放置单个、放置多个、直线、曲线、目标印戳工具；功能区为填充、滚动、刷涂；区域为编辑、生成地图网格。资产的工具模式与功能的工具模式分开记忆，因为它们的选项并不相同。";
@@ -404,7 +444,7 @@ namespace ToolModeMemory
 
 			// ---------- 3 高度（用户原话的例子） ----------
 			d["item.elevation.label"] = "高度";
-			d["item.elevation.desc"] = "记忆工具离开时的高度值，也包括提升高度、降低高度得到的结果。交叉路口的高度不在记忆范围内。";
+			d["item.elevation.desc"] = "记忆工具离开时的高度值，也包括提升高度、降低高度得到的结果；「高度阶段」（一次抬高或降低多少米，Anarchy 面板里那一行叫高度调整幅度）跟高度一起记忆、用同一个共用范围。交叉路口的高度不在记忆范围内。";
 			d["item.elevation.ex.group"] = "比如点击两车道道路将高度提高到10m，那么切换其它的小型道路，高度也是10m，但切换到大型道路就不是10m了";
 			d["item.elevation.ex.menu"] = "点击所有道路菜单里面的资产，高度都是10m，但切换到电力菜单就不是10m了";
 			d["item.elevation.ex.category"] = "切换到大型道路高度也是10m，但切换到桥梁的高度就变成0m（需单独设置），即使它们都在道路菜单下";
@@ -430,12 +470,6 @@ namespace ToolModeMemory
 			d["item.topography.ex.menu"] = "点击道路菜单里面的所有资产，地形都是勾着的，但切换到电力菜单就不是了";
 			d["item.topography.ex.category"] = "切换到大型道路也是勾着的，但切换到桥梁就变成不勾（需单独设置），即使它们都在道路菜单下";
 
-			// ---------- 7 高度阶段 ----------
-			d["item.elevationStep.label"] = "高度阶段";
-			d["item.elevationStep.desc"] = "记忆「高度阶段」的数值，也就是一次提升高度或降低高度所移动的量；Anarchy 面板里叫高度调整幅度的那一行是同一个数值。";
-			d["item.elevationStep.ex.group"] = "比如把两车道小型道路的高度阶段改成1m，切换到其它的小型道路，也是1m，但切换到大型道路就不是了";
-			d["item.elevationStep.ex.menu"] = "点击道路菜单里面的所有资产，高度阶段都是1m，但切换到电力菜单就不是了";
-			d["item.elevationStep.ex.category"] = "切换到大型道路也是1m，但切换到桥梁就回到默认幅度（需单独设置），即使它们都在道路菜单下";
 
 			// ---------- 8 左侧和右侧（Anarchy） ----------
 			d["item.leftRight.label"] = "左侧和右侧";
@@ -475,7 +509,9 @@ namespace ToolModeMemory
 			d["mod.name"] = "工具模式區分記憶";
 			d["tab.mod"] = "工具模式記憶設定";
 			d["tab.about"] = "關於";
-			d["group.items"] = "工具記憶模式設定";
+			d["group.master"] = "工具模式記憶";
+			d["group.official"] = "官方工具項設定";
+			d["group.anarchy"] = "Anarchy工具項設定";
 			d["group.reset"] = "記憶管理";
 			d["group.compat"] = "相容性";
 			d["group.about"] = "資訊與連結";
@@ -528,6 +564,19 @@ namespace ToolModeMemory
 			d["item.anarchy.ex.menu"] = "點選道路選單裡面的所有資產，Anarchy 都是開啟的，但切換到電力選單就不是了";
 			d["item.anarchy.ex.category"] = "切換到大型道路同樣是開啟的，但切換到橋樑就變成關閉（需單獨設定），即使它們都在道路選單下";
 
+			// 地區主題 / 資料包：行名照原版語言包（Toolbar.THEME_PANEL_TITLE = 主題、
+			// Toolbar.ASSET_PACKS_PANEL_TITLE = 安裝包）。
+			d["item.themes.label"] = "主題";
+			d["item.themes.desc"] = "記憶工具列篩選面板裡「主題」勾選了哪些。只有目前分類確實有資產使用主題時才會出現這一列，勾選後工具列只列出支援這些主題的資產。原版只在讀檔時把它重置回預設主題，所以這一項預設不開。";
+			d["item.themes.ex.group"] = "例如只在道路/小型道路勾了某個主題，切換到大型道路就不按它篩選了";
+			d["item.themes.ex.menu"] = "在道路選單勾的主題，切換到電力選單就不生效，回到道路選單又還是那一組";
+			d["item.themes.ex.category"] = "小巷與地鐵軌道都算同類分類，勾的主題跨選單共用這一組";
+			d["item.packs.label"] = "安裝包";
+			d["item.packs.desc"] = "記憶工具列篩選面板裡「安裝包」勾選了哪些，勾選後工具列只列出屬於這些安裝包的資產。原版每次切換選單或分類都會把它清空，所以按「同一選單+分類」來記最貼近你看到的規律，這一項預設也不開。";
+			d["item.packs.ex.group"] = "例如在道路/小型道路勾了某個安裝包，切到大型道路會被原版清空，回到小型道路又自動恢復";
+			d["item.packs.ex.menu"] = "在道路選單勾的安裝包，和電力選單勾的各記各的";
+			d["item.packs.ex.category"] = "小巷在道路選單和行政區選單裡都叫小巷，勾的安裝包兩邊共用一份";
+
 			// ---------- 2 工具模式 ----------
 			d["item.toolMode.label"] = "工具模式";
 			d["item.toolMode.desc"] = "記憶每個工具所選的模式，可選項按工具不同：道路、軌道、管道為直線、簡單曲線、複數曲線、連續曲線、網格、替換、連接點；建築、裝飾物、樹木為設置一個、設置多個、直線、曲線、物件印章工具；功能區為填充、選取方格、塗上；區域為編輯、生成地圖方格。資產的工具模式與功能的工具模式分開記憶，因為它們的選項並不相同。";
@@ -537,7 +586,7 @@ namespace ToolModeMemory
 
 			// ---------- 3 高度 ----------
 			d["item.elevation.label"] = "高度";
-			d["item.elevation.desc"] = "記憶工具離開時的高度值，也包括提升高度、降低高度得到的結果。交叉路口的高度不在記憶範圍內。";
+			d["item.elevation.desc"] = "記憶工具離開時的高度值，也包括提升高度、降低高度得到的結果；「高度階段」（一次抬高或降低多少公尺，Anarchy 面板裡那一行叫高度間距）跟高度一起記憶、用同一個共用範圍。交叉路口的高度不在記憶範圍內。";
 			d["item.elevation.ex.group"] = "例如點選兩車道道路把高度提高到10m，那麼切換其他小型道路，高度也是10m，但切換到大型道路就不是10m了";
 			d["item.elevation.ex.menu"] = "點選所有道路選單裡面的資產，高度都是10m，但切換到電力選單就不是10m了";
 			d["item.elevation.ex.category"] = "切換到大型道路高度也是10m，但切換到橋樑的高度就變成0m（需單獨設定），即使它們都在道路選單下";
@@ -563,12 +612,6 @@ namespace ToolModeMemory
 			d["item.topography.ex.menu"] = "點選道路選單裡面的所有資產，地形圖都是勾選的，但切換到電力選單就不是了";
 			d["item.topography.ex.category"] = "切換到大型道路也是勾選的，但切換到橋樑就變成不勾（需單獨設定），即使它們都在道路選單下";
 
-			// ---------- 7 高度階段 ----------
-			d["item.elevationStep.label"] = "高度階段";
-			d["item.elevationStep.desc"] = "記憶「高度階段」的數值，也就是一次提升高度或降低高度所移動的量；Anarchy 面板裡稱為高度調整幅度的那一行是同一個數值。";
-			d["item.elevationStep.ex.group"] = "例如把兩車道小型道路的高度階段改成1m，切換到其他小型道路也是1m，但切換到大型道路就不是了";
-			d["item.elevationStep.ex.menu"] = "點選道路選單裡面的所有資產，高度階段都是1m，但切換到電力選單就不是了";
-			d["item.elevationStep.ex.category"] = "切換到大型道路也是1m，但切換到橋樑就回到預設幅度（需單獨設定），即使它們都在道路選單下";
 
 			// ---------- 8 左側和右側（Anarchy） ----------
 			d["item.leftRight.label"] = "左側和右側";
@@ -608,7 +651,9 @@ namespace ToolModeMemory
 			d["mod.name"] = "TOOL MODE MEMORY";
 			d["tab.mod"] = "Tool Mode Memory Settings";
 			d["tab.about"] = "About";
-			d["group.items"] = "Tool Memory Settings";
+			d["group.master"] = "Tool Mode Memory";
+			d["group.official"] = "Official Tool Settings";
+			d["group.anarchy"] = "Anarchy Tool Settings";
 			d["group.reset"] = "Memory management";
 			d["group.compat"] = "Compatibility";
 			d["group.about"] = "Information and links";
@@ -648,11 +693,11 @@ namespace ToolModeMemory
 
 			d["about.version"] = "Mod version";
 			d["about.author"] = "Author";
-			d["about.kofi"] = "Buy me a coffee";
+			d["about.kofi"] = "Buy me a Coffee";
 			d["about.kofi.desc"] = "Support the author on Ko-fi.";
-			d["about.forum"] = "Forum page";
+			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Open the Paradox forum thread.";
-			d["about.rainbow"] = "RAINBOW website";
+			d["about.rainbow"] = "RAINBOW官网";
 			d["about.rainbow.desc"] = "Open the Rainbow Series site.";
 
 			// ---------- 1 Anarchy ----------
@@ -660,6 +705,19 @@ namespace ToolModeMemory
 			d["item.anarchy.ex.group"] = "for example, turn Anarchy on for a two-lane small road and the other small roads keep it on, while a large road does not";
 			d["item.anarchy.ex.menu"] = "every asset you click in the Roads menu has Anarchy on, but moving to the Electricity menu it is not";
 			d["item.anarchy.ex.category"] = "switching to a large road still has it on, but a bridge goes back to off and needs its own setting, even though both are in the Roads menu";
+
+			// Row names follow the game's own language pack:
+			// Toolbar.THEME_PANEL_TITLE = "Theme", Toolbar.ASSET_PACKS_PANEL_TITLE = "Pack".
+			d["item.themes.label"] = "Theme";
+			d["item.themes.desc"] = "Remembers which entries are ticked in the toolbar's Theme filter. That row only appears when the current category really contains assets that use themes, and ticking one limits the toolbar list to assets supporting those themes. Vanilla only resets it to the default theme when a save is loaded, so this item ships switched off.";
+			d["item.themes.ex.group"] = "for example you tick a theme only under Roads/Small Roads, so large roads don't filter by it";
+			d["item.themes.ex.menu"] = "a theme ticked in the Roads menu stops applying in the Electricity menu and is back when you return";
+			d["item.themes.ex.category"] = "alleys and metro tracks count as the same category, so the ticked theme is shared across menus";
+			d["item.packs.label"] = "Pack";
+			d["item.packs.desc"] = "Remembers which entries are ticked in the toolbar's Pack filter; ticking one limits the toolbar list to assets belonging to those packs. Vanilla clears it every time you change menu or category, so remembering it per menu + category matches what you see, and this item also ships switched off.";
+			d["item.packs.ex.group"] = "for example you tick a pack under Roads/Small Roads, vanilla clears it on large roads, and it comes back when you return";
+			d["item.packs.ex.menu"] = "packs ticked in the Roads menu and in the Electricity menu are remembered separately";
+			d["item.packs.ex.category"] = "alleys sit in both the Roads and Districts menus under the same name, so the ticked packs are one shared set";
 
 			// ---------- 2 Tool Mode ----------
 			d["item.toolMode.label"] = "Tool Mode";
@@ -670,7 +728,7 @@ namespace ToolModeMemory
 
 			// ---------- 3 Elevation ----------
 			d["item.elevation.label"] = "Elevation";
-			d["item.elevation.desc"] = "Remembers the elevation a tool was left at, including where Increase elevation and Decrease elevation took it. The elevation of intersections is not covered.";
+			d["item.elevation.desc"] = "Remembers the elevation a tool was left at, including where Increase elevation and Decrease elevation took it. The Elevation step (how far one press moves you — the row Anarchy adds for the same value carries that very name) is remembered together with it and shares its scope. The elevation of intersections is not covered.";
 			d["item.elevation.ex.group"] = "for example, raise a two-lane road to 10 m and the other small roads go to 10 m too, while a large road is not at 10 m";
 			d["item.elevation.ex.menu"] = "every asset you click in the Roads menu is at 10 m, but moving to the Electricity menu it is not at 10 m";
 			d["item.elevation.ex.category"] = "switching to a large road still gives 10 m, but a bridge goes back to 0 m and needs its own setting, even though both are in the Roads menu";
@@ -696,12 +754,6 @@ namespace ToolModeMemory
 			d["item.topography.ex.menu"] = "every asset you click in the Roads menu shows contour lines, but moving to the Electricity menu it does not";
 			d["item.topography.ex.category"] = "switching to a large road still shows them, but a bridge has the row off and needs its own setting, even though both are in the Roads menu";
 
-			// ---------- 7 Elevation step ----------
-			d["item.elevationStep.label"] = "Elevation step";
-			d["item.elevationStep.desc"] = "Remembers the Elevation step value, the amount one press of Increase elevation or Decrease elevation moves you. The row Anarchy calls Elevation adjustment is the same value.";
-			d["item.elevationStep.ex.group"] = "for example, set the elevation step of a two-lane small road to 1 m and the other small roads also move by 1 m, while a large road does not";
-			d["item.elevationStep.ex.menu"] = "every asset you click in the Roads menu steps by 1 m, but moving to the Electricity menu it does not";
-			d["item.elevationStep.ex.category"] = "switching to a large road still steps by 1 m, but a bridge returns to the default step and needs its own setting, even though both are in the Roads menu";
 
 			// ---------- 8 Left / Right (Anarchy) ----------
 			d["item.leftRight.label"] = "Left and Right";

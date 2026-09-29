@@ -94,5 +94,41 @@ namespace ToolModeMemory.Memory
 				default: return SHARED;
 			}
 		}
+
+		// ---------- 工具栏筛选项（地区主题 / 数据包）----------
+		//
+		// 这两项的值不是「一个整数」而是「一组可选项」：原版把选中的主题/数据包存在
+		// ToolbarUISystem 的私有 List&lt;Entity&gt; 里（Game.UI.InGame.ToolbarUISystem
+		// m_SelectedThemes / m_SelectedAssetPacks），一个桶存不下，Entity.Index 又不能当键
+		// （DLC 加载顺序一变就漂移）。所以一个可选项一个键：
+		//   完整键 = 域 + 层级 + '$' + 家族 + '$' + 可选项名        值 1 = 勾选
+		//   完整键 = 域 + 层级 + '$' + 家族                        值 = 当时勾选的个数（哨兵）
+		// 哨兵用来区分「记过，但一个都没选」（值 0，恢复时把筛选清空）与「从没记过」
+		//（未命中，保持原版行为不动）。可选项名 = PrefabSystem.GetPrefabName(entity)，
+		// '$' 不会出现在 prefab 名里（与家族分隔符同一条约定）。
+
+		public const string FILTER_SEP = "$";
+
+		/// <summary>可选项键 = 完整层级键 + '$' + 选项名。任一段为空则返回 null（不拼坏键）。</summary>
+		public static string FilterOption(string fullKey, string optionName)
+		{
+			if (string.IsNullOrEmpty(fullKey) || string.IsNullOrEmpty(optionName)) return null;
+			return fullKey + FILTER_SEP + optionName;
+		}
+
+		/// <summary>从可选项键里取回选项名；不是该层级键下面的选项就返回 null。</summary>
+		public static string FilterOptionName(string fullKey, string key)
+		{
+			if (string.IsNullOrEmpty(fullKey) || string.IsNullOrEmpty(key)) return null;
+			if (key.Length <= fullKey.Length + FILTER_SEP.Length) return null;
+			if (!key.StartsWith(fullKey + FILTER_SEP, StringComparison.Ordinal)) return null;
+			return key.Substring(fullKey.Length + FILTER_SEP.Length);
+		}
+
+		/// <summary>勾选记 1，取消记 0（未命中与记 0 语义不同，靠 Get 的 found 区分）。</summary>
+		public static int FilterValue(bool selected)
+		{
+			return selected ? 1 : 0;
+		}
 	}
 }

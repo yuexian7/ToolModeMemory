@@ -30,12 +30,16 @@ LANGS = {
 # Frames() 里 12 份共用、不需要各语言重复的键
 FRAMES_KEYS = {"frame.locale", "item.anarchy.label", "scope.group.none"}
 
-ITEM_IDS = ["anarchy", "toolMode", "elevation", "parallel", "snap", "topography",
-            "elevationStep", "leftRight", "general", "underground", "other"]
+# v0.2.2 的 12 项（顺序 = 设置页跨板块连续编号）；elevationStep 已并入 elevation 的 Subs
+ITEM_IDS = ["themes", "packs", "toolMode", "elevation", "parallel", "snap", "topography",
+            "underground", "other", "anarchy", "leftRight", "general"]
+# 已取消的独立项：它们的键再出现就是漏删
+RETIRED = ["elevationStep"]
 
 SCALAR_KEYS = [
     "mod.name", "tab.mod", "tab.about",
-    "group.items", "group.reset", "group.compat", "group.about",
+    "group.master", "group.official", "group.anarchy",
+    "group.reset", "group.compat", "group.about",
     "enabled.label", "enabled.desc", "compat.label", "compat.desc",
     "scope.label", "scope.desc",
     "scope.line.group", "scope.line.menu", "scope.line.category",
@@ -50,8 +54,7 @@ SCALAR_KEYS = [
     "about.rainbow", "about.rainbow.desc",
 ]
 
-FORBIDDEN = ["scope.defs", "item.packs.label", "item.packs.desc",
-             "item.themes.label", "item.themes.desc"]
+FORBIDDEN = ["scope.defs"]
 
 TEMPLATE_KEYS = ["scope.line.group", "scope.line.menu", "scope.line.category"]
 
@@ -182,8 +185,9 @@ def main():
         banned = [k for k in FORBIDDEN if k in d]
         empty = [k for k, v in d.items() if not v.strip()]
         no_slot = [k for k in TEMPLATE_KEYS if "{0}" not in d.get(k, "")]
-        stale = [k for k, v in d.items() if "Extra Networks" in v or "額外網路" in v]
-        bad = missing + banned + empty + no_slot + stale
+        stale = [k for k, v in d.items() if "Extra Networks" in v]
+        retired = [k for k in d for r in RETIRED if k.startswith("item.%s." % r)]
+        bad = missing + banned + empty + no_slot + stale + retired
         if bad:
             fails += 1
             print("FAIL %s (%d 个键)" % (lang, len(d)))
@@ -197,6 +201,8 @@ def main():
                 print("   缺{{0}} %s" % k)
             for k in stale:
                 print("   错误归属 %s" % k)
+            for k in retired:
+                print("   退役键 %s（高度阶段已并入高度）" % k)
         else:
             print("OK   %s：%d 键，%d 项例子齐全" % (lang, len(d), len(ITEM_IDS) * 3))
 

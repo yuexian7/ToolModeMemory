@@ -11,12 +11,17 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import l10n_check as lc  # noqa: E402
 
-ITEMS = [
-    (1, "anarchy", "Anarchy"), (2, "toolMode", "工具模式"), (3, "elevation", "高度"),
-    (4, "parallel", "并列模式"), (5, "snap", "对齐"), (6, "topography", "地形"),
-    (7, "elevationStep", "高度阶段"), (8, "leftRight", "左侧和右侧"), (9, "general", "常规"),
-    (10, "underground", "地下模式"), (11, "other", "其它"),
+# v0.2.2 目录顺序 = 设置页顺序，跨板块连续编号（官方 1..9，Anarchy 10..12）。
+# 第三个元素只是「拿不到词条时的占位名」，真正显示的名字取 item.<id>.label。
+OFFICIAL = [
+    (1, "themes", "地区主题"), (2, "packs", "数据包"), (3, "toolMode", "工具模式"),
+    (4, "elevation", "高度"), (5, "parallel", "并列模式"), (6, "snap", "对齐"),
+    (7, "topography", "地形"), (8, "underground", "地下模式"), (9, "other", "其它"),
 ]
+ANARCHY = [
+    (10, "anarchy", "Anarchy"), (11, "leftRight", "左侧和右侧"), (12, "general", "常规"),
+]
+ITEMS = OFFICIAL + ANARCHY
 
 
 def main():
@@ -36,25 +41,34 @@ def main():
             return ""
         return tpl.replace("{0}", ex)
 
+    def block(title_key, rows):
+        out.append("")
+        out.append("【板块】" + d[title_key])
+        for num, item_id, placeholder in rows:
+            label = "%d. %s" % (num, d.get("item.%s.label" % item_id) or placeholder)
+            out.append("")
+            out.append("── %s" % label)
+            out.append("   说明: " + d["item.%s.desc" % item_id])
+            scope = [d["scope.desc"],
+                     fill(d["scope.line.group"], d["item.%s.ex.group" % item_id]),
+                     fill(d["scope.line.menu"], d["item.%s.ex.menu" % item_id]),
+                     fill(d["scope.line.category"], d["item.%s.ex.category" % item_id]),
+                     d["scope.line.shared"],
+                     d["scope.line.unique"],
+                     d["scope.note"]]
+            out.append("   共用范围（%s）:" % d["scope.label"])
+            for i, line in enumerate(scope):
+                out.append("     %d) %s" % (i + 1, line))
+
     out = []
     out.append("=========== %s ===========" % locale)
-    out.append("[板块] " + d["group.items"])
+    # 总开关单独一块（设置页里这块不显示标题，这里仍把标题打出来便于校对）
+    out.append("【板块】" + d["group.master"] + "（设置页不显示标题）")
     out.append("%s = %s" % (d["enabled.label"], d["enabled.desc"]))
-    for num, item_id, _ in ITEMS:
-        label = "%d. %s" % (num, d.get("item.%s.label" % item_id, item_id))
-        out.append("")
-        out.append("── %s" % label)
-        out.append("   说明: " + d["item.%s.desc" % item_id])
-        scope = [d["scope.desc"],
-                 fill(d["scope.line.group"], d["item.%s.ex.group" % item_id]),
-                 fill(d["scope.line.menu"], d["item.%s.ex.menu" % item_id]),
-                 fill(d["scope.line.category"], d["item.%s.ex.category" % item_id]),
-                 d["scope.line.shared"],
-                 d["scope.line.unique"],
-                 d["scope.note"]]
-        out.append("   共用范围（%s）:" % d["scope.label"])
-        for i, line in enumerate(scope):
-            out.append("     %d) %s" % (i + 1, line))
+    block("group.official", OFFICIAL)
+    block("group.anarchy", ANARCHY)
+    out.append("")
+    out.append("【关于页按钮】%s / %s / %s" % (d["about.kofi"], d["about.forum"], d["about.rainbow"]))
     print("\n".join(out))
     io.open(os.path.join(lc.ROOT, "research", "l10n_preview_%s.txt" % locale), "w",
             encoding="utf-8", newline="\n").write("\n".join(out) + "\n")

@@ -19,7 +19,9 @@ namespace ToolModeMemory
 			d["mod.name"] = "ツールモード記憶";
 			d["tab.mod"] = "ツールモード設定";
 			d["tab.about"] = "情報";
-			d["group.items"] = "ツール記憶の設定";
+			d["group.master"] = "ツールモード記憶";
+			d["group.official"] = "公式ツール設定";
+			d["group.anarchy"] = "Anarchyツール設定";
 			d["group.reset"] = "メモリ管理";
 			d["group.compat"] = "互換性";
 			d["group.about"] = "情報とリンク";
@@ -59,11 +61,11 @@ namespace ToolModeMemory
 
 			d["about.version"] = "Mod バージョン";
 			d["about.author"] = "作者";
-			d["about.kofi"] = "コーヒーをおごる";
+			d["about.kofi"] = "Buy me a Coffee";
 			d["about.kofi.desc"] = "Ko-fi で作者を支援する。";
-			d["about.forum"] = "フォーラムページ";
+			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Paradox フォーラムのスレッドを開く。";
-			d["about.rainbow"] = "RAINBOW 公式サイト";
+			d["about.rainbow"] = "RAINBOW官网";
 			d["about.rainbow.desc"] = "Rainbow Series の公式サイトを開く。";
 
 			// ---------- 1 Anarchy ----------
@@ -71,6 +73,16 @@ namespace ToolModeMemory
 			d["item.anarchy.ex.group"] = "たとえば、2車線の小型道路で Anarchy をオンにすると、他の小型道路もオンのままですが、大型道路ではそうなりません";
 			d["item.anarchy.ex.menu"] = "道路メニュー内のすべてのアセットをクリックすると Anarchy はオンですが、電力メニューに切り替えるとそうはなりません";
 			d["item.anarchy.ex.category"] = "大型道路に切り替えてもオンのままですが、橋に切り替えるとオフに戻るので個別に設定し直す必要があります。どちらも道路メニューに属していても同じです";
+			d["item.themes.label"] = "テーマ";
+			d["item.themes.desc"] = "ツールバーの「テーマ」フィルタでどれにチェックを付けたかを記憶します。この行は現在の分類にテーマを使うアセットが実際に含まれている時だけ表示され、チェックを付けるとツールバーの一覧がそれらのテーマに対応するアセットに絞られます。標準ではセーブを読み込んだ時だけ既定のテーマに戻るため、この項目はデフォルトでオフです。";
+			d["item.themes.ex.group"] = "たとえば、道路/小型道路でのみテーマにチェックを付けると、大型道路ではそのテーマで絞り込まれません";
+			d["item.themes.ex.menu"] = "道路メニューでチェックしたテーマは電力メニューに切り替えると効かなくなり、戻ると再び付いています";
+			d["item.themes.ex.category"] = "街路と地下鉄線路は同じ分類として数えられるため、チェックしたテーマはメニューをまたいで共有されます";
+			d["item.packs.label"] = "パック";
+			d["item.packs.desc"] = "ツールバーの「パック」フィルタでどれにチェックを付けたかを記憶します。チェックを付けると、ツールバーの一覧がそれらのパックに属するアセットに絞られます。標準ではメニューや分類を切り替えるたびにクリアされるため、メニューと分類の組み合わせごとに記憶するのが実際の見え方に合い、この項目もデフォルトでオフです。";
+			d["item.packs.ex.group"] = "たとえば道路/小型道路でのみパックにチェックを付けると、大型道路に切り替えた時点では標準の動作でチェックが外れますが、戻ると再び付いています";
+			d["item.packs.ex.menu"] = "道路メニューでチェックしたパックと電力メニューでチェックしたパックは分けて記憶されます";
+			d["item.packs.ex.category"] = "街路は道路メニューと地区メニューの両方に同じ名前で入っているため、チェックしたパックは一つに共有されます";
 
 			// ---------- 2 ツールモード ----------
 			d["item.toolMode.label"] = "ツールモード";
@@ -81,7 +93,7 @@ namespace ToolModeMemory
 
 			// ---------- 3 高度 ----------
 			d["item.elevation.label"] = "高度";
-			d["item.elevation.desc"] = "ツールを離れた時の高度を記憶します。高度を上げる、高度を下げる の結果も含まれます。交差点や跨線橋の高度は対象外です。";
+			d["item.elevation.desc"] = "ツールを離れた時の高度を記憶します。高度を上げる、高度を下げる の結果で動いた位置も含まれます。「高度ステップ」（1 回押すといくつ動くか。Anarchy のパネルでもこの行は同じく Elevation Step という名前です）も高度と一緒に記憶され、同じ共有範囲を使います。交差点の高度は対象外です。";
 			d["item.elevation.ex.group"] = "たとえば、2車線の道路の高度を10mまで上げると、他の小型道路の高度も10mになりますが、大型道路では10mにはなりません";
 			d["item.elevation.ex.menu"] = "道路メニュー内のすべてのアセットをクリックすると、高度はいずれも10mですが、電力メニューに切り替えると10mではなくなります";
 			d["item.elevation.ex.category"] = "大型道路に切り替えても高度は10mですが、橋に切り替えると0mに戻るため個別に設定し直す必要があります。どちらも道路メニューに属していても同じです";
@@ -106,13 +118,6 @@ namespace ToolModeMemory
 			d["item.topography.ex.group"] = "たとえば、2車線の小型道路で「地形」にチェックを入れると、他の小型道路もチェックされたままですが、大型道路ではそうなりません";
 			d["item.topography.ex.menu"] = "道路メニュー内のすべてのアセットをクリックすると、いずれも地形が表示されますが、電力メニューに切り替えるとそうはなりません";
 			d["item.topography.ex.category"] = "大型道路に切り替えてもチェックされたままですが、橋に切り替えるとチェックが外れるため個別に設定し直す必要があります。どちらも道路メニューに属していても同じです";
-
-			// ---------- 7 高度ステップ ----------
-			d["item.elevationStep.label"] = "高度ステップ";
-			d["item.elevationStep.desc"] = "「高度ステップ」の値、つまり高度を上げる / 高度を下げる を 1 回押すといくつ動くかを記憶します。Anarchy のパネルで「Elevation Step」と呼んでいる行も同じ値です。";
-			d["item.elevationStep.ex.group"] = "たとえば、2車線の小型道路の高度ステップを1mにすると、他の小型道路も1mずつ動きますが、大型道路ではそうなりません";
-			d["item.elevationStep.ex.menu"] = "道路メニュー内のすべてのアセットをクリックすると、高度ステップはいずれも1mですが、電力メニューに切り替えるとそうはなりません";
-			d["item.elevationStep.ex.category"] = "大型道路に切り替えても1mずつ動きますが、橋に切り替えると既定の幅に戻るため個別に設定し直す必要があります。どちらも道路メニューに属していても同じです";
 
 			// ---------- 8 左側と右側（Anarchy） ----------
 			d["item.leftRight.label"] = "左側と右側";
@@ -152,13 +157,15 @@ namespace ToolModeMemory
 			d["mod.name"] = "도구 모드 기억";
 			d["tab.mod"] = "도구 모드 설정";
 			d["tab.about"] = "정보";
-			d["group.items"] = "도구 기억 설정";
+			d["group.master"] = "도구 모드 기억";
+			d["group.official"] = "공식 도구 설정";
+			d["group.anarchy"] = "Anarchy 도구 설정";
 			d["group.reset"] = "메모리 관리";
 			d["group.compat"] = "호환성";
 			d["group.about"] = "정보 및 링크";
 
 			d["enabled.label"] = "도구 모드 기억 사용";
-			d["enabled.desc"] = "기본으로 켜짐. 켜 두는 동안 모든 항목의 값이 계속 기록되므로, 세이브로 돌아오면 종료할 때의 상태로 그대로 복원됩니다. 항목 하나만 끄면 그 항목만 복원되지 않고 값은 계속 기록됩니다. 이 마스터 스위치만 꺼야 기록이 멈추고 모든 도구가 원본 동작으로 돌아갑니다.";
+			d["enabled.desc"] = "기본으로 켜짐. 켜 두는 동안 모든 항목의 값이 계속 기록되므로, 세이브로 돌아오면 종료할 때의 상태로 그대로 복원됩니다. 항목 하나만 끄면 그 항목만 복원되지 않고 값은 계속 기록됩니다. 이 마스터 스위치만 꺼야 기록이 멈추고 모든 도구가 게임 기본 동작으로 돌아갑니다.";
 			d["compat.label"] = "다른 모드와 호환";
 			d["compat.desc"] = "기본으로 켜짐. 켜면 다른 모드(Asset UI Manager, ExtraLib 등)가 조정한 메뉴와 그룹 이름으로 기억합니다. 이동한 에셋은 새 위치를 따릅니다. 끄면 이 모드가 처음 본 분류를 그대로 써서 더 안정적입니다. 다만 커스텀 에셋의 제작자가 알맞은 에셋 유형으로 분류해 두지 않았다면 그 유형과 함께 조정할 수 없습니다. 두 경우 모두 이미 기록된 값은 사라지지 않습니다.";
 			d["scope.label"] = "공유 범위";
@@ -192,11 +199,11 @@ namespace ToolModeMemory
 
 			d["about.version"] = "Mod 버전";
 			d["about.author"] = "저자";
-			d["about.kofi"] = "커피 한 잔 사주기";
+			d["about.kofi"] = "Buy me a Coffee";
 			d["about.kofi.desc"] = "Ko-fi에서 저자를 지원합니다.";
-			d["about.forum"] = "포럼 페이지";
+			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Paradox 포럼 스레드를 엽니다.";
-			d["about.rainbow"] = "RAINBOW 웹사이트";
+			d["about.rainbow"] = "RAINBOW官网";
 			d["about.rainbow.desc"] = "Rainbow Series 웹사이트를 엽니다.";
 
 			// ---------- 1 Anarchy ----------
@@ -204,6 +211,16 @@ namespace ToolModeMemory
 			d["item.anarchy.ex.group"] = "예를 들어 2차로 소형 도로에 Anarchy를 켜면 다른 소형 도로도 켜진 상태로 남지만, 대형 도로는 그렇지 않습니다";
 			d["item.anarchy.ex.menu"] = "도로 메뉴의 모든 에셋을 클릭하면 Anarchy가 켜져 있지만, 전기 메뉴로 바꾸면 그렇지 않습니다";
 			d["item.anarchy.ex.category"] = "대형 도로로 바꿔도 켜져 있지만, 다리로 바꾸면 꺼진 상태로 돌아가 따로 설정해야 합니다. 둘 다 도로 메뉴에 속해도 마찬가지입니다";
+			d["item.themes.label"] = "테마";
+			d["item.themes.desc"] = "도구 막대의 테마 필터에서 어떤 항목에 체크했는지를 기억합니다. 이 행은 현재 분류에 테마를 사용하는 에셋이 실제로 있을 때만 나타나고, 하나에 체크하면 도구 목록이 그 테마를 지원하는 에셋으로만 좁혀집니다. 게임 기본에서는 세이브를 불러올 때만 기본 테마로 되돌리므로 이 항목은 기본으로 꺼져 있습니다.";
+			d["item.themes.ex.group"] = "예를 들어 도로/소형 도로에서만 테마에 체크하면 대형 도로는 그 테마로 좁혀지지 않습니다";
+			d["item.themes.ex.menu"] = "도로 메뉴에서 체크한 테마는 전기 메뉴로 바꾸면 적용이 풀리고, 돌아오면 다시 체크되어 있습니다";
+			d["item.themes.ex.category"] = "골목길과 지하철 선로는 같은 분류로 취급되므로 체크한 테마가 메뉴를 넘어 공유됩니다";
+			d["item.packs.label"] = "팩";
+			d["item.packs.desc"] = "도구 막대의 팩 필터에서 어떤 항목에 체크했는지를 기억합니다. 하나에 체크하면 도구 목록이 그 팩에 속한 에셋으로만 좁혀집니다. 게임 기본에서는 메뉴나 분류를 바꿀 때마다 이 체크를 지우므로, 메뉴와 분류 조합별로 기억하는 것이 실제로 보이는 것과 일치하며 이 항목도 기본으로 꺼져 있습니다.";
+			d["item.packs.ex.group"] = "예를 들어 도로/소형 도로에서만 팩에 체크하면, 대형 도로로 바꾸면 게임 기본 동작에 따라 체크가 풀렸다가, 돌아오면 다시 체크되어 있습니다";
+			d["item.packs.ex.menu"] = "도로 메뉴에서 체크한 팩과 전기 메뉴에서 체크한 팩은 따로 기억됩니다";
+			d["item.packs.ex.category"] = "골목길은 도로 메뉴와 지구 메뉴 양쪽에 같은 이름으로 들어 있으므로 체크한 팩은 하나로 공유됩니다";
 
 			// ---------- 2 도구 모드 ----------
 			d["item.toolMode.label"] = "도구 모드";
@@ -214,7 +231,7 @@ namespace ToolModeMemory
 
 			// ---------- 3 고도 ----------
 			d["item.elevation.label"] = "고도";
-			d["item.elevation.desc"] = "도구를 종료할 때의 고도를 기억합니다. 고도 높이기, 고도 낮추기의 결과도 포함됩니다. 교차로와 입체 교차로의 고도는 대상이 아닙니다.";
+			d["item.elevation.desc"] = "도구를 종료할 때의 고도를 기억합니다. 고도 높이기, 고도 낮추기의 결과로 이동한 위치도 포함됩니다. 고도 단계(한 번 누를 때 움직이는 양, Anarchy 패널에서도 이 행을 고도 단계라고 부릅니다)는 고도와 함께 기억되고 같은 공유 범위를 따릅니다. 교차로의 고도는 대상이 아닙니다.";
 			d["item.elevation.ex.group"] = "예를 들어 2차로 도로의 고도를 10m로 올리면 다른 소형 도로의 고도도 10m가 되지만, 대형 도로는 10m가 아닙니다";
 			d["item.elevation.ex.menu"] = "도로 메뉴의 모든 에셋을 클릭하면 고도가 모두 10m이지만, 전기 메뉴로 바꾸면 10m가 아닙니다";
 			d["item.elevation.ex.category"] = "대형 도로로 바꿔도 고도는 10m이지만, 다리로 바꾸면 0m로 돌아가 따로 설정해야 합니다. 둘 다 도로 메뉴에 속해도 마찬가지입니다";
@@ -239,13 +256,6 @@ namespace ToolModeMemory
 			d["item.topography.ex.group"] = "예를 들어 2차로 소형 도로에서 지형도에 체크를 넣으면 다른 소형 도로도 체크된 상태로 남지만, 대형 도로는 그렇지 않습니다";
 			d["item.topography.ex.menu"] = "도로 메뉴의 모든 에셋을 클릭하면 지형도가 모두 켜져 있지만, 전기 메뉴로 바꾸면 그렇지 않습니다";
 			d["item.topography.ex.category"] = "대형 도로로 바꿔도 체크된 상태로 남지만, 다리로 바꾸면 체크가 해제되어 따로 설정해야 합니다. 둘 다 도로 메뉴에 속해도 마찬가지입니다";
-
-			// ---------- 7 고도 단계 ----------
-			d["item.elevationStep.label"] = "고도 단계";
-			d["item.elevationStep.desc"] = "고도 단계 값을 기억합니다. 고도 높이기 / 고도 낮추기를 한 번 누를 때 움직이는 양입니다. Anarchy 패널의 「고도 단계」 행과 같은 값입니다.";
-			d["item.elevationStep.ex.group"] = "예를 들어 2차로 소형 도로의 고도 단계를 1m로 바꾸면 다른 소형 도로도 1m씩 움직이지만, 대형 도로는 그렇지 않습니다";
-			d["item.elevationStep.ex.menu"] = "도로 메뉴의 모든 에셋을 클릭하면 고도 단계가 모두 1m이지만, 전기 메뉴로 바꾸면 그렇지 않습니다";
-			d["item.elevationStep.ex.category"] = "대형 도로로 바꿔도 1m씩 움직이지만, 다리로 바꾸면 기본 고도 단계로 돌아가 따로 설정해야 합니다. 둘 다 도로 메뉴에 속해도 마찬가지입니다";
 
 			// ---------- 8 좌측과 우측（Anarchy） ----------
 			d["item.leftRight.label"] = "좌측과 우측";
