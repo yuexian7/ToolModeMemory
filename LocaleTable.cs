@@ -697,7 +697,7 @@ namespace ToolModeMemory
 			d["about.kofi.desc"] = "Support the author on Ko-fi.";
 			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Open the Paradox forum thread.";
-			d["about.rainbow"] = "RAINBOW官网";
+			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Open the Rainbow Series site.";
 
 			// ---------- 1 Anarchy ----------

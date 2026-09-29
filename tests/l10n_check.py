@@ -56,6 +56,16 @@ SCALAR_KEYS = [
 
 FORBIDDEN = ["scope.defs"]
 
+# 关于页三个按钮：owner 定的名字。中文两份用他写的中文，其余 10 种语言一律用英文原文。
+# 0.2.2 曾把 "RAINBOW官网" 当成品牌串照抄进非中文语言，被要求改回英文，所以这里钉死。
+BUTTON_KEYS = {"about.kofi": "Buy me a Coffee",
+               "about.forum": "Forum Page",
+               "about.rainbow": "RAINBOW Site"}
+ZH_LANGS = ("zh-HANS", "zh-HANT")
+# 拉丁/西里尔语言里出现中日韩字就是漏翻（日语本身就写汉字，不参与这条检查）
+NO_CJK_LANGS = ("en-US", "de-DE", "es-ES", "fr-FR", "it-IT", "pl-PL", "pt-BR", "ru-RU")
+CJK = re.compile(u'[ぁ-ヿ㐀-䶿一-鿿가-힣豈-﫿]')
+
 TEMPLATE_KEYS = ["scope.line.group", "scope.line.menu", "scope.line.category"]
 
 ASSIGN = re.compile(r'^\s*d\[(?P<key>"[^"]*"|[A-Za-z_][A-Za-z0-9_]*)\]\s*=\s*"(?P<val>.*)"\s*;\s*$')
@@ -187,7 +197,13 @@ def main():
         no_slot = [k for k in TEMPLATE_KEYS if "{0}" not in d.get(k, "")]
         stale = [k for k, v in d.items() if "Extra Networks" in v]
         retired = [k for k in d for r in RETIRED if k.startswith("item.%s." % r)]
-        bad = missing + banned + empty + no_slot + stale + retired
+        # 三个按钮名：非中文语言必须是 owner 定的英文原文，一个字都不许多/换
+        wrong_btn = ["%s=%r" % (k, d.get(k, "")) for k, v in BUTTON_KEYS.items()
+                     if lang not in ZH_LANGS and d.get(k, "") != v]
+        # 拉丁/西里尔语言里混进中日韩字 = 漏翻（0.2.2 的 "RAINBOW官网" 就是这么漏出去的）
+        cjk = ["%s=%s" % (k, v[:28]) for k, v in d.items()
+               if lang in NO_CJK_LANGS and CJK.search(v)]
+        bad = missing + banned + empty + no_slot + stale + retired + wrong_btn + cjk
         if bad:
             fails += 1
             print("FAIL %s (%d 个键)" % (lang, len(d)))
@@ -203,6 +219,10 @@ def main():
                 print("   错误归属 %s" % k)
             for k in retired:
                 print("   退役键 %s（高度阶段已并入高度）" % k)
+            for k in wrong_btn:
+                print("   按钮名应为英文 %s" % k)
+            for k in cjk:
+                print("   非中文语言含中日韩字 %s" % k)
         else:
             print("OK   %s：%d 键，%d 项例子齐全" % (lang, len(d), len(ITEM_IDS) * 3))
 

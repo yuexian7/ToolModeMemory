@@ -66,7 +66,7 @@ namespace ToolModeMemory
 			d["about.kofi.desc"] = "Wesprzyj autora na Ko-fi.";
 			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Otwórz wątek na forum Paradox.";
-			d["about.rainbow"] = "RAINBOW官网";
+			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Otwórz stronę serii Rainbow.";
 
 			d["item.anarchy.desc"] = "Zapamiętuje stan przełącznika Anarchy dodawanego przez mod Anarchy (mod Paradox 74604): gdy jest włączony, stawianie obiektu nie wykonuje już sprawdzeń nakładania i podobnych ograniczeń. Ten przycisk pochodzi z tamtego moda, nie z gry; bez Anarchy ta pozycja nic nie robi.";
@@ -185,7 +185,7 @@ namespace ToolModeMemory
 			d["about.kofi.desc"] = "Apoie o autor no Ko-fi.";
 			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Abrir a conversa no fórum da Paradox.";
-			d["about.rainbow"] = "RAINBOW官网";
+			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Abrir o site da série Rainbow.";
 
 			d["item.anarchy.desc"] = "Lembra o estado do botão Anarchy que o mod Anarchy (mod 74604 da Paradox) acrescenta: com ele ligado, colocar um objeto já não faz as verificações de sobreposição e semelhantes. O botão vem daquele mod, não do jogo; sem o Anarchy isto não faz nada.";
@@ -304,7 +304,7 @@ namespace ToolModeMemory
 			d["about.kofi.desc"] = "Поддержать автора на Ko-fi.";
 			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Открыть тему на форуме Paradox.";
-			d["about.rainbow"] = "RAINBOW官网";
+			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Открыть сайт серии Rainbow.";
 
 			d["item.anarchy.desc"] = "Запоминает состояние кнопки Anarchy, которую добавляет мод Anarchy (мод Paradox 74604): когда она включена, при размещении объекта больше не выполняются проверки на пересечение и подобные нарушения. Эта кнопка относится к тому моду, а не к игре; без Anarchy этот пункт ничего не делает.";

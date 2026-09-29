@@ -65,7 +65,7 @@ namespace ToolModeMemory
 			d["about.kofi.desc"] = "Ko-fi で作者を支援する。";
 			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Paradox フォーラムのスレッドを開く。";
-			d["about.rainbow"] = "RAINBOW官网";
+			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Rainbow Series の公式サイトを開く。";
 
 			// ---------- 1 Anarchy ----------
@@ -203,7 +203,7 @@ namespace ToolModeMemory
 			d["about.kofi.desc"] = "Ko-fi에서 저자를 지원합니다.";
 			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Paradox 포럼 스레드를 엽니다.";
-			d["about.rainbow"] = "RAINBOW官网";
+			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Rainbow Series 웹사이트를 엽니다.";
 
 			// ---------- 1 Anarchy ----------

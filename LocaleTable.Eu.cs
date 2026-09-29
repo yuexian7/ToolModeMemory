@@ -65,7 +65,7 @@ namespace ToolModeMemory
 			d["about.kofi.desc"] = "Unterstütze den Autor auf Ko-fi.";
 			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Den Thread im Paradox-Forum öffnen.";
-			d["about.rainbow"] = "RAINBOW官网";
+			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Die Website der Rainbow-Reihe öffnen.";
 
 			// ---------- 1 Anarchy ----------
@@ -205,7 +205,7 @@ namespace ToolModeMemory
 			d["about.kofi.desc"] = "Apoya al autor en Ko-fi.";
 			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Abrir el hilo en el foro de Paradox.";
-			d["about.rainbow"] = "RAINBOW官网";
+			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Abrir el sitio de la serie Rainbow.";
 
 			// ---------- 1 Anarchy ----------
@@ -345,7 +345,7 @@ namespace ToolModeMemory
 			d["about.kofi.desc"] = "Soutenez l'auteur sur Ko-fi.";
 			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Ouvrir le fil sur le forum Paradox.";
-			d["about.rainbow"] = "RAINBOW官网";
+			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Ouvrir le site de la série Rainbow.";
 
 			// ---------- 1 Anarchy ----------
@@ -485,7 +485,7 @@ namespace ToolModeMemory
 			d["about.kofi.desc"] = "Supporta l'autore su Ko-fi.";
 			d["about.forum"] = "Forum Page";
 			d["about.forum.desc"] = "Apri la discussione sul forum Paradox.";
-			d["about.rainbow"] = "RAINBOW官网";
+			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Apri il sito della serie Rainbow.";
 
 			// ---------- 1 Anarchy ----------
