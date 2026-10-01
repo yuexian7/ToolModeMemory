@@ -45,9 +45,10 @@ namespace ToolModeMemory.Systems
 		private readonly int[] m_FilterSigs = new int[] { kFilterUnknown, kFilterUnknown };
 		private readonly string[] m_FilterKeys = new string[2];
 		private readonly List<string> m_FilterNames = new List<string>(32);
+		// 裸层级键缓存：槽 = 范围 × 2 +「同类资产是否按工具栏层级」，5 档范围两种口径共 10 槽
 		private int m_LevelKeyPass;
-		private readonly string[] m_LevelKeys = new string[5];
-		private readonly int[] m_LevelKeyPasses = new int[5];
+		private readonly string[] m_LevelKeys = new string[10];
+		private readonly int[] m_LevelKeyPasses = new int[10];
 
 		private static ILog log = ToolModeMemoryMod.log;
 
@@ -209,7 +210,7 @@ namespace ToolModeMemory.Systems
 			// 「游戏里只有一份值」的项在「全局共用」下必须只有一把键，否则这一档会碎成
 			// A|S$net / A|S$obj / F|S$area… 每组各一份，玩家看到的正是「设了全局共用
 			// 还是各工具组单独记忆」。详见 ToolItemCatalog.UsesFamilyFreeKey。
-			if (ToolItemCatalog.UsesFamilyFreeKey(def, scope)) return LevelKeyCached(scope, prefab, tool);
+			if (ToolItemCatalog.UsesFamilyFreeKey(def, scope)) return LevelKeyCached(scope, false, prefab, tool);
 
 			int slot = (int)scope;
 			if (slot < 0 || slot >= m_Keys.Length) slot = 0;
@@ -343,22 +344,29 @@ namespace ToolModeMemory.Systems
 			m_FilterKeys[1] = null;
 		}
 
-		/// <summary>裸层级键（不含域/家族）：筛选项与「全局共用 + 游戏里只有一份值」的工具项共用。</summary>
+		/// <summary>
+		/// 裸层级键（不含域/家族）：只给工具栏筛选项用，所以「同类资产」这一档
+		/// 按工具栏的（菜单+分类）发键——那两行的勾选是面板状态，不是资产的属性。
+		/// 详见 ToolMemoryBridge.ResolveLevelKey 的 categoryByUiHierarchy。
+		/// </summary>
 		private string LevelKeyFor(ToolModeMemorySettings setting, ToolItemDef def, PrefabBase prefab, ToolBaseSystem tool)
 		{
-			return LevelKeyCached(setting.GetItemScope(def.Id), prefab, tool);
+			return LevelKeyCached(setting.GetItemScope(def.Id), true, prefab, tool);
 		}
 
 		/// <summary>
 		/// 裸层级键（不套资产/功能域、不套枚举家族）：工具栏筛选项与「全局共用 + 游戏里
 		/// 只有一份值」的工具项共用这条通道。每趟 Capture/Apply 由 m_LevelKeyPass 作废缓存。
+		/// 缓存槽按「范围 × 是否按 UI 层级分同类」编号，两种口径不会互相顶掉。
 		/// </summary>
-		private string LevelKeyCached(MemoryScope scope, PrefabBase prefab, ToolBaseSystem tool)
+		private string LevelKeyCached(MemoryScope scope, bool categoryByUiHierarchy, PrefabBase prefab,
+			ToolBaseSystem tool)
 		{
-			int slot = (int)scope;
+			int slot = (int)scope * 2 + (categoryByUiHierarchy ? 1 : 0);
 			if (slot < 0 || slot >= m_LevelKeys.Length) slot = 0;
 			if (m_LevelKeys[slot] != null && m_LevelKeyPasses[slot] == m_LevelKeyPass) return m_LevelKeys[slot];
-			string key = ToolMemoryBridge.ResolveLevelKey(scope, prefab, tool, m_PrefabSystem, base.EntityManager);
+			string key = ToolMemoryBridge.ResolveLevelKey(scope, prefab, tool, m_PrefabSystem,
+				base.EntityManager, categoryByUiHierarchy);
 			m_LevelKeys[slot] = key;
 			m_LevelKeyPasses[slot] = m_LevelKeyPass;
 			return key;

@@ -48,11 +48,16 @@
     v0.2.3——与 0.2.2/0.2.3 那两次同样的传播滞后，判断发版成功以 edit 页 + LAST UPDATED + SIZE 为准。
     22:33（发布后 9 分钟）再读列表页：MOD VER. 0.3.0 / SIZE 110.91 KB / CHANGELOG 顶端 v0.3.0 /
     无 pending 横幅 / Private 徽章在，线上与本文件逐字段一致，没有被手改的痕迹。
+    2026-10-01（v0.3.1）：owner 要求「改好本地测试，不用上传线上」，所以本文件已写成
+    ModVersion 0.3.1 + v0.3.1 中英 ChangeLog（displayName / short / long 一字未动），
+    但**没有执行 NewVersion，线上此刻仍是 v0.3.0**——本文件与线上故意不一致。
+    下次要发布时先按纪律重新读编辑页逐字段核对（确认这期间没人在线上改过元数据），
+    再决定直接 NewVersion 还是先把线上改动同步进来。
     注意：编辑页地址必须带平台段 /Windows，写成 /mods/160529/edit 会被 SPA 退回首页。-->
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
 	<ModId Value="160529" />
-	<ModVersion Value="0.3.0" />
+	<ModVersion Value="0.3.1" />
 	<GameVersion Value="1.6.*" />
 	<!--Private = 不公开（用户要求）。若平台拒绝此值再改 Unlisted。-->
 	<AccessLevel Value="Private" />
@@ -66,18 +71,16 @@
 	<ExternalLink Type="kofi" Url="https://ko-fi.com/yuexian7" />
 	<ExternalLink Type="x" Url="https://x.com/yuexian777/status/2101942150447702427?s=20" />
 	<ChangeLog>
-v0.3.0
+v0.3.1
 
-*   Memory files now carry exactly your save's name, so renaming a file really does copy a setup; files written by older versions are renamed for you (loading an auto save keeps its memory under the city name).
-*   Tool settings are written 10 seconds after you stop changing them instead of after every change.
-*   Fixed: "Shared globally" now really covers every tool for Topography, Underground mode and the Anarchy rows.
-*   Shorter Anarchy row text, and the memory folder row now explains that memory is read by save name.
+*   "Same asset type" now groups assets by what they actually serve: alleys, roads of any width and bridges form one group, while pathways, metro tracks, train tracks and power cables are each their own, and primary and high school count as one - so lane count, size and level no longer split a setting.
+*   This scope no longer follows the toolbar layout: the "Compatible with other mods" switch now only covers Same group and Same menu.
+*   Reworded the "Same asset type" line and its examples in all 12 languages.
 
 中文
 
-*   记忆文件名与存档名一致，改文件名就能复制一份记忆；旧版本写的文件会自动改名（读自动存档时按城市名保存）。
-*   停止改动 10 秒后才写入文件，不再每改一次就写盘。
-*   修正「全局共用」在地形、地下模式、Anarchy 三项上没有真正全局共用。
-*   简化 Anarchy 的说明，并在记忆文件夹一项说明记忆是按存档名读取的。
+*   「同类资产」改为按资产实际服务谁归类：小巷、各车道数的道路与桥梁算同一类，步行道、地铁轨道、火车轨道、电缆各算一类，小学与中学同类；车道数、大小、级别不再把同一项设置拆开。
+*   这一档不再跟随工具栏的排布：「是否兼容其它模组」开关从此只管「同组」和「同菜单」两档。
+*   12 种语言重写了「同类资产」这一行的说明和例子。
 </ChangeLog>
 </PublishConfiguration>

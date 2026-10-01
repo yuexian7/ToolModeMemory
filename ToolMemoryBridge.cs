@@ -183,6 +183,14 @@ namespace ToolModeMemory
 		/// <summary>工具家族，按具体类型记忆（类型数量有限，天然有界）。</summary>
 		private static readonly Dictionary<Type, string> s_FamilyCache = new Dictionary<Type, string>();
 
+		/// <summary>
+		/// 「同类资产」判定结果，按 prefab 引用记忆。分类只读资产自己的组件，
+		/// 资产在一个存档期内不会改类别，所以缓存可以活到 ForgetNames() 被调用为止。
+		/// 值允许是 null（= 判不出类别），故用 TryGetValue 而不是 ContainsKey。
+		/// </summary>
+		private static readonly Dictionary<PrefabBase, string> s_ClassCache =
+			new Dictionary<PrefabBase, string>();
+
 		// ResolveKey 每帧都会带进系统引用，缓存下来供只有 (tool, prefab) 的公开判据复用
 		private static PrefabSystem s_CachedPrefabSystem;
 		private static EntityManager s_Em;
@@ -214,6 +222,7 @@ namespace ToolModeMemory
 			s_NameCache.Clear();
 			s_FrozenPos.Clear();
 			s_FnCache.Clear();
+			s_ClassCache.Clear();
 			s_FamilyCache.Clear();
 			s_ViewSystem = null;
 			s_HaveSystems = false;
@@ -233,11 +242,13 @@ namespace ToolModeMemory
 
 		/// <summary>
 		/// 把一个共用范围翻成完整记忆键（域 + 层级 + 家族）。永不返回 null。
+		/// categoryByUiHierarchy 见 ResolveLevelKey 的同名参数（只有工具栏筛选项用 true）。
 		/// </summary>
 		public static string ResolveKey(MemoryScope scope, PrefabBase prefab, ToolBaseSystem tool,
-			PrefabSystem prefabSystem, EntityManager em)
+			PrefabSystem prefabSystem, EntityManager em, bool categoryByUiHierarchy = false)
 		{
-			return Finish(ResolveLevelKey(scope, prefab, tool, prefabSystem, em), prefab, tool);
+			return Finish(ResolveLevelKey(scope, prefab, tool, prefabSystem, em, categoryByUiHierarchy),
+				prefab, tool);
 		}
 
 		/// <summary>
@@ -246,9 +257,12 @@ namespace ToolModeMemory
 		/// 某个枚举家族（原版切菜单、换工具都不重置它，只有读档重置，见 T:624-631），
 		/// 套上域/家族就等于把「全局共用」偷偷变成「每个家族各一份」。
 		/// 顺带把 prefabSystem / em 缓存下来，供筛选项的 ECS 读用。永不返回 null。
+		///
+		/// categoryByUiHierarchy：「同类资产」这一档要不要仍按工具栏的（菜单+分类）发键。
+		/// 只有地区主题 / 数据包两行用 true，理由见下面 Category 分支的注释。
 		/// </summary>
 		public static string ResolveLevelKey(MemoryScope scope, PrefabBase prefab, ToolBaseSystem tool,
-			PrefabSystem prefabSystem, EntityManager em)
+			PrefabSystem prefabSystem, EntityManager em, bool categoryByUiHierarchy = false)
 		{
 			string levelKey;
 			try
@@ -274,10 +288,29 @@ namespace ToolModeMemory
 					}
 					case MemoryScope.Category:
 					{
-						string menu;
-						string category;
-						ResolveHierarchy(prefab, prefabSystem, em, out menu, out category);
-						levelKey = MemoryKeys.Category(category);
+						// 「同类资产」= 资产自己声明的服务对象（见 AssetClass.cs），
+						// **不读** UIObjectData.m_Group / UIAssetCategoryData.m_Menu：那两个组件正是
+						// Asset UI Manager 之类模组会重写的东西，owner 要求兼容开关只管「同组 / 同菜单」，
+						// 这一档开不开兼容都得按本模组分好的类别走。
+						// 判不出类别（装饰物、区域样式…）时退化成按单个资产记忆，宁可不合并也不猜。
+						//
+						// 唯一的例外是工具栏筛选项（地区主题 / 数据包，categoryByUiHierarchy=true）：
+						// 那份勾选不是资产的属性，而是筛选面板在当前「菜单 + 分类」下的状态，
+						// 原版每次换菜单或换分类都会把它清空（数据包）或保留（主题）。
+						// 若按资产类别发键，从小型道路换到大型道路（同类别、不同分类）时键不变，
+						// 本模组就分不清「原版清空」与「玩家取消勾选」，会把玩家记过的勾选抹掉。
+						if (categoryByUiHierarchy)
+						{
+							string uiMenu;
+							string uiCategory;
+							ResolveHierarchy(prefab, prefabSystem, em, out uiMenu, out uiCategory);
+							levelKey = MemoryKeys.Category(uiCategory);
+							break;
+						}
+						string cls = AssetClassOf(prefab, prefabSystem, em);
+						levelKey = cls != null
+							? MemoryKeys.Category(cls)
+							: MemoryKeys.Asset(AssetName(prefab, tool, prefabSystem));
 						break;
 					}
 					case MemoryScope.Group:
@@ -349,6 +382,164 @@ namespace ToolModeMemory
 			{
 				return true;
 			}
+		}
+
+		// ============================ 同类资产判定 ============================
+		//
+		// 只读资产 prefab 实体**自己**的组件（外加它引用的车道实体与所服务的服务实体），
+		// 完全不看工具栏层级，所以 Asset UI Manager 之类重排分类的模组影响不到这一档。
+		// 组件与位值全部按反编译 Game.dll 的结果写死，证据文件见 research/class30/：
+		//   RoadPrefab      → RoadData                 （给车走：小巷 / 各宽度道路 / 高架 / 隧道）
+		//   PathwayPrefab   → PathwayData              （给人走：步行道、自行车道）
+		//   TrackPrefab     → TrackData.m_TrackType    （Train / Tram / Subway 三种轨道分别为三类）
+		//   WaterwayPrefab  → WaterwayData             （船）
+		//   TaxiwayPrefab / AirplanePrefab → TaxiwayData / AirplaneData（飞机）
+		//   NetPrefab       → NetData.m_RequiredLayers / m_ConnectLayers / m_LocalConnectLayers
+		//   UtilityObject   → UtilityObjectData.m_UtilityTypes（电缆 / 各类管线 / 围栏）
+		//   ServiceObject   → ServiceObjectData.m_Service → 服务实体上的 ServiceData.m_Service
+		//                       （小学与中学同为 Education ⇒ 同类；发电站是 Electricity ⇒ 与电缆不同类）
+		//   桥梁 / 隧道这类 net piece 自己没有以上组件，于是看它 NetPieceLane / DefaultNetLane /
+		//   NetCompositionLane / SubLane 引用的车道实体挂的是 CarLaneData / TrackLaneData /
+		//   PedestrianLaneData / UtilityLaneData。
+		//   树木：TreeData。
+		// 一个都读不到就返回 null（装饰物、区域样式等），调用方退化成按单个资产记忆。
+
+		/// <summary>
+		/// 「同类资产」的键片段（形如 "K:road"、"K:rail_subway"、"K:svc-education"）。
+		/// 判不出来返回 null。结果按 prefab 引用缓存，整个存档期内一件资产只算一次。
+		/// </summary>
+		public static string AssetClassOf(PrefabBase prefab, PrefabSystem prefabSystem, EntityManager em)
+		{
+			if (prefab == null) return null;
+			string hit;
+			if (s_ClassCache.TryGetValue(prefab, out hit)) return hit;
+			string computed = ComputeAssetClass(prefab, prefabSystem, em);
+			if (s_ClassCache.Count < kCacheCap) s_ClassCache[prefab] = computed;
+			return computed;
+		}
+
+		private static string ComputeAssetClass(PrefabBase prefab, PrefabSystem prefabSystem, EntityManager em)
+		{
+			try
+			{
+				if (prefabSystem == null || !s_HaveSystems) return null;
+				Entity e = prefabSystem.GetEntity(prefab);
+				if (e == Entity.Null || !em.Exists(e)) return null;
+				return AssetClass.Key(CollectFacts(e, prefabSystem, em));
+			}
+			catch
+			{
+				return null;
+			}
+		}
+
+		/// <summary>把一件资产实体上的分类事实抽出来。任何组件读不到就留空，绝不抛。</summary>
+		private static AssetFacts CollectFacts(Entity e, PrefabSystem prefabSystem, EntityManager em)
+		{
+			AssetFacts f = AssetFacts.Empty();
+			AssetKind kind = AssetKind.None;
+
+			RoadData road;
+			if (em.TryGetComponent(e, out road)) kind |= AssetKind.Road;
+			PathwayData pathway;
+			if (em.TryGetComponent(e, out pathway)) kind |= AssetKind.Pathway;
+			WaterwayData waterway;
+			if (em.TryGetComponent(e, out waterway)) kind |= AssetKind.Waterway;
+			AirplaneData airplane;
+			TaxiwayData taxiway;
+			if (em.TryGetComponent(e, out airplane) || em.TryGetComponent(e, out taxiway)) kind |= AssetKind.Air;
+			TrackData track;
+			if (em.TryGetComponent(e, out track)) kind |= TrackBits((uint)track.m_TrackType);
+
+			NetData net;
+			if (em.TryGetComponent(e, out net))
+			{
+				f.Layers = (uint)net.m_RequiredLayers | (uint)net.m_ConnectLayers | (uint)net.m_LocalConnectLayers;
+			}
+
+			UtilityObjectData utilityObject;
+			if (em.TryGetComponent(e, out utilityObject)) f.Utility |= (uint)utilityObject.m_UtilityTypes;
+
+			// 资产本身没声明对象、也没有分层（= 桥梁 / 隧道段这类 net piece）时才去翻它的车道。
+			if (kind == AssetKind.None && f.Layers == 0u)
+			{
+				AssetKind laneKind = AssetKind.None;
+				uint laneUtility = 0u;
+				CollectFromLanes(e, em, ref laneKind, ref laneUtility);
+				kind = laneKind;
+				f.Utility |= laneUtility;
+			}
+			f.Kind = kind;
+
+			ServiceObjectData serviceObject;
+			if (em.TryGetComponent(e, out serviceObject) && serviceObject.m_Service != Entity.Null
+				&& em.Exists(serviceObject.m_Service))
+			{
+				f.HasService = true;
+				f.ServiceOrdinal = -1;
+				ServiceData serviceData;
+				if (em.TryGetComponent(serviceObject.m_Service, out serviceData))
+				{
+					f.ServiceOrdinal = (int)serviceData.m_Service;
+				}
+				f.ServiceName = NameOf(serviceObject.m_Service, prefabSystem, em);
+			}
+
+			TreeData tree;
+			if (em.TryGetComponent(e, out tree)) f.Tree = true;
+
+			return f;
+		}
+
+		/// <summary>
+		/// 遍历该资产引用的车道实体，汇总通行对象与管线类型。四种 buffer 都要看：
+		/// net piece 用 NetPieceLane，几何网用 DefaultNetLane / NetCompositionLane / SubLane。
+		/// </summary>
+		private static void CollectFromLanes(Entity e, EntityManager em, ref AssetKind kind, ref uint utility)
+		{
+			if (em.HasComponent<NetPieceLane>(e))
+			{
+				DynamicBuffer<NetPieceLane> lanes = em.GetBuffer<NetPieceLane>(e, isReadOnly: true);
+				for (int i = 0; i < lanes.Length; i++) LaneFacts(lanes[i].m_Lane, em, ref kind, ref utility);
+			}
+			if (em.HasComponent<DefaultNetLane>(e))
+			{
+				DynamicBuffer<DefaultNetLane> lanes = em.GetBuffer<DefaultNetLane>(e, isReadOnly: true);
+				for (int i = 0; i < lanes.Length; i++) LaneFacts(lanes[i].m_Lane, em, ref kind, ref utility);
+			}
+			if (em.HasComponent<NetCompositionLane>(e))
+			{
+				DynamicBuffer<NetCompositionLane> lanes = em.GetBuffer<NetCompositionLane>(e, isReadOnly: true);
+				for (int i = 0; i < lanes.Length; i++) LaneFacts(lanes[i].m_Lane, em, ref kind, ref utility);
+			}
+			if (em.HasComponent<SubLane>(e))
+			{
+				DynamicBuffer<SubLane> lanes = em.GetBuffer<SubLane>(e, isReadOnly: true);
+				for (int i = 0; i < lanes.Length; i++) LaneFacts(lanes[i].m_Prefab, em, ref kind, ref utility);
+			}
+		}
+
+		private static void LaneFacts(Entity lane, EntityManager em, ref AssetKind kind, ref uint utility)
+		{
+			if (lane == Entity.Null || !em.Exists(lane)) return;
+			CarLaneData car;
+			if (em.TryGetComponent(lane, out car)) kind |= AssetKind.Road;
+			TrackLaneData track;
+			if (em.TryGetComponent(lane, out track)) kind |= TrackBits((uint)track.m_TrackTypes);
+			PedestrianLaneData pedestrian;
+			if (em.TryGetComponent(lane, out pedestrian)) kind |= AssetKind.Pathway;
+			UtilityLaneData util;
+			if (em.TryGetComponent(lane, out util)) utility |= (uint)util.m_UtilityTypes;
+		}
+
+		/// <summary>Game.Net.TrackTypes 位 → 轨道对象（反编译：Train=1 Tram=2 Subway=4）。</summary>
+		private static AssetKind TrackBits(uint trackTypes)
+		{
+			AssetKind kind = AssetKind.None;
+			if ((trackTypes & 1u) != 0u) kind |= AssetKind.RailTrain;
+			if ((trackTypes & 2u) != 0u) kind |= AssetKind.RailTram;
+			if ((trackTypes & 4u) != 0u) kind |= AssetKind.RailSubway;
+			return kind;
 		}
 
 		/// <summary>判据 1：按工具类型直接定为功能的面板。</summary>

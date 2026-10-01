@@ -21,7 +21,7 @@ namespace ToolModeMemory
 	/// </summary>
 	public class ToolModeMemoryMod : IMod
 	{
-		public const string kVersion = "0.3.0";
+		public const string kVersion = "0.3.1";
 
 		public static ILog log = LogManager.GetLogger(nameof(ToolModeMemory)).SetShowsErrorsInUI(false);
 

@@ -174,6 +174,7 @@ namespace ToolModeMemory.Tests
 			VersionFilter();
 			FilterOptionMemory();
 			LegacyFileHousekeeping();
+			AssetClassification();
 
 			Console.WriteLine();
 			Console.WriteLine(s_Fails == 0
@@ -1104,6 +1105,169 @@ namespace ToolModeMemory.Tests
 			Check(MemoryStore.SanitizeFileName(null) == "_unnamed", "null 名");
 			Check(MemoryStore.SanitizeFileName(new string('x', 200)).Length == 80, "超长截断");
 			Check(MemoryStore.SanitizeFileName("城市 名字-1_2") == "城市 名字-1_2", "合法中文名保留");
+		}
+
+		// ---------- [21] 同类资产判定 ----------
+		//
+		// 位值抄自反编译 Game.dll（research/class30/），故意写数字：官方枚举顺序变了测试会红，
+		// 那时必须重新核对采集代码，而不是悄悄改测试让它过。
+		//   Game.Net.Layer: Road=0x1 PowerlineLow=0x2 PowerlineHigh=0x4 WaterPipe=0x8 SewagePipe=0x10
+		//                   TrainTrack=0x40 Pathway=0x80 Waterway=0x100 TramTrack=0x400 SubwayTrack=0x800
+		//                   Fence=0x1000 PublicTransportRoad=0x8000 ResourceLine=0x20000
+		//   Game.Net.UtilityTypes: WaterPipe=1 SewagePipe=2 LowVoltageLine=8 Catenary=0x20 HighVoltageLine=0x40
+		//   Game.City.CityService: 2=Education 3=Electricity 4=FireAndRescue 6=HealthcareAndDeathcare
+		//                          9=PoliceAndAdministration 10=Roads
+
+		private const uint LY_ROAD = 0x1u;
+		private const uint LY_POWER_LOW = 0x2u;
+		private const uint LY_POWER_HIGH = 0x4u;
+		private const uint LY_WATER_PIPE = 0x8u;
+		private const uint LY_TRAIN = 0x40u;
+		private const uint LY_PATHWAY = 0x80u;
+		private const uint LY_WATERWAY = 0x100u;
+		private const uint LY_SUBWAY = 0x800u;
+		private const uint LY_FENCE = 0x1000u;
+		private const uint LY_BUS_ROAD = 0x8000u;
+
+		private const uint UT_WATER_PIPE = 0x1u;
+		private const uint UT_SEWAGE_PIPE = 0x2u;
+		private const uint UT_POWER_LOW = 0x8u;
+		private const uint UT_CATENARY = 0x20u;
+
+		private static AssetFacts AF(AssetKind kind = AssetKind.None, uint layers = 0u, uint utility = 0u,
+			int service = -1, string serviceName = null, bool tree = false)
+		{
+			AssetFacts f = AssetFacts.Empty();
+			f.Kind = kind;
+			f.Layers = layers;
+			f.Utility = utility;
+			if (service >= 0)
+			{
+				f.HasService = true;
+				f.ServiceOrdinal = service;
+			}
+			f.ServiceName = serviceName;
+			f.Tree = tree;
+			return f;
+		}
+
+		/// <summary>所有分类键都必须是能直接当记忆键片段用的安全 ASCII 串。</summary>
+		private static bool KeyIsSafe(string key)
+		{
+			if (key == null) return true;
+			if (!key.StartsWith("K:", StringComparison.Ordinal)) return false;
+			for (int i = 0; i < key.Length; i++)
+			{
+				char c = key[i];
+				bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+					|| (c >= '0' && c <= '9') || c == '_' || c == '-' || c == '+' || c == ':';
+				if (!ok) return false;
+			}
+			return true;
+		}
+
+		private static void AssetClassification()
+		{
+			Console.WriteLine("[21] 同类资产 = 按资产服务谁分类（owner 的五个例子）");
+
+			// 1) 数量 / 级别不算区别：车行道路全家同类
+			string twoLane = AssetClass.Key(AF(kind: AssetKind.Road));
+			string sixLane = AssetClass.Key(AF(kind: AssetKind.Road, layers: LY_BUS_ROAD));
+			string alley = AssetClass.Key(AF(kind: AssetKind.Road, layers: LY_ROAD | LY_PATHWAY | LY_FENCE));
+			string bridge2 = AssetClass.Key(AF(kind: AssetKind.Road));
+			string bridge4 = AssetClass.Key(AF(kind: AssetKind.Road | AssetKind.Pathway));
+			Check(twoLane == "K:road", "两车道道路 = K:road（实际值：" + twoLane + "）");
+			Check(twoLane == sixLane, "两车道与六车道道路同类");
+			Check(twoLane == alley, "小巷与车行道路同类（人行道 / 围栏层不拆类）");
+			Check(bridge2 == bridge4 && bridge4 == "K:road", "双车道桥与四车道桥同类，且与车行道路同类");
+
+			// 2) 给人走的不是给车走的
+			string walkway = AssetClass.Key(AF(kind: AssetKind.Pathway));
+			string bikePath = AssetClass.Key(AF(kind: AssetKind.Pathway, layers: LY_PATHWAY | LY_ROAD));
+			string pedBridge = AssetClass.Key(AF(layers: LY_PATHWAY | LY_FENCE));
+			Check(walkway == "K:pathway", "步行道 = K:pathway（实际值：" + walkway + "）");
+			Check(walkway != twoLane, "步行道 ≠ 车行道路");
+			Check(walkway == bikePath, "行人-自行车道与步行道同类（都是人 / 自行车的路权）");
+			Check(walkway == pedBridge, "人行天桥与步行道同类，且不与车行桥同类");
+
+			// 3) 三种轨道各算一类
+			string subway = AssetClass.Key(AF(kind: AssetKind.RailSubway));
+			string subwayOneway = AssetClass.Key(AF(layers: LY_SUBWAY));
+			string train = AssetClass.Key(AF(kind: AssetKind.RailTrain, layers: LY_TRAIN | LY_PATHWAY));
+			string tram = AssetClass.Key(AF(kind: AssetKind.RailTram));
+			string streetTram = AssetClass.Key(AF(kind: AssetKind.RailTram | AssetKind.Road));
+			Check(subway == "K:rail_subway", "地铁轨道 = K:rail_subway（实际值：" + subway + "）");
+			Check(subway == subwayOneway, "单向与双向地铁轨道同类");
+			Check(train == "K:rail_train" && train != subway, "火车轨道 ≠ 地铁轨道");
+			Check(tram == "K:rail_tram" && tram != train && tram != subway, "有轨电车又是另一类");
+			Check(streetTram == "K:road+rail_tram" && streetTram != twoLane,
+				"马路上的混行轨道 = 车+电车，与纯车行道路不同类（实际值：" + streetTram + "）");
+
+			// 4) 航道只看船
+			string narrow = AssetClass.Key(AF(kind: AssetKind.Waterway));
+			string medium = AssetClass.Key(AF(layers: LY_WATERWAY | LY_PATHWAY));
+			Check(narrow == "K:waterway" && narrow == medium, "狭窄航道与普通航道同类");
+
+			// 5) 传播电的东西是一类，发电站是另一类
+			string cable = AssetClass.Key(AF(utility: UT_POWER_LOW));
+			string powerline = AssetClass.Key(AF(layers: LY_POWER_HIGH));
+			string catenary = AssetClass.Key(AF(utility: UT_CATENARY));
+			string powerPlant = AssetClass.Key(AF(service: 3));
+			Check(cable == "K:power", "电缆 = K:power（实际值：" + cable + "）");
+			Check(cable == powerline && cable == catenary, "电缆 / 高压线 / 接触网同属输电一类");
+			Check(powerPlant == "K:svc-electricity" && powerPlant != cable, "发电站 ≠ 电缆");
+			string waterPipe = AssetClass.Key(AF(utility: UT_WATER_PIPE));
+			string sewagePipe = AssetClass.Key(AF(utility: UT_SEWAGE_PIPE));
+			string waterWorks = AssetClass.Key(AF(service: 12));
+			Check(waterPipe == "K:water_pipe" && sewagePipe == "K:sewage_pipe" && waterPipe != sewagePipe,
+				"供水管与污水管各算一类");
+			Check(waterWorks == "K:svc-water_sewage" && waterWorks != waterPipe,
+				"供水管线与供水厂不同类：一个是传播水的东西，一个是提供服务的建筑");
+
+			// 6) 建筑按公共服务分类：小学 / 中学 / 大学同类，诊所 / 医院同类
+			string elementary = AssetClass.Key(AF(service: 2));
+			string highSchool = AssetClass.Key(AF(service: 2, serviceName: "SecondaryEducation"));
+			string clinic = AssetClass.Key(AF(service: 6));
+			string fire = AssetClass.Key(AF(service: 4));
+			string police = AssetClass.Key(AF(service: 9));
+			Check(elementary == "K:svc-education", "小学 = K:svc-education（实际值：" + elementary + "）");
+			Check(elementary == highSchool, "小学与中学同类");
+			Check(clinic == "K:svc-healthcare" && clinic != elementary, "诊所与小学不同类");
+			Check(fire != police, "消防站与警察局不同类");
+
+			// 7) 服务本身也带道路服务时，仍然先按对象分（道路资产不会被分到 svc-roads）
+			string roadWithService = AssetClass.Key(AF(kind: AssetKind.Road, service: 10));
+			Check(roadWithService == "K:road", "挂了道路服务的道路仍按车行分类");
+
+			// 8) 树木自成一类；什么都读不到就不分类（宁可不合并）
+			Check(AssetClass.Key(AF(tree: true)) == "K:tree", "树木 = K:tree");
+			Check(AssetClass.Key(AssetFacts.Empty()) == null, "没有任何事实 -> 不分类");
+			Check(AssetClass.Key(new AssetFacts()) == null, "default(AssetFacts) 也不会误判成某个真类别");
+			Check(AssetClass.Key(AF(service: 999, serviceName: null)) == null,
+				"未知服务序号且没有名字 -> 不分类");
+			Check(AssetClass.Key(AF(service: 999, serviceName: "Custom Dump")) == "K:svc-custom-dump",
+				"自定义服务退回服务资产名");
+
+			// 9) 键形状：必须是纯 ASCII 安全片段，且与旧的 UI 分类名键不会撞车
+			string[] allKeys = new string[]
+			{
+				twoLane, sixLane, alley, bridge4, walkway, pedBridge, subway, train, tram, streetTram,
+				narrow, cable, powerline, powerPlant, waterPipe, sewagePipe, waterWorks, elementary, clinic,
+				fire, police, AssetClass.Key(AF(tree: true)), AssetClass.Key(AF(service: 999, serviceName: "X"))
+			};
+			bool allSafe = true;
+			string badKey = null;
+			for (int i = 0; i < allKeys.Length; i++)
+			{
+				if (KeyIsSafe(allKeys[i])) continue;
+				allSafe = false;
+				if (badKey == null) badKey = allKeys[i];
+			}
+			Check(allSafe, "所有分类键都是 K: 开头的 ASCII 安全片段（不含 $ / 空格），首个不合格：" + badKey);
+			Check(MemoryKeys.Category(twoLane) == "C:K:road",
+				"完整层级键 = C:K:road（带 K: 段，绝不会等于旧的 UI 分类名键）");
+			Check(MemoryKeys.Category(twoLane).IndexOf('/') < 0 && MemoryKeys.Category(twoLane).IndexOf('$') < 0,
+				"层级键不含家族分隔符与斜杠");
 		}
 	}
 }

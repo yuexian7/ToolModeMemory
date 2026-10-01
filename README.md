@@ -32,9 +32,16 @@ dotnet run -c Release --project tests\StoreHarness
 |---|---|
 | 同组 | 同一菜单下的同一分类（= 原版道路工具的粒度） |
 | 同菜单 | 整个菜单共用（道路、教育…） |
-| 同类资产 | 同名分类跨菜单共用（如道路与管道下都有的「隧道」） |
+| 同类资产 | **不**按工具栏分类，而按资产自己服务的对象归群（`AssetClass.cs`）：小巷 / 各车道数的道路 / 桥梁同为车行，步行道、地铁轨道、火车轨道、电缆各算一类，小学与中学同为教育服务；判不出用途就退回按单个资产记 |
 | 全局共用 | 所有资产共用一份 |
 | 全局不共用 | 每个资产各记一份 |
+
+「同组」「同菜单」读工具栏的实时层级（`UIObjectData.m_Group` → `UIAssetCategoryData.m_Menu`，
+会被 Asset UI Manager 这类模组改写，所以受「是否兼容其它模组」开关影响）；
+「同类资产」只读资产自己的组件（`RoadData` / `TrackData` / `PathwayData` / `WaterwayData` /
+`NetData.m_*Layers` / `UtilityObjectData` / 车道实体的 `*LaneData` / `ServiceObjectData` → `ServiceData`），
+与那个开关无关。唯一的例外是地区主题 / 数据包两行：它们的值是筛选面板自己的状态，
+仍按（菜单+分类）记录，否则原版换分类时的清空会被误当成玩家取消勾选。
 
 键一律用资产/分类的稳定名字，不用实体索引，所以加装或移除 DLC、创意工坊后不会串记忆。
 

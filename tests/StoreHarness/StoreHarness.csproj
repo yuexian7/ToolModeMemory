@@ -17,6 +17,7 @@
     <Compile Include="..\..\Memory\MemoryKeys.cs" Link="MemoryKeys.cs" />
     <Compile Include="..\..\Memory\SaveIdentity.cs" Link="SaveIdentity.cs" />
     <Compile Include="..\..\ToolItemCatalog.cs" Link="ToolItemCatalog.cs" />
+    <Compile Include="..\..\AssetClass.cs" Link="AssetClass.cs" />
     <Compile Include="StoreHarness.cs" />
   </ItemGroup>
 
