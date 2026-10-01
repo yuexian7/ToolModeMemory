@@ -124,6 +124,66 @@ namespace ToolModeMemory.Memory
 			catch { }
 		}
 
+		/// <summary>
+		/// 一次性搬家：旧版本（认不出存档名时）写成 _auto_&lt;guid&gt;.json，
+		/// 现在名字确证了，就把那份记忆搬到正式名字下，玩家不必重设一遍。
+		/// 目标已存在时以正式名字为准，把旧占位文件当垃圾清掉（它只可能属于当前这个 guid）。
+		/// 必须在 LoadForCurrentSave() 之前调用，否则读不到搬过来的数据。
+		/// </summary>
+		public bool MigrateLegacyFile(string legacyName)
+		{
+			string target = CurrentFilePath();
+			if (string.IsNullOrEmpty(legacyName) || target == null) return false;
+			if (legacyName == m_SaveName) return false;
+			string from = Path.Combine(DataDirectory, legacyName + ".json");
+			string fromTmp = from + ".tmp";
+			try
+			{
+				bool hasMain = File.Exists(from);
+				bool hasTmp = File.Exists(fromTmp);
+				if (!hasMain && !hasTmp) return false;
+				if (!File.Exists(target))
+				{
+					Directory.CreateDirectory(DataDirectory);
+					if (hasMain) File.Move(from, target);
+					else if (hasTmp) File.Move(fromTmp, target + ".tmp");
+					return true;
+				}
+				if (hasMain) File.Delete(from);
+				if (hasTmp) File.Delete(fromTmp);
+				return true;
+			}
+			catch { return false; }
+		}
+
+		/// <summary>
+		/// 清掉再也认不出主人的会话占位文件：_unsaved_xxxx 的名字是每次进档随机生成的，
+		/// 玩家手动存过盘就会被改名接管，没存过盘的这份永远读不到了，留着只是垃圾。
+		/// keepName（当前会话正用的名字）与它的 .tmp 不动，所以只能在主菜单 / 进档前调用。
+		/// </summary>
+		public static int CleanSessionPlaceholders(string keepName)
+		{
+			int deleted = 0;
+			try
+			{
+				string dir = DataDirectory;
+				if (!Directory.Exists(dir)) return 0;
+				string[] files = Directory.GetFiles(dir, UNSAVED_SEARCH);
+				for (int i = 0; i < files.Length; i++)
+				{
+					string file = files[i];
+					string stem = Path.GetFileNameWithoutExtension(file);
+					// 通配符在 Windows 上可能连带匹配到 .json.tmp，两种写法都要认下来
+					if (keepName != null && (stem == keepName || stem == keepName + ".json")) continue;
+					try { File.Delete(file); deleted++; } catch { }
+				}
+			}
+			catch { }
+			return deleted;
+		}
+
+		private const string UNSAVED_SEARCH = SaveIdentity.UNSAVED_PREFIX + "*.json*";
+
 		/// <summary>未命名新档：本次进程内的会话占位名。</summary>
 		public void EnsureSessionName()
 		{
@@ -159,6 +219,9 @@ namespace ToolModeMemory.Memory
 			m_Dirty = false;
 			m_WriteBlocked = false;
 			m_SessionFallback = null;
+			// 随机会话名再也不会被读到（下次进档要么认出名，要么换一个新随机名），
+			// 留着只会让玩家在文件夹里看到一堆对不上号的垃圾文件。
+			CleanSessionPlaceholders(null);
 		}
 
 		public void MarkDirty()

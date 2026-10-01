@@ -34,11 +34,17 @@
     displayName / shortDescription / longDescription / changelog / version / userModVersion **全部一致**
     （列表页 LAST UPDATED 仍停在 0.2.1 发布时间 00:41，线上没有被手改过），因此本次 NewVersion
     覆盖元数据不会冲掉用户线上改动；本次只改 ModVersion 0.2.1 -> 0.2.2 与 ChangeLog。
-    注意：编辑页地址必须带平台段 /Windows，写成 /mods/160529/edit 会被 SPA 退回首页。-->
+    注意：编辑页地址必须带平台段 /Windows，写成 /mods/160529/edit 会被 SPA 退回首页。
+    2026-10-01（v0.3.0 发版前）：内嵌浏览器会话已掉登录（mods.paradoxplaza.com 顶部显示
+    "Log in"，/mods/160529/Windows 直接跳回首页），所以本次发版前**没能完成线上逐字段核对**。
+    上一次核对是 2026-09-29 发 0.2.3 之前：displayName / short / long / changelog / version /
+    userModVersion 当时全部与本文件一致，发完后线上就是本文件内容 + 0.2.3 的 ChangeLog。
+    若这期间用户在平台上改过元数据，NewVersion 会把它冲掉——因此本次上传需用户点头（或先登录
+    让我核对完再传）。本次改动本身只有 ModVersion 0.2.3 -> 0.3.0 与 ChangeLog。-->
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
 	<ModId Value="160529" />
-	<ModVersion Value="0.2.3" />
+	<ModVersion Value="0.3.0" />
 	<GameVersion Value="1.6.*" />
 	<!--Private = 不公开（用户要求）。若平台拒绝此值再改 Unlisted。-->
 	<AccessLevel Value="Private" />
@@ -52,12 +58,18 @@
 	<ExternalLink Type="kofi" Url="https://ko-fi.com/yuexian7" />
 	<ExternalLink Type="x" Url="https://x.com/yuexian777/status/2101942150447702427?s=20" />
 	<ChangeLog>
-v0.2.3
+v0.3.0
 
-*   About tab: the third button now reads "RAINBOW Site" in every language except Chinese (it wrongly kept the Chinese tail 「官网」).
+*   Memory files now carry exactly your save's name, so renaming a file really does copy a setup; files written by older versions are renamed for you (loading an auto save keeps its memory under the city name).
+*   Tool settings are written 10 seconds after you stop changing them instead of after every change.
+*   Fixed: "Shared globally" now really covers every tool for Topography, Underground mode and the Anarchy rows.
+*   Shorter Anarchy row text, and the memory folder row now explains that memory is read by save name.
 
 中文
 
-*   关于页：第三个按钮在非中文语言改回英文 "RAINBOW Site"（此前误留了中文「官网」二字）。
+*   记忆文件名与存档名一致，改文件名就能复制一份记忆；旧版本写的文件会自动改名（读自动存档时按城市名保存）。
+*   停止改动 10 秒后才写入文件，不再每改一次就写盘。
+*   修正「全局共用」在地形、地下模式、Anarchy 三项上没有真正全局共用。
+*   简化 Anarchy 的说明，并在记忆文件夹一项说明记忆是按存档名读取的。
 </ChangeLog>
 </PublishConfiguration>

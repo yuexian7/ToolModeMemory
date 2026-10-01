@@ -35,6 +35,11 @@ namespace ToolModeMemory
 		public const string kScopeLineMenu = "scope.line.menu";
 		public const string kScopeLineCategory = "scope.line.category";
 		public const string kScopeLineShared = "scope.line.shared";
+		/// <summary>
+		/// 「游戏里只有一份设置」的那几项（地形 / 地下模式 / Anarchy 三项）专用：
+		/// 它们的「全局共用」连资产与功能都不分，用上面那句会把行为说错。
+		/// </summary>
+		public const string kScopeLineSharedSingle = "scope.line.sharedSingle";
 		public const string kScopeLineUnique = "scope.line.unique";
 		public const string kScopeNote = "scope.note";
 
@@ -207,7 +212,7 @@ namespace ToolModeMemory
 			sb.Append('\n');
 			sb.Append(Line(d, kScopeLineCategory, Example(d, def.Id, "category")));
 			sb.Append('\n');
-			sb.Append(Val(d, kScopeLineShared));
+			sb.Append(Val(d, def.FamilyFreeScope ? kScopeLineSharedSingle : kScopeLineShared));
 			sb.Append('\n');
 			sb.Append(Val(d, kScopeLineUnique));
 			sb.Append('\n');
@@ -384,6 +389,7 @@ namespace ToolModeMemory
 			d[kScopeLineMenu] = "同菜单：{0}";
 			d[kScopeLineCategory] = "同类资产：只有同一小类目的资产/功能共用设置，即{0}";
 			d[kScopeLineShared] = "全局共用：任何支持本项工具的资产/功能全部共用，但资产和功能之间不共用";
+			d[kScopeLineSharedSingle] = "全局共用：所有支持本项的工具共用一份，资产和功能之间也共用";
 			d[kScopeLineUnique] = "全部不共用：所有支持本项工具的资产/功能完全独立设置";
 			d[kScopeNote] = "注意，功能指的是功能区、空间和区域、地形改造、标记和预制对象等非资产";
 
@@ -405,7 +411,7 @@ namespace ToolModeMemory
 			d["resetall.warn"] = "此操作无法撤销。";
 			d["resetall.confirm"] = "确定要重置所有设置项吗？";
 			d["folder.label"] = "管理所有存档的记忆文件";
-			d["folder.desc"] = "打开保存记忆的本地文件夹，每个存档一份文件，文件名就是存档名。";
+			d["folder.desc"] = "打开保存记忆的本地文件夹，每个存档一份文件，文件名就是存档名。模组读取记忆都是按存档名，存档名称和 json 文件名一致才会读取。所以可以通过修改文件名的方式实现复制。读自动存档时按城市名保存这一份记忆，因为自动存档的存档名每次都不一样。";
 
 			d["about.version"] = "模组版本";
 			d["about.author"] = "作者";
@@ -417,7 +423,7 @@ namespace ToolModeMemory
 			d["about.rainbow.desc"] = "打开 RAINBOW 系列官网。";
 
 			// ---------- 1 Anarchy ----------
-			d["item.anarchy.desc"] = "记忆 Anarchy 模组（Paradox 模组 74604）那颗 Anarchy 开关的状态：打开后放置物体时不再做重叠等限制检查。这颗按钮由该模组提供，不是原版内容；没装 Anarchy 时这一项不起作用。";
+			d["item.anarchy.desc"] = "记忆 Anarchy 模组的开关，Anarchy 模组是全局共用，开启后可以修改共用范围。没安装 Anarchy 模组时这一项不起作用。";
 			d["item.anarchy.ex.group"] = "比如给两车道小型道路打开 Anarchy，切换到其它的小型道路，也是打开的，但切换到大型道路就不是了";
 			d["item.anarchy.ex.menu"] = "点击道路菜单里面的所有资产，Anarchy 都是打开的，但切换到电力菜单就不是了";
 			d["item.anarchy.ex.category"] = "切换到大型道路也是打开的，但切换到桥梁就变成关闭（需单独设置），即使它们都在道路菜单下";
@@ -526,6 +532,7 @@ namespace ToolModeMemory
 			d[kScopeLineMenu] = "同選單：{0}";
 			d[kScopeLineCategory] = "同類資產：只有同一小類目的資產/功能共用設定，即{0}";
 			d[kScopeLineShared] = "全域共用：任何支援本項工具的資產/功能全部共用，但資產和功能之間不共用";
+			d[kScopeLineSharedSingle] = "全域共用：所有支援本項的工具共用一份，資產和功能之間也共用";
 			d[kScopeLineUnique] = "全部不共用：所有支援本項工具的資產/功能完全獨立設定";
 			d[kScopeNote] = "注意，功能指的是功能區、空間與區域、地形改造、標記和預製物件等非資產";
 
@@ -547,7 +554,7 @@ namespace ToolModeMemory
 			d["resetall.warn"] = "此操作無法復原。";
 			d["resetall.confirm"] = "確定要重設所有設定項嗎？";
 			d["folder.label"] = "管理所有存檔的記憶檔案";
-			d["folder.desc"] = "開啟保存記憶的本機資料夾，每個存檔一份檔案，檔名就是存檔名。";
+			d["folder.desc"] = "開啟保存記憶的本機資料夾，每個存檔一份檔案，檔名就是存檔名。模組讀取記憶都是按存檔名，存檔名稱和 json 檔名一致才會讀取。所以可以透過修改檔名的方式實現複製。讀取自動存檔時按城市名保存這份記憶，因為自動存檔的存檔名每次都不一樣。";
 
 			d["about.version"] = "模組版本";
 			d["about.author"] = "作者";
@@ -559,7 +566,7 @@ namespace ToolModeMemory
 			d["about.rainbow.desc"] = "開啟 RAINBOW 系列官網。";
 
 			// ---------- 1 Anarchy ----------
-			d["item.anarchy.desc"] = "記憶 Anarchy 模組（Paradox 模組 74604）那顆 Anarchy 開關的狀態：開啟後放置物體時不再做重疊等限制檢查。這顆按鈕由該模組提供，不是原版內容；沒裝 Anarchy 時這一項不起作用。";
+			d["item.anarchy.desc"] = "記憶 Anarchy 模組的開關，Anarchy 模組是全域共用，開啟後可以修改共用範圍。沒安裝 Anarchy 模組時這一項不起作用。";
 			d["item.anarchy.ex.group"] = "例如給兩車道小型道路開啟 Anarchy，切換到其他小型道路也是開啟的，但切換到大型道路就不是了";
 			d["item.anarchy.ex.menu"] = "點選道路選單裡面的所有資產，Anarchy 都是開啟的，但切換到電力選單就不是了";
 			d["item.anarchy.ex.category"] = "切換到大型道路同樣是開啟的，但切換到橋樑就變成關閉（需單獨設定），即使它們都在道路選單下";
@@ -668,6 +675,7 @@ namespace ToolModeMemory
 			d[kScopeLineMenu] = "Same menu: {0}";
 			d[kScopeLineCategory] = "Same asset type: only assets or functions of the same sub-category share the setting, that is {0}";
 			d[kScopeLineShared] = "Shared globally: every asset or function that supports this item shares it, but assets and functions do not share with each other";
+			d[kScopeLineSharedSingle] = "Shared globally: every tool that supports this item uses one value, assets and functions included";
 			d[kScopeLineUnique] = "Not shared at all: every asset and function that supports this item is set independently";
 			d[kScopeNote] = "Note: the word functions here means Zones, Spaces and Areas, Terraforming, Marker and Object Prefabs, that is the tools that are not assets";
 
@@ -689,7 +697,7 @@ namespace ToolModeMemory
 			d["resetall.warn"] = "This cannot be undone.";
 			d["resetall.confirm"] = "Reset every setting of this mod to its recommended default?";
 			d["folder.label"] = "Manage memory files for all saves";
-			d["folder.desc"] = "Opens the local folder that holds the memory files, one per save, named after the save.";
+			d["folder.desc"] = "Opens the local folder that holds the memory files, one per save, named after the save. Memory is always read by save name: a file is only used when the save name and the json file name match, so renaming the file is how you copy memory from one save to another. When you load an auto save its memory is kept under the city name, because an auto save gets a new name every time.";
 
 			d["about.version"] = "Mod version";
 			d["about.author"] = "Author";
@@ -701,7 +709,7 @@ namespace ToolModeMemory
 			d["about.rainbow.desc"] = "Open the Rainbow Series site.";
 
 			// ---------- 1 Anarchy ----------
-			d["item.anarchy.desc"] = "Remembers the state of the Anarchy button that the Anarchy mod (Paradox mod 74604) adds: with it on, placing an item no longer runs the overlap and similar checks. The button comes from that mod, not from the game; without Anarchy this item does nothing.";
+			d["item.anarchy.desc"] = "Remembers the Anarchy mod's switch. Anarchy is shared across the whole game, so this one is global; once it is on you can change the sharing scope. Without the Anarchy mod installed this item does nothing.";
 			d["item.anarchy.ex.group"] = "for example, turn Anarchy on for a two-lane small road and the other small roads keep it on, while a large road does not";
 			d["item.anarchy.ex.menu"] = "every asset you click in the Roads menu has Anarchy on, but moving to the Electricity menu it is not";
 			d["item.anarchy.ex.category"] = "switching to a large road still has it on, but a bridge goes back to off and needs its own setting, even though both are in the Roads menu";

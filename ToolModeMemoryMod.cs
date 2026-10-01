@@ -21,7 +21,7 @@ namespace ToolModeMemory
 	/// </summary>
 	public class ToolModeMemoryMod : IMod
 	{
-		public const string kVersion = "0.2.3";
+		public const string kVersion = "0.3.0";
 
 		public static ILog log = LogManager.GetLogger(nameof(ToolModeMemory)).SetShowsErrorsInUI(false);
 
@@ -46,6 +46,17 @@ namespace ToolModeMemory
 			s_Instance = this;
 
 			Store = new MemoryStore();
+
+			// 开机先做一次清理：随机会话名 (_unsaved_xxxx) 永远不可能再被读到，
+			// 旧版本认不出存档名留下的 _auto_<guid> 现在能改名成真正的存档名。
+			// 资产库此时若还没缓存好，改名会整体空转，不会误删任何东西。
+			try
+			{
+				int junk = MemoryStore.CleanSessionPlaceholders(null);
+				if (junk > 0) log.Info("Removed " + junk + " unreachable session file(s).");
+			}
+			catch { }
+			RecoverPlaceholderFiles();
 
 			m_Setting = new ToolModeMemorySettings(this);
 			ToolModeMemorySettings.Instance = m_Setting;
@@ -173,6 +184,7 @@ namespace ToolModeMemory
 					m_InSave = false;
 					RefreshActive();
 					if (Store != null) Store.BeginMainMenu();
+					RecoverPlaceholderFiles();
 					log.Info("Back to main menu.");
 					return;
 				}
@@ -193,18 +205,38 @@ namespace ToolModeMemory
 
 				LoadIndex();
 
+				// 只有「载入已有存档」才认这个 guid：新建城市时 instigatorGuid 是地图的 id，
+				// 拿它建索引会让同一张地图上的两座新城共用记忆文件。
+				SaveIdentity.PurposeKind kind = SaveIdentity.Classify((int)purpose);
+				Colossal.Hash128 loadGuid;
+				bool haveGuid = TryGetInstigatorGuid(out loadGuid);
+				string guidText = (kind == SaveIdentity.PurposeKind.LoadedSave && haveGuid)
+					? loadGuid.ToString() : null;
+				m_CurrentGuid = guidText;
+
+				SaveIdentity.SaveMetaInfo metaInfo = guidText != null
+					? ReadSaveMeta(loadGuid) : new SaveIdentity.SaveMetaInfo();
+
 				string resolved;
 				bool isPlaceholder;
-				ResolveSaveName(purpose, m_Index, out resolved, out isPlaceholder);
-				// 只有「载入已有存档」才留载入 guid：新建城市时 instigatorGuid 是地图的 id，
-				// 拿它建索引会让同一张地图上的两座新城共用记忆文件。
-				m_CurrentGuid = (SaveIdentity.Classify((int)purpose) == SaveIdentity.PurposeKind.LoadedSave
-					&& TryGetInstigatorGuid(out Colossal.Hash128 g)) ? g.ToString() : null;
+				bool named = SaveIdentity.TryResolveName(kind, guidText != null, guidText,
+					metaInfo, m_Index, out resolved, out isPlaceholder);
 
-				if (!string.IsNullOrEmpty(resolved))
+				if (named)
 				{
 					if (isPlaceholder) Store.UsePlaceholderName(resolved);
 					else Store.UseSaveName(resolved);
+
+					// 0.2.3 及以前认不出存档名，把记忆写在 _auto_<guid>.json 里。
+					// 现在名字确证了，先搬家再读，玩家升级后第一次进档就接得上。
+					if (Store.MigrateLegacyFile(SaveIdentity.LegacyAutoName(guidText)))
+					{
+						log.Info("Moved legacy memory file '" + SaveIdentity.LegacyAutoName(guidText)
+							+ "' to '" + Store.SaveName + "'.");
+					}
+
+					// 记下 guid -> 存档名：资产库偶尔查不到（存档正在改名、云端只读副本）时还能认回来
+					if (!isPlaceholder && m_Index.Set(guidText, Store.SaveName)) SaveIndexToDisk();
 				}
 				else
 				{
@@ -233,58 +265,47 @@ namespace ToolModeMemory
 		}
 
 		/// <summary>
-		/// 存档身份判定。
-		/// userState.lastSaveGameMetadata 只在 GameManager.Save() 成功路径里赋值
-		/// （Game.SceneFlow/GameManager.cs:995），载入时不更新，所以：
-		///   新建城市 / 从存档列表直接载入 -> 它可能指向上一个「存过」的档；
-		/// 只有当它确实等于本次反序列化上下文的 instigatorGuid 时才可信。
-		/// 不可信时使用确定性占位名 _auto_&lt;guid&gt;：同一存档再次载入仍能找回记忆，
-		/// 且绝不会写坏别的存档的记忆文件。
+		/// 按本次载入的 guid 反查存档元数据，取游戏里显示的那个存档名。
+		///
+		/// 依据（反编译 Game.dll）：
+		///   - GameManager.Load:1196 把 saveGameMetadata.id 交给序列化上下文 ⇒ instigatorGuid
+		///     就是这条存档元数据的 guid；
+		///   - GameManager.Load:1219 游戏自己按 guid 载入存档用的就是
+		///     AssetDatabase.global.TryGetAsset(guid, out asset)，反查通道可靠；
+		///   - AssetData.name => database.GetName(id) => FileSystemDataSource.GetName:719
+		///     返回 Unescape(文件名)，即玩家在存档列表里看到的名字（= 存档包名，不是城市名）。
+		///
+		/// 载入完成后游戏会 Dispose 那份元数据，但那只是 Unload（m_Target 置空），
+		/// 资产仍注册在库里，name 照读、target 会按需重新 Load。
+		/// 只在主线程的进档回调里调用：AssetDatabase.m_Databases 是普通 HashSet，不是线程安全的。
 		/// </summary>
-		private static void ResolveSaveName(Purpose purpose, SaveIndex index,
-			out string fileName, out bool placeholder)
+		private static SaveIdentity.SaveMetaInfo ReadSaveMeta(Colossal.Hash128 guid)
 		{
-			fileName = null;
-			placeholder = false;
-
-			SaveIdentity.PurposeKind kind = SaveIdentity.Classify((int)purpose);
-			if (!SaveIdentity.ShouldParticipate(kind)) return;
-
-			Colossal.Hash128 loadGuid = default(Colossal.Hash128);
-			bool haveGuid = TryGetInstigatorGuid(out loadGuid);
-			string guidText = haveGuid ? loadGuid.ToString() : null;
-
-			string metaIdText = null;
-			string metaName = null;
-			bool metaIsAuto = true;
+			SaveIdentity.SaveMetaInfo info = new SaveIdentity.SaveMetaInfo();
 			try
 			{
-				SaveGameMetadata meta = GameManager.instance.settings.userState.lastSaveGameMetadata;
-				if (meta != null)
+				SaveGameMetadata meta;
+				if (!AssetDatabase.global.TryGetAsset<SaveGameMetadata>(guid, out meta) || meta == null)
 				{
-					// meta.id 是 Identifier（struct{guid, uri}），ToString() 会带 "[uri]"，
-					// 必须显式取 guid 才能和 instigatorGuid 的文本比。
-					Colossal.Hash128 metaGuid = meta.id;
-					if (metaGuid.isValid) metaIdText = metaGuid.ToString();
-					metaIsAuto = meta.target == null ? true : meta.target.autoSave;
-					// 注意：Metadata.identifier == "{database}/{guid}"，根本不是存档名，
-					// 用它当文件名会和 onGameSaveLoad 给的 saveName 永远对不上（一个档两份文件）。
-					// 存档名只能取 target.displayName（= 存档包名）。
-					if (meta.target != null && !string.IsNullOrEmpty(meta.target.displayName))
-					{
-						metaName = meta.target.displayName;
-					}
+					return info;
 				}
+				info.name = meta.name;
+				SaveInfo target = null;
+				try { target = meta.target; } catch { }
+				if (target == null)
+				{
+					// 元数据读不开：没有 autoSave 标志就无法排除时间戳名，按「查不到」处理
+					return info;
+				}
+				info.cityName = target.cityName;
+				info.autoSave = target.autoSave;
+				info.known = SaveIdentity.IsUsableName(info.name);
 			}
-			catch { }
-
-			bool ok = SaveIdentity.TryResolveName(kind, haveGuid, guidText, metaIdText, metaName,
-				metaIsAuto, index, out fileName, out placeholder);
-			if (!ok)
+			catch (Exception ex)
 			{
-				fileName = null;
-				placeholder = false;
+				log.Warn("ReadSaveMeta: " + ex.GetType().Name + " " + ex.Message);
 			}
+			return info;
 		}
 
 		private static bool TryGetInstigatorGuid(out Colossal.Hash128 guid)
@@ -374,6 +395,55 @@ namespace ToolModeMemory
 			{
 				log.Warn("SaveIndex failed: " + ex.GetType().Name);
 			}
+		}
+
+		/// <summary>
+		/// 把旧版本留下的 _auto_&lt;guid&gt;.json 改成真正的存档名。
+		/// 只在主菜单里跑（不在存档内、文件没人用），而且只做「目标不存在才搬」的重命名，
+		/// 绝不删任何对得上号的文件：认不出名字的一律原地留着。
+		/// </summary>
+		private static void RecoverPlaceholderFiles()
+		{
+			try
+			{
+				string dir = MemoryStore.DataDirectory;
+				if (!System.IO.Directory.Exists(dir)) return;
+				string[] files = System.IO.Directory.GetFiles(dir, SaveIdentity.AUTO_PREFIX + "*.json");
+				int moved = 0;
+				for (int i = 0; i < files.Length; i++)
+				{
+					string stem = System.IO.Path.GetFileNameWithoutExtension(files[i]);
+					if (stem.Length <= SaveIdentity.AUTO_PREFIX.Length + 8) continue;
+					string real = ResolveNameForGuid(stem.Substring(SaveIdentity.AUTO_PREFIX.Length));
+					if (string.IsNullOrEmpty(real) || real == stem) continue;
+					string target = System.IO.Path.Combine(dir, MemoryStore.SanitizeFileName(real) + ".json");
+					if (System.IO.File.Exists(target)) continue;
+					try
+					{
+						System.IO.File.Move(files[i], target);
+						moved++;
+					}
+					catch { }
+				}
+				if (moved > 0) log.Info("Renamed " + moved + " legacy memory file(s) to their save names.");
+			}
+			catch (Exception ex)
+			{
+				log.Warn("RecoverPlaceholderFiles: " + ex.GetType().Name);
+			}
+		}
+
+		/// <summary>给一个存档 guid 求「游戏里显示的名字」；认不出来返回 null。</summary>
+		private static string ResolveNameForGuid(string guidText)
+		{
+			Colossal.Hash128 g;
+			if (string.IsNullOrEmpty(guidText)) return null;
+			if (!Colossal.Hash128.TryParse(guidText, out g) || !g.isValid) return null;
+			bool placeholder;
+			string name;
+			bool ok = SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, guidText,
+				ReadSaveMeta(g), new SaveIndex(), out name, out placeholder);
+			return ok ? name : null;
 		}
 
 		private void OnApplicationQuitting()

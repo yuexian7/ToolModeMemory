@@ -8,15 +8,57 @@ namespace ToolModeMemory.Memory
 	/// 「这次进的是哪个存档」的判定，纯函数（不碰游戏类型，离线可测）。
 	///
 	/// 事实依据（反编译 Game.dll）：
-	///   - userState.lastSaveGameMetadata 只在 GameManager.Save() 成功分支赋值，载入时不更新；
-	///   - 自动存档也走 GameManager.Save(名字 = "dd-MMMM-HH-mm-ss")，同样会覆盖它；
-	///   - 载入时 LoadGameSystem.context.instigatorGuid == 被载入存档的 SaveGameMetadata.id。
-	/// 所以只有「存档元数据的 id == 本次载入 guid」或「guid 已在索引里」时，存档名才算确证。
+	///   - 载入时 LoadGameSystem.context.instigatorGuid == 被载入存档的 SaveGameMetadata.id
+	///     （GameManager.Load:1196 把 saveGameMetadata.id 原样交给 Context）；
+	///   - AssetDatabase.global.TryGetAsset(guid, out asset) 就是这个 guid 的反查通道，
+	///     游戏自己的 GameManager.Load(GameMode,Purpose,Hash128):1219 也用它；
+	///   - 查到的元数据里 name == 存档列表显示的名字（FileSystemDataSource.GetName 把文件名
+	///     去转义后返回），target.autoSave 标明它是不是自动存档，target.cityName 是城市名；
+	///   - 自动存档的名字是 $"{DateTime.Now:dd-MMMM-HH-mm-ss}"（AutoSaveSystem:184），
+	///     每跳一次自动存档就换一个，所以不能当记忆文件名。
+	///
+	/// 0.2.3 及以前只信 userState.lastSaveGameMetadata，而它只在 GameManager.Save() 成功分支
+	/// 赋值（GameManager:995），单纯载入时它还是上一个存过盘的东西 → 对不上号 → 只能落进
+	/// _auto_&lt;guid&gt; 占位名，于是玩家看到「记忆文件名和存档名完全不一致」。
+	/// 现在直接按 guid 反查，名字与游戏内一致。
 	/// </summary>
 	public static class SaveIdentity
 	{
 		public const string AUTO_PREFIX = "_auto_";
 		public const string UNSAVED_PREFIX = "_unsaved_";
+
+		/// <summary>AssetDatabase 查不到条目时 GetName 的返回值（FileSystemDataSource:724）。</summary>
+		public const string TRANSIENT_NAME = "Transient asset";
+
+		/// <summary>
+		/// 本次载入存档的元数据（由调用方从 Game.dll 读好后传进来，保持本类可离线测试）。
+		/// </summary>
+		public struct SaveMetaInfo
+		{
+			/// <summary>在资产库里查到了这条存档的元数据。</summary>
+			public bool known;
+			/// <summary>存档列表里显示的名字（存档包名；自动存档是时间戳）。</summary>
+			public string name;
+			/// <summary>城市名：自动存档用它当记忆文件名，否则每 10 分钟换一份。</summary>
+			public string cityName;
+			/// <summary>target.autoSave。</summary>
+			public bool autoSave;
+		}
+
+		/// <summary>名字能不能直接当文件名用（排除空值与资产库的占位返回值）。</summary>
+		public static bool IsUsableName(string name)
+		{
+			if (string.IsNullOrEmpty(name)) return false;
+			if (string.Equals(name, TRANSIENT_NAME, StringComparison.Ordinal)) return false;
+			return true;
+		}
+
+		/// <summary>旧版本（0.2.3 及以前）为认不出的存档生成的占位名，用于一次性搬家。</summary>
+		public static string LegacyAutoName(string guidText)
+		{
+			if (string.IsNullOrEmpty(guidText)) return null;
+			return AUTO_PREFIX + guidText;
+		}
 
 		/// <summary>本次进入是否需要参与（新建城市要，主菜单/编辑器不要）。</summary>
 		public static bool ShouldParticipate(PurposeKind kind)
@@ -53,10 +95,10 @@ namespace ToolModeMemory.Memory
 
 		/// <summary>
 		/// 决定记忆文件名。返回 false = 无法确证，调用方应使用随机会话占位名。
+		/// placeholder=true 表示这名字只是暂时的，之后玩家手动存盘时要把文件搬过去。
 		/// </summary>
 		public static bool TryResolveName(PurposeKind kind, bool haveGuid, string guidText,
-			string lastMetaIdText, string lastMetaName, bool lastMetaIsAutoSave,
-			SaveIndex index, out string fileName, out bool placeholder)
+			SaveMetaInfo meta, SaveIndex index, out string fileName, out bool placeholder)
 		{
 			fileName = null;
 			placeholder = false;
@@ -72,17 +114,28 @@ namespace ToolModeMemory.Memory
 				return false;
 			}
 
+			if (meta.known && !meta.autoSave && IsUsableName(meta.name))
+			{
+				// 确证：这次载入的就是名叫 meta.name 的存档（玩家在游戏里看到的同一个名字）。
+				// 优先级高于索引：存档被改名后文件名要跟着改，否则「按名字复制记忆」就失效了。
+				fileName = meta.name;
+				placeholder = false;
+				return true;
+			}
+
+			if (meta.known && meta.autoSave && IsUsableName(meta.cityName))
+			{
+				// 自动存档：它的名字是时间戳（10 分钟换一个），拿城市名当本份记忆的键。
+				// 记成占位名，玩家之后手动存盘时文件会自动改成真正的存档名。
+				fileName = meta.cityName;
+				placeholder = true;
+				return true;
+			}
+
 			string indexed = index != null ? index.LookupName(guidText) : null;
 			if (!string.IsNullOrEmpty(indexed))
 			{
 				fileName = indexed;
-				return true;
-			}
-
-			if (!lastMetaIsAutoSave && !string.IsNullOrEmpty(lastMetaName)
-				&& string.Equals(lastMetaIdText, guidText, StringComparison.Ordinal))
-			{
-				fileName = lastMetaName;
 				placeholder = false;
 				return true;
 			}

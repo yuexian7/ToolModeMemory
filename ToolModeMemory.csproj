@@ -44,6 +44,9 @@
 		<Reference Include="Colossal.Collections"><Private>false</Private></Reference>
 		<Reference Include="Colossal.Logging"><Private>false</Private></Reference>
 		<Reference Include="Colossal.IO.AssetDatabase"><Private>false</Private></Reference>
+		<!-- AssetData 实现了 Colossal.AssetPipeline 的 Report.IFile / Report.IAddressableAsset，
+		     读存档元数据的 name/target 时编译器必须能看到这两个接口。 -->
+		<Reference Include="Colossal.AssetPipeline"><Private>false</Private></Reference>
 		<Reference Include="Colossal.Localization"><Private>false</Private></Reference>
 		<Reference Include="Colossal.UI"><Private>false</Private></Reference>
 		<Reference Include="Colossal.UI.Binding"><Private>false</Private></Reference>

@@ -43,7 +43,7 @@ SCALAR_KEYS = [
     "enabled.label", "enabled.desc", "compat.label", "compat.desc",
     "scope.label", "scope.desc",
     "scope.line.group", "scope.line.menu", "scope.line.category",
-    "scope.line.shared", "scope.line.unique", "scope.note",
+    "scope.line.shared", "scope.line.sharedSingle", "scope.line.unique", "scope.note",
     "scope.group", "scope.menu", "scope.category", "scope.globalShared", "scope.globalUnique",
     "tag.vanilla", "tag.recommended", "tag.recVanilla",
     "reset.label", "reset.desc", "reset.warn", "reset.confirm",

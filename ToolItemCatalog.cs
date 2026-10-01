@@ -37,8 +37,23 @@ namespace ToolModeMemory
 		/// </summary>
 		public readonly string[] Subs;
 
+		/// <summary>
+		/// 该项在「全局共用」下是否只用层级键当记忆键（不套资产/功能域、不套枚举家族）。
+		///
+		/// 适用于「游戏里本来就只有一份值、而且这个值对所有工具都是同一个意思」的项：
+		/// 等高线（UndergroundViewSystem.globalContourLinesOn，整个会话一个 bool）、
+		/// 地下模式（每个工具一个 bool，但 on/off 的含义到处都一样）、
+		/// Anarchy 的三份（都住在 NetworkAnarchyUISystem 这一个实例上）。
+		/// 这类项如果照旧套上域/家族，「全局共用」就会碎成 A|S$net / A|S$obj / F|S$area…
+		/// 每把一份，玩家换到另一个工具组时读到的是没记过的默认值，
+		/// 看上去就是「设了全局共用还是每组各记各的」（0.3.0 修的这个缺陷）。
+		/// 工具模式 / 对齐这类**枚举与位掩码**不适用：同一个数字在道路工具和区域工具里
+		/// 根本是两回事，混成一把键会写进非法组合。
+		/// </summary>
+		public readonly bool FamilyFreeScope;
+
 		public ToolItemDef(string id, int number, ItemSource source, int vanillaScope,
-			int recommendedScope, bool defaultEnabled, string[] subs = null)
+			int recommendedScope, bool defaultEnabled, string[] subs = null, bool familyFreeScope = false)
 		{
 			Id = id;
 			Number = number;
@@ -47,6 +62,7 @@ namespace ToolModeMemory
 			RecommendedScope = recommendedScope;
 			DefaultEnabled = defaultEnabled;
 			Subs = subs;
+			FamilyFreeScope = familyFreeScope;
 		}
 
 		/// <summary>实际用作该项默认的范围。</summary>
@@ -154,16 +170,26 @@ namespace ToolModeMemory
 			new ToolItemDef(kElevation, 4, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.Group, true, s_ElevationSubs),
 			new ToolItemDef(kParallel, 5, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.GlobalUnique, true, s_ParallelSubs),
 			new ToolItemDef(kSnap, 6, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.Category, true),
-			new ToolItemDef(kTopography, 7, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.GlobalShared, false),
+			new ToolItemDef(kTopography, 7, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.GlobalShared, false, null, true),
 			// 地下模式：推荐同组 == 原版同组 -> 默认关（用户定的规则）
-			new ToolItemDef(kUnderground, 8, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.Group, false),
+			new ToolItemDef(kUnderground, 8, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.Group, false, null, true),
 			new ToolItemDef(kOther, 9, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false, s_OtherSubs),
 
 			// ---- Anarchy 工具项设置（10..12）----
-			new ToolItemDef(kAnarchy, 10, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, false),
-			new ToolItemDef(kLeftRight, 11, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Group, true, s_LeftRightSubs),
-			new ToolItemDef(kGeneral, 12, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, true),
+			new ToolItemDef(kAnarchy, 10, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, false, null, true),
+			new ToolItemDef(kLeftRight, 11, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Group, true, s_LeftRightSubs, true),
+			new ToolItemDef(kGeneral, 12, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, true, null, true),
 		};
+
+		/// <summary>
+		/// 「全局共用」这一档是否要用不带域/家族的裸层级键（理由见 ToolItemDef.FamilyFreeScope）。
+		/// 其余四档照旧按层级 + 域 + 家族存，保证同一把键不会被两类互不相干的面板抢用。
+		/// </summary>
+		public static bool UsesFamilyFreeKey(ToolItemDef def, MemoryScope scope)
+		{
+			if (def == null) return false;
+			return def.FamilyFreeScope && scope == MemoryScope.GlobalShared;
+		}
 
 		public static ToolItemDef Find(string id)
 		{

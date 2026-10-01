@@ -173,6 +173,7 @@ namespace ToolModeMemory.Tests
 			DomainSeparation();
 			VersionFilter();
 			FilterOptionMemory();
+			LegacyFileHousekeeping();
 
 			Console.WriteLine();
 			Console.WriteLine(s_Fails == 0
@@ -381,9 +382,19 @@ namespace ToolModeMemory.Tests
 			Check(!c.SaveToDisk(), "保护期间不许写");
 		}
 
+		private static SaveIdentity.SaveMetaInfo Meta(bool known, string name, string city, bool auto)
+		{
+			SaveIdentity.SaveMetaInfo m = new SaveIdentity.SaveMetaInfo();
+			m.known = known;
+			m.name = name;
+			m.cityName = city;
+			m.autoSave = auto;
+			return m;
+		}
+
 		private static void Identity()
 		{
-			Console.WriteLine("[12] 存档身份判定（对应「读错档 / 写坏别人记忆」缺陷）");
+			Console.WriteLine("[12] 存档身份判定（对应「记忆文件名和存档名不一致」缺陷）");
 			SaveIndex idx = new SaveIndex();
 
 			string name; bool ph;
@@ -396,43 +407,130 @@ namespace ToolModeMemory.Tests
 			Check(SaveIdentity.Classify(6) == SaveIdentity.PurposeKind.NonSave, "Cleanup -> 不参与");
 			Check(!SaveIdentity.ShouldParticipate(SaveIdentity.PurposeKind.NonSave), "编辑器/清理不参与");
 
-			// 新建城市：即便 lastSaveGameMetadata 还指向上一个档，也绝不能沿用
+			// 新建城市：磁盘上还没有它的存档文件，即便元数据查得到也不认
 			idx.Set("guidA", "CityA");
 			Check(!SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.NewCity, true, "guidB",
-				"guidA", "CityA", false, idx, out name, out ph),
+				Meta(true, "CityB", "CityB", false), idx, out name, out ph),
 				"新建城市不解析出名字（用会话占位）");
 			Check(name == null && !ph, "新建城市输出为空");
 
-			// 从存档列表载入 B，而 lastSaveGameMetadata 还指向 A -> 不许用 A 的名字
+			// 0.3.0 的核心修复：单纯「载入」时 lastSaveGameMetadata 是上一个档的，
+			// 但按本次 guid 反查元数据能直接拿到游戏里显示的名字 -> 用它，不再落进 _auto_
 			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidB",
-				"guidA", "CityA", false, idx, out name, out ph)
-				&& name == "_auto_guidB" && ph, "id 不符 -> 用 guid 占位，不冒名");
+				Meta(true, "CityB", "CityB", false), idx, out name, out ph)
+				&& name == "CityB" && !ph, "按 guid 查到名字 -> 文件与存档同名");
 
-			// Continue 载入 A：id 与 guid 一致 -> 用真实存档名
+			// 游戏里给存档改名后再进档：文件名跟着改，「按名字复制记忆」才不会失效
 			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidA",
-				"guidA", "CityA", false, idx, out name, out ph)
-				&& name == "CityA" && !ph, "id 相符 -> 用存档名");
+				Meta(true, "CityARenamed", "CityARenamed", false), idx, out name, out ph)
+				&& name == "CityARenamed" && !ph, "实时名字优先于旧索引");
 
-			// 自动存档顶掉了 metadata -> 索引里认得就用索引里的名字
+			// 自动存档：名字是时间戳（10 分钟换一个），改用城市名，且算占位名（手动存盘后还要搬走）
+			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidAuto",
+				Meta(true, "27-九月-13-45-02", "我的城市", true), idx, out name, out ph)
+				&& name == "我的城市" && ph, "自动存档 -> 按城市名，且允许之后改名");
+
+			// 自动存档又拿不到城市名 -> 退回索引 / _auto_
 			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidA",
-				"guidAuto", "27-September-13-45-02", true, idx, out name, out ph)
-				&& name == "CityA" && !ph, "自动存档污染 -> 索引接管");
+				Meta(true, "27-九月-13-45-02", null, true), idx, out name, out ph)
+				&& name == "CityA" && !ph, "自动存档无名可取 -> 索引接管");
+			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidNew",
+				Meta(true, "27-九月-13-45-02", "", true), idx, out name, out ph)
+				&& name == "_auto_guidNew" && ph, "自动存档无城市名 -> 确定性占位");
+
+			// 资产库查不到（存档正被改名、只读云副本读取失败）：绝不拿查不到名字的东西当存档名
+			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidA",
+				Meta(false, "CityGuess", "CityGuess", false), idx, out name, out ph)
+				&& name == "CityA" && !ph, "元数据不可信 -> 索引接管");
+			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidA",
+				Meta(true, "Transient asset", "CityA", false), idx, out name, out ph)
+				&& name == "CityA" && !ph, "Transient asset 不是存档名");
+			Check(SaveIdentity.IsUsableName("Transient asset") == false, "Transient asset 判为不可用");
+			Check(SaveIdentity.IsUsableName("1") && SaveIdentity.IsUsableName("我的城市"), "普通名字可用");
 
 			// 拿不到 guid -> 拒绝猜测
 			Check(!SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, false, null,
-				"guidA", "CityA", false, idx, out name, out ph), "无 guid 不猜名字");
+				Meta(true, "CityA", "CityA", false), idx, out name, out ph), "无 guid 不冒名");
 
-			// 无索引无 metadata -> 稳定占位（重启后仍能找回同一份记忆）
+			// 全新存档：无索引、元数据也没读到 -> 稳定占位（重启后仍能找回同一份记忆）
 			SaveIndex empty = new SaveIndex();
 			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidZ",
-				null, null, true, empty, out name, out ph) && name == "_auto_guidZ" && ph,
+				Meta(false, null, null, false), empty, out name, out ph) && name == "_auto_guidZ" && ph,
 				"首次遇到 -> 确定性 _auto_ 占位");
+
+			Check(SaveIdentity.LegacyAutoName("guidZ") == "_auto_guidZ", "旧占位名可推算（搬家用）");
+			Check(SaveIdentity.LegacyAutoName(null) == null && SaveIdentity.LegacyAutoName("") == null,
+				"没有 guid 时不编出 _auto_ 名字");
 
 			// 存档事件：自动存档必须忽略
 			Check(!SaveIdentity.ShouldAdoptOnSave(true, true, "27-September-13-45-02"), "忽略自动存档事件");
 			Check(!SaveIdentity.ShouldAdoptOnSave(false, false, "CityA"), "存档失败不接管");
 			Check(!SaveIdentity.ShouldAdoptOnSave(true, false, ""), "空名字不接管");
 			Check(SaveIdentity.ShouldAdoptOnSave(true, false, "CityA"), "手动存档才接管");
+		}
+
+		/// <summary>
+		/// 0.3.0：旧版本遗留的 _auto_&lt;guid&gt;.json 要能搬到真正的存档名下，
+		/// 随机会话文件（_unsaved_xxxx）永不再被读到，得自动清掉。
+		/// </summary>
+		private static void LegacyFileHousekeeping()
+		{
+			Console.WriteLine("[20] 旧占位文件搬家与会话垃圾清理");
+			FreshDir("housekeeping");
+
+			// 进档前玩家已有 _auto_guidH.json（0.2.3 写的），现在名字确证为「杭州」
+			MemoryStore s = new MemoryStore();
+			s.UseSaveName("_auto_guidH");
+			string oldKey = K(kSmallRoads, false, "net");
+			s.Set(ToolItemCatalog.kToolMode, oldKey, 3);
+			Check(s.SaveToDisk(true), "旧占位文件已落盘");
+			string legacyPath = s.CurrentFilePath();
+
+			s.UseSaveName("杭州");
+			Check(s.MigrateLegacyFile("_auto_guidH"), "搬家返回成功");
+			Check(!File.Exists(legacyPath), "旧文件不再留在原地");
+			Check(File.Exists(s.CurrentFilePath()), "记忆出现在存档名下");
+			Check(s.LoadForCurrentSave(), "按新名字读得懂");
+			bool found;
+			Check(s.Get(ToolItemCatalog.kToolMode, oldKey, out found) == 3 && found, "搬家后数据还在");
+
+			// 名字没变（或压根没有旧文件）时不许动任何东西
+			Check(!s.MigrateLegacyFile("杭州"), "同名不搬");
+			Check(!s.MigrateLegacyFile("_auto_missing"), "没有旧文件时不报错");
+			Check(!s.MigrateLegacyFile(null), "null 安全");
+
+			// 目标已存在：以正式名字为准，旧占位文件当垃圾清掉，不能覆盖正式内容
+			MemoryStore t = new MemoryStore();
+			t.UseSaveName("杭州");
+			t.Set(ToolItemCatalog.kToolMode, oldKey, 7);
+			Check(t.SaveToDisk(true), "正式文件已写好");
+			string dup = Path.Combine(MemoryStore.DataDirectory, "_auto_dup.json");
+			File.WriteAllText(dup, "{\"v\":3,\"save\":\"_auto_dup\",\"items\":{}}", Encoding.UTF8);
+			Check(t.MigrateLegacyFile("_auto_dup") && !File.Exists(dup), "重名冲突时清掉旧占位文件");
+			Check(t.LoadForCurrentSave() && t.Get(ToolItemCatalog.kToolMode, oldKey, out found) == 7,
+				"正式文件内容未被顶掉");
+
+			// 会话垃圾：只清 _unsaved_*，别人的文件与 keepName 都不动
+			File.WriteAllText(Path.Combine(MemoryStore.DataDirectory, "_unsaved_dead1.json"), "{}", Encoding.UTF8);
+			File.WriteAllText(Path.Combine(MemoryStore.DataDirectory, "_unsaved_keep0.json"), "{}", Encoding.UTF8);
+			File.WriteAllText(Path.Combine(MemoryStore.DataDirectory, "_unsaved_keep0.json.tmp"), "{}", Encoding.UTF8);
+			Check(MemoryStore.CleanSessionPlaceholders("_unsaved_keep0") == 1, "只删认不出主人的会话文件");
+			Check(File.Exists(Path.Combine(MemoryStore.DataDirectory, "_unsaved_keep0.json")),
+				"keepName 的会话文件保留");
+			Check(File.Exists(Path.Combine(MemoryStore.DataDirectory, "杭州.json")), "正式记忆不受影响");
+			Check(MemoryStore.CleanSessionPlaceholders(null) >= 2, "主菜单：全清会话文件");
+			Check(!File.Exists(Path.Combine(MemoryStore.DataDirectory, "_unsaved_keep0.json")),
+				"主菜单连当前会话的也清掉（下次进档必换新名）");
+			Check(File.Exists(Path.Combine(MemoryStore.DataDirectory, "杭州.json")), "清垃圾不碰记忆");
+
+			// BeginMainMenu 自带这份清理：回主菜单不该留下 _unsaved_*
+			MemoryStore u = new MemoryStore();
+			u.StartUnnamedSession();
+			u.Set(ToolItemCatalog.kSnap, "A|a$net", 1);
+			Check(u.SaveToDisk(true), "会话占位文件写出");
+			string sessionFile = u.CurrentFilePath();
+			u.BeginMainMenu();
+			Check(!File.Exists(sessionFile), "回主菜单清掉随机会话文件");
 		}
 
 		private static void IndexFile()
@@ -572,6 +670,40 @@ namespace ToolModeMemory.Tests
 				&& ToolItemCatalog.Find(ToolItemCatalog.kLeftRight).VanillaScope == ToolItemCatalog.kVanillaNone
 				&& ToolItemCatalog.Find(ToolItemCatalog.kGeneral).VanillaScope == ToolItemCatalog.kVanillaNone,
 				"Anarchy 三项原版无记忆");
+
+			// 「全局共用」必须真的只剩一把键：游戏里只有一份值的项不能再按域/家族碎裂，
+			// 否则玩家设成全局共用后，换到另一个工具组读到的还是没记过的默认值。
+			string[] familyFree = new string[]
+			{
+				ToolItemCatalog.kTopography, ToolItemCatalog.kUnderground,
+				ToolItemCatalog.kAnarchy, ToolItemCatalog.kLeftRight, ToolItemCatalog.kGeneral
+			};
+			for (int i = 0; i < familyFree.Length; i++)
+			{
+				ToolItemDef d = ToolItemCatalog.Find(familyFree[i]);
+				Check(d != null && d.FamilyFreeScope, familyFree[i] + " = 游戏里只有一份值");
+				Check(ToolItemCatalog.UsesFamilyFreeKey(d, MemoryScope.GlobalShared),
+					familyFree[i] + " 全局共用 -> 裸层级键");
+			}
+			// 枚举 / 位掩码项反过来：同一个数字在道路工具和区域工具里是两回事，
+			// 并成一把键会把非法组合写进工具，必须继续按域 + 家族分开。
+			string[] familyBound = new string[]
+			{
+				ToolItemCatalog.kToolMode, ToolItemCatalog.kElevation, ToolItemCatalog.kParallel,
+				ToolItemCatalog.kSnap, ToolItemCatalog.kOther
+			};
+			for (int i = 0; i < familyBound.Length; i++)
+			{
+				ToolItemDef d = ToolItemCatalog.Find(familyBound[i]);
+				Check(d != null && !d.FamilyFreeScope, familyBound[i] + " 仍按域/家族分键");
+			}
+			ToolItemDef topo = ToolItemCatalog.Find(ToolItemCatalog.kTopography);
+			Check(!ToolItemCatalog.UsesFamilyFreeKey(topo, MemoryScope.Group)
+				&& !ToolItemCatalog.UsesFamilyFreeKey(topo, MemoryScope.Menu)
+				&& !ToolItemCatalog.UsesFamilyFreeKey(topo, MemoryScope.Category)
+				&& !ToolItemCatalog.UsesFamilyFreeKey(topo, MemoryScope.GlobalUnique),
+				"只有「全局共用」这一档走裸键，其余四档不变");
+			Check(!ToolItemCatalog.UsesFamilyFreeKey(null, MemoryScope.GlobalShared), "def 为 null 安全");
 
 			// 子字段：一项覆盖多个游戏值 -> 每个值一个独立记忆桶
 			string[] par = ToolItemCatalog.Find(ToolItemCatalog.kParallel).Subs;

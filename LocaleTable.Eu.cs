@@ -36,6 +36,7 @@ namespace ToolModeMemory
 			d["scope.line.menu"] = "Selbes Menü: {0}";
 			d["scope.line.category"] = "Selber Asset-Typ: nur Assets oder Funktionen derselben Unterkategorie teilen sich die Einstellung, also {0}";
 			d["scope.line.shared"] = "Global geteilt: jedes Asset und jede Funktion, die diesen Punkt unterstützt, teilt sich den Wert - aber Assets und Funktionen teilen nicht untereinander";
+			d["scope.line.sharedSingle"] = "Global geteilt: jedes Asset und jede Funktion, die diesen Punkt unterstützt, teilt sich denselben Wert - auch zwischen Assets und Funktionen";
 			d["scope.line.unique"] = "Gar nicht geteilt: jedes Asset und jede Funktion, die diesen Punkt unterstützt, wird eigenständig eingestellt";
 			d["scope.note"] = "Hinweis: Funktionen meint hier Zonen, Räume und Flächen, Terraforming, Markierungen und Objekt-Fertigteile, also die Werkzeuge, die keine Assets sind";
 
@@ -57,7 +58,7 @@ namespace ToolModeMemory
 			d["resetall.warn"] = "Das kann nicht rückgängig gemacht werden.";
 			d["resetall.confirm"] = "Wirklich alle Einstellungen zurücksetzen?";
 			d["folder.label"] = "Gedächtnisdateien aller Spielstände verwalten";
-			d["folder.desc"] = "Öffnet den lokalen Ordner mit den Gedächtnisdateien, eine pro Spielstand, benannt wie der Spielstand.";
+			d["folder.desc"] = "Öffnet den lokalen Ordner mit den Gedächtnisdateien, eine pro Spielstand, benannt wie der Spielstand. Das Gedächtnis wird immer nach dem Namen des Spielstands gelesen: eine Datei wird nur benutzt, wenn der Name des Spielstands und der Dateiname der json-Datei gleich sind, also benennst du die Datei um, um das Gedächtnis von einem Spielstand auf einen anderen zu kopieren. Beim Laden einer automatischen Speicherung wird ihr Gedächtnis unter dem Stadtnamen geführt, weil eine automatische Speicherung jedes Mal einen neuen Namen bekommt.";
 
 			d["about.version"] = "Mod-Version";
 			d["about.author"] = "Autor";
@@ -69,7 +70,7 @@ namespace ToolModeMemory
 			d["about.rainbow.desc"] = "Die Website der Rainbow-Reihe öffnen.";
 
 			// ---------- 1 Anarchy ----------
-			d["item.anarchy.desc"] = "Merkt sich den Status des Schalters Anarchy, den der Anarchy-Mod (Paradox-Mod 74604) hinzufügt: ist er an, prüft das Platzieren eines Objekts nicht mehr auf Überlappung und ähnliche Verstöße. Diese Schaltfläche stammt aus dem Mod, nicht aus dem Spiel; ohne Anarchy tut dieser Punkt nichts.";
+			d["item.anarchy.desc"] = "Merkt sich den Status des Schalters Anarchy, den der Anarchy-Mod hinzufügt. Anarchy wird im ganzen Spiel geteilt, dieser Punkt ist also global; ist er an, kannst du den gemeinsamen Bereich ändern. Ohne den Anarchy-Mod tut dieser Punkt nichts.";
 			d["item.anarchy.ex.group"] = "zum Beispiel schaltest du Anarchy für eine zweispurige kleine Straße ein, andere kleine Straßen haben Anarchy ebenfalls an, eine große Straße dagegen nicht";
 			d["item.anarchy.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, hat Anarchy an, im Menü Strom dagegen nicht";
 			d["item.anarchy.ex.category"] = "wechselt man zu einer großen Straße, bleibt Anarchy an, aber eine Brücke geht wieder aus und braucht eine eigene Einstellung, obwohl beide im Menü Straßen liegen";
@@ -176,6 +177,7 @@ namespace ToolModeMemory
 			d["scope.line.menu"] = "Mismo menú: {0}";
 			d["scope.line.category"] = "Mismo tipo de activo: solo lo comparten los activos o funciones de la misma subcategoría, es decir {0}";
 			d["scope.line.shared"] = "Global: cada activo y cada función que admitan este elemento comparten el valor, pero los activos y las funciones no comparten entre ellos";
+			d["scope.line.sharedSingle"] = "Global: cada activo y cada función que admitan este elemento comparten el valor, y los activos y las funciones también comparten entre ellos";
 			d["scope.line.unique"] = "Sin compartir: cada activo y cada función que admita este elemento se ajusta por separado";
 			d["scope.note"] = "Nota: funciones significa Zonas, Espacios y áreas, Terraformación, Marcadores y prefabricados de objeto, es decir, las herramientas que no son activos";
 
@@ -197,7 +199,7 @@ namespace ToolModeMemory
 			d["resetall.warn"] = "No se puede deshacer.";
 			d["resetall.confirm"] = "¿Restablecer todos los ajustes?";
 			d["folder.label"] = "Gestionar los archivos de memoria de todas las partidas";
-			d["folder.desc"] = "Abre la carpeta local con los archivos de memoria, uno por partida y con el nombre de la partida.";
+			d["folder.desc"] = "Abre la carpeta local con los archivos de memoria, uno por partida y con el nombre de la partida. La memoria se lee siempre por nombre de partida: un archivo solo se usa cuando el nombre de la partida y el nombre del archivo json coinciden, así que renombrar el archivo es la forma de copiar la memoria de una partida a otra. Al cargar un guardado automático su memoria se guarda con el nombre de la ciudad, porque un guardado automático recibe un nombre nuevo cada vez.";
 
 			d["about.version"] = "Versión del mod";
 			d["about.author"] = "Autor";
@@ -209,7 +211,7 @@ namespace ToolModeMemory
 			d["about.rainbow.desc"] = "Abrir el sitio de la serie Rainbow.";
 
 			// ---------- 1 Anarchy ----------
-			d["item.anarchy.desc"] = "Recuerda el estado del interruptor Anarchy que añade el mod Anarchy (mod 74604 de Paradox): con él activado, al colocar un objeto ya no se hacen las comprobaciones de superposición y similares. El botón lo aporta ese mod, no el juego; sin Anarchy este elemento no hace nada.";
+			d["item.anarchy.desc"] = "Recuerda el estado del interruptor Anarchy que añade el mod Anarchy. Anarchy se comparte en todo el juego, así que este elemento es global; una vez activado puedes cambiar el ámbito compartido. Sin el mod Anarchy este elemento no hace nada.";
 			d["item.anarchy.ex.group"] = "por ejemplo, activas Anarchy en una carretera pequeña de dos carriles y las otras carreteras pequeñas también lo tienen activado, mientras que una carretera grande no";
 			d["item.anarchy.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras tienen Anarchy activado, pero al pasar al menú de Electricidad ya no";
 			d["item.anarchy.ex.category"] = "cambiar a una carretera grande sigue teniéndolo activado, pero un puente vuelve a desactivado y necesita su propio ajuste, aunque los dos estén en el menú de Carreteras";
@@ -316,6 +318,7 @@ namespace ToolModeMemory
 			d["scope.line.menu"] = "Même menu : {0}";
 			d["scope.line.category"] = "Même type d'actif : seuls les assets ou les fonctions de la même sous-catégorie partagent le réglage, c'est-à-dire {0}";
 			d["scope.line.shared"] = "Global : tout asset et toute fonction compatibles avec cet élément partagent la valeur, mais les assets et les fonctions ne partagent jamais entre eux";
+			d["scope.line.sharedSingle"] = "Global : tout asset et toute fonction compatibles avec cet élément partagent la valeur, et les assets et les fonctions partagent aussi entre eux";
 			d["scope.line.unique"] = "Aucun partage : chaque asset et chaque fonction compatibles avec cet élément se règlent indépendamment";
 			d["scope.note"] = "Remarque : par fonctions, on entend Zones, Espaces et aires, Terraformation, Marqueur et objets préfabriqués, c'est-à-dire les outils qui ne sont pas des assets";
 
@@ -337,7 +340,7 @@ namespace ToolModeMemory
 			d["resetall.warn"] = "Irréversible.";
 			d["resetall.confirm"] = "Réinitialiser tous les réglages ?";
 			d["folder.label"] = "Gérer les fichiers mémoire de toutes les parties";
-			d["folder.desc"] = "Ouvre le dossier local des fichiers mémoire, un par partie, nommé d'après la partie.";
+			d["folder.desc"] = "Ouvre le dossier local des fichiers mémoire, un par partie, nommé d'après la partie. La mémoire se lit toujours d'après le nom de la partie : un fichier n'est utilisé que si le nom de la partie et celui du fichier json correspondent, donc renommer le fichier est le moyen de copier la mémoire d'une partie à une autre. Quand vous chargez une sauvegarde automatique, sa mémoire est gardée sous le nom de la ville, parce qu'une sauvegarde automatique reçoit un nom nouveau à chaque fois.";
 
 			d["about.version"] = "Version du mod";
 			d["about.author"] = "Auteur";
@@ -349,7 +352,7 @@ namespace ToolModeMemory
 			d["about.rainbow.desc"] = "Ouvrir le site de la série Rainbow.";
 
 			// ---------- 1 Anarchy ----------
-			d["item.anarchy.desc"] = "Mémorise l'état du bouton Anarchy ajouté par le mod Anarchy (mod Paradox 74604) : une fois activé, la pose d'un objet ne lance plus les contrôles de chevauchement et similaires. Ce bouton vient de ce mod, pas du jeu ; sans Anarchy, cet élément ne fait rien.";
+			d["item.anarchy.desc"] = "Mémorise l'état du bouton Anarchy ajouté par le mod Anarchy. Anarchy est partagé dans tout le jeu, cet élément est donc global ; une fois activé, vous pouvez modifier la portée de partage. Sans le mod Anarchy, cet élément ne fait rien.";
 			d["item.anarchy.ex.group"] = "par exemple, activez Anarchy sur une petite route à deux voies, les autres petites routes l'ont activé aussi, mais une grande route non";
 			d["item.anarchy.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes ont Anarchy activé, mais dans le menu Électricité ce n'est plus le cas";
 			d["item.anarchy.ex.category"] = "en passant à une grande route Anarchy reste activé, mais un pont revient à désactivé et réclame son propre réglage, bien que les deux soient dans le menu Routes";
@@ -456,6 +459,7 @@ namespace ToolModeMemory
 			d["scope.line.menu"] = "Stesso menu: {0}";
 			d["scope.line.category"] = "Stesso tipo di asset: solo gli asset o le funzioni della stessa sottocategoria condividono l'impostazione, cioè {0}";
 			d["scope.line.shared"] = "Globale: ogni asset e ogni funzione che supporta questa voce condivide il valore, ma asset e funzioni non condividono mai tra loro";
+			d["scope.line.sharedSingle"] = "Globale: ogni asset e ogni funzione che supporta questa voce condivide il valore, e anche asset e funzioni condividono tra loro";
 			d["scope.line.unique"] = "Non condiviso: ogni asset e ogni funzione che supporta questa voce viene impostato in modo indipendente";
 			d["scope.note"] = "Nota: per funzioni si intendono Zone, Aree e spazi, Terraformazione, Indicatore e oggetti prefabbricati, cioè gli strumenti che non sono asset";
 
@@ -477,7 +481,7 @@ namespace ToolModeMemory
 			d["resetall.warn"] = "Non annullabile.";
 			d["resetall.confirm"] = "Reimpostare tutte le impostazioni?";
 			d["folder.label"] = "Gestisci i file di memoria di tutte le partite";
-			d["folder.desc"] = "Apre la cartella locale dei file di memoria, uno per partita, con il nome della partita.";
+			d["folder.desc"] = "Apre la cartella locale dei file di memoria, uno per partita, con il nome della partita. La memoria viene sempre letta in base al nome della partita: un file viene usato solo se il nome della partita e quello del file json corrispondono, quindi rinominare il file è il modo di copiare la memoria da una partita all'altra. Quando carichi un salvataggio automatico, la sua memoria viene salvata con il nome della città, perché un salvataggio automatico riceve un nome nuovo ogni volta.";
 
 			d["about.version"] = "Versione mod";
 			d["about.author"] = "Autore";
@@ -489,7 +493,7 @@ namespace ToolModeMemory
 			d["about.rainbow.desc"] = "Apri il sito della serie Rainbow.";
 
 			// ---------- 1 Anarchy ----------
-			d["item.anarchy.desc"] = "Ricorda lo stato del pulsante Anarchy aggiunto dal mod Anarchy (mod Paradox 74604): quando è attivo, posizionare un oggetto non esegue più i controlli di sovrapposizione e simili. Il pulsante viene da quel mod, non dal gioco; senza Anarchy questa voce non fa nulla.";
+			d["item.anarchy.desc"] = "Ricorda lo stato del pulsante Anarchy aggiunto dal mod Anarchy. Anarchy è condiviso in tutto il gioco, quindi questa voce è globale; una volta attivo puoi cambiare l'ambito di condivisione. Senza il mod Anarchy questa voce non fa nulla.";
 			d["item.anarchy.ex.group"] = "per esempio, attivi Anarchy su una piccola strada a due corsie e anche le altre piccole strade ce l'hanno attivo, mentre una strada grande no";
 			d["item.anarchy.ex.menu"] = "tutti gli asset che clicchi nel menu Strade hanno Anarchy attivo, ma passando al menu Elettricità no";
 			d["item.anarchy.ex.category"] = "passando a una strada grande Anarchy resta attivo, ma un ponte torna a spento e necessita un'impostazione propria, benché entrambi siano nel menu Strade";

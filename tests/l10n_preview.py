@@ -6,6 +6,7 @@
 """
 import io
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -41,6 +42,14 @@ def main():
             return ""
         return tpl.replace("{0}", ex)
 
+    # 「全局共用」这一行按项不同：游戏里只有一份设置的那几项（第 8 个构造参数 true）
+    # 走 scope.line.sharedSingle，预览必须跟着 ScopeDescription() 的逻辑走，否则校对的就是假文本。
+    cat = io.open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                               "ToolItemCatalog.cs"), encoding="utf-8").read()
+    # 常量名 kTopography -> 项 id topography，和 rows 里用的 id 对得上
+    single = set(re.sub(r"^k(.?)", lambda m: m.group(1).lower(), name)
+                 for name in re.findall(r"new ToolItemDef\((\w+),[^\n]*, (?:s_\w+|null), true\)", cat))
+
     def block(title_key, rows):
         out.append("")
         out.append("【板块】" + d[title_key])
@@ -49,11 +58,12 @@ def main():
             out.append("")
             out.append("── %s" % label)
             out.append("   说明: " + d["item.%s.desc" % item_id])
+            shared_key = "scope.line.sharedSingle" if item_id in single else "scope.line.shared"
             scope = [d["scope.desc"],
                      fill(d["scope.line.group"], d["item.%s.ex.group" % item_id]),
                      fill(d["scope.line.menu"], d["item.%s.ex.menu" % item_id]),
                      fill(d["scope.line.category"], d["item.%s.ex.category" % item_id]),
-                     d["scope.line.shared"],
+                     d[shared_key],
                      d["scope.line.unique"],
                      d["scope.note"]]
             out.append("   共用范围（%s）:" % d["scope.label"])

@@ -25,13 +25,17 @@ namespace ToolModeMemory.Systems
 		private Entity m_LastPrefabEntity;
 		private bool m_WarnedBlocked;
 
-		// 实时落盘防抖：改动停止 kFlushDelay 秒后写盘。崩溃也就丢这 1 秒内的改动，
-		// 而且写的是 tmp+替换，不会留下半截文件。
-		private const float kFlushDelay = 1f;
+		// 实时落盘防抖：玩家**停止改动** kFlushDelay 秒后才写盘。频繁切换工具的玩家
+		// 一次游戏能产生上百次改动，逐次写盘既伤硬盘又没必要（记忆只在下次进档时才用）。
+		// 10 秒的代价：闪退最多丢掉这 10 秒内的改动，而且写的是 tmp+替换，不会留下半截文件；
+		// 回主菜单、退出游戏、存档成功这三处都会立刻强制落盘，正常流程一点都不丢。
+		private const float kFlushDelay = 10f;
 		private long m_SeenSerial;
 		private float m_FlushAt;
 
-		// 一次 Capture/Apply 之内最多解析 5 个范围键（11 个工具项共用），跨调用必须重开
+		// 一次 Capture/Apply 之内，完整键（域+层级+家族）与裸层级键各最多解析 5 次
+		// （五档共用范围，12 个工具项共用同一份缓存：同一趟里 prefab/tool 是同一个），
+		// 跨调用必须重开。m_KeyPass 与 m_LevelKeyPass 在 CaptureNow/ApplyNow 顶端各自 +1。
 		private int m_KeyPass;
 		private readonly string[] m_Keys = new string[5];
 		private readonly int[] m_KeyPasses = new int[5];
@@ -153,7 +157,7 @@ namespace ToolModeMemory.Systems
 		}
 
 		/// <summary>
-		/// 实时保存：有新改动就把落盘时间往后推，改动停下来 1 秒后落盘。
+		/// 实时保存：有新改动就把落盘时间往后推，玩家停下来 kFlushDelay（10 秒）后才落盘。
 		/// 只有 Dirty 且到点才真正写，稳态下每帧只读两个字段，零分配。
 		/// </summary>
 		private void FlushDebounced()
@@ -200,8 +204,13 @@ namespace ToolModeMemory.Systems
 
 		public bool MasterEnabled { get { return base.Enabled; } }
 
-		private string KeyFor(ToolModeMemorySettings setting, PrefabBase prefab, ToolBaseSystem tool, MemoryScope scope)
+		private string KeyFor(ToolItemDef def, PrefabBase prefab, ToolBaseSystem tool, MemoryScope scope)
 		{
+			// 「游戏里只有一份值」的项在「全局共用」下必须只有一把键，否则这一档会碎成
+			// A|S$net / A|S$obj / F|S$area… 每组各一份，玩家看到的正是「设了全局共用
+			// 还是各工具组单独记忆」。详见 ToolItemCatalog.UsesFamilyFreeKey。
+			if (ToolItemCatalog.UsesFamilyFreeKey(def, scope)) return LevelKeyCached(scope, prefab, tool);
+
 			int slot = (int)scope;
 			if (slot < 0 || slot >= m_Keys.Length) slot = 0;
 			if (m_Keys[slot] != null && m_KeyPasses[slot] == m_KeyPass) return m_Keys[slot];
@@ -225,7 +234,6 @@ namespace ToolModeMemory.Systems
 		private void CaptureFilters(ToolModeMemorySettings setting, MemoryStore store,
 			PrefabBase prefab, ToolBaseSystem tool)
 		{
-			m_LevelKeyPass++;
 			ToolItemDef[] items = ToolItemCatalog.Items;
 			for (int i = 0; i < items.Length; i++)
 			{
@@ -277,7 +285,6 @@ namespace ToolModeMemory.Systems
 		private void RestoreFilters(ToolModeMemorySettings setting, MemoryStore store,
 			PrefabBase prefab, ToolBaseSystem tool)
 		{
-			m_LevelKeyPass++;
 			ToolItemDef[] items = ToolItemCatalog.Items;
 			for (int i = 0; i < items.Length; i++)
 			{
@@ -336,10 +343,18 @@ namespace ToolModeMemory.Systems
 			m_FilterKeys[1] = null;
 		}
 
-		/// <summary>筛选项用层级键（不含域/家族），单独一套每趟缓存。</summary>
+		/// <summary>裸层级键（不含域/家族）：筛选项与「全局共用 + 游戏里只有一份值」的工具项共用。</summary>
 		private string LevelKeyFor(ToolModeMemorySettings setting, ToolItemDef def, PrefabBase prefab, ToolBaseSystem tool)
 		{
-			MemoryScope scope = setting.GetItemScope(def.Id);
+			return LevelKeyCached(setting.GetItemScope(def.Id), prefab, tool);
+		}
+
+		/// <summary>
+		/// 裸层级键（不套资产/功能域、不套枚举家族）：工具栏筛选项与「全局共用 + 游戏里
+		/// 只有一份值」的工具项共用这条通道。每趟 Capture/Apply 由 m_LevelKeyPass 作废缓存。
+		/// </summary>
+		private string LevelKeyCached(MemoryScope scope, PrefabBase prefab, ToolBaseSystem tool)
+		{
 			int slot = (int)scope;
 			if (slot < 0 || slot >= m_LevelKeys.Length) slot = 0;
 			if (m_LevelKeys[slot] != null && m_LevelKeyPasses[slot] == m_LevelKeyPass) return m_LevelKeys[slot];
@@ -352,6 +367,9 @@ namespace ToolModeMemory.Systems
 		public void CaptureNow()
 		{
 			m_KeyPass++;
+			// 裸层级键的缓存同样一趟一作废：CaptureNow 里既有用到完整键的工具项，
+			// 也有只用层级键的筛选项，两批必须看到同一个 prefab/tool。
+			m_LevelKeyPass++;
 			ToolModeMemorySettings setting = ToolModeMemorySettings.Instance;
 			MemoryStore store = ToolModeMemoryMod.Store;
 			if (setting == null || !setting.Enabled || store == null) return;
@@ -375,7 +393,7 @@ namespace ToolModeMemory.Systems
 					string fieldId = subs == null ? def.Id : subs[j];
 					int value;
 					if (!ToolMemoryBridge.TryCapture(fieldId, tool, out value)) continue;
-					if (key == null) key = KeyFor(setting, prefab, tool, setting.GetItemScope(def.Id));
+					if (key == null) key = KeyFor(def, prefab, tool, setting.GetItemScope(def.Id));
 					store.Set(fieldId, key, value);
 				}
 			}
@@ -388,6 +406,7 @@ namespace ToolModeMemory.Systems
 		public void ApplyNow()
 		{
 			m_KeyPass++;
+			m_LevelKeyPass++;
 			ToolModeMemorySettings setting = ToolModeMemorySettings.Instance;
 			MemoryStore store = ToolModeMemoryMod.Store;
 			if (setting == null || !setting.Enabled || store == null) return;
@@ -401,7 +420,7 @@ namespace ToolModeMemory.Systems
 				ToolItemDef def = items[i];
 				if (!setting.IsItemEnabled(def.Id)) continue;
 				MemoryScope scope = setting.GetItemScope(def.Id);
-				string key = KeyFor(setting, prefab, tool, scope);
+				string key = KeyFor(def, prefab, tool, scope);
 
 				string[] subs = def.Subs;
 				int count = subs == null ? 1 : subs.Length;
