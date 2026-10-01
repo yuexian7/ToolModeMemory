@@ -35,12 +35,18 @@
     （列表页 LAST UPDATED 仍停在 0.2.1 发布时间 00:41，线上没有被手改过），因此本次 NewVersion
     覆盖元数据不会冲掉用户线上改动；本次只改 ModVersion 0.2.1 -> 0.2.2 与 ChangeLog。
     注意：编辑页地址必须带平台段 /Windows，写成 /mods/160529/edit 会被 SPA 退回首页。
-    2026-10-01（v0.3.0 发版前）：内嵌浏览器会话已掉登录（mods.paradoxplaza.com 顶部显示
-    "Log in"，/mods/160529/Windows 直接跳回首页），所以本次发版前**没能完成线上逐字段核对**。
-    上一次核对是 2026-09-29 发 0.2.3 之前：displayName / short / long / changelog / version /
-    userModVersion 当时全部与本文件一致，发完后线上就是本文件内容 + 0.2.3 的 ChangeLog。
-    若这期间用户在平台上改过元数据，NewVersion 会把它冲掉——因此本次上传需用户点头（或先登录
-    让我核对完再传）。本次改动本身只有 ModVersion 0.2.3 -> 0.3.0 与 ChangeLog。-->
+    2026-10-01（v0.3.0 发版前后，核对已做完）：发版前内嵌浏览器会话曾掉登录（顶部显示 "Log in"，
+    /mods/160529/Windows 跳回首页），用户重新登录后我逐字段核对了线上：`edit?version=7`（当时
+    banner 为 latest v0.2.3）的 displayName(16, 54c6c202e0946405) / short(124, f7d57e0a6ec954e4) /
+    long(1389, c7bdae4bb8a532b9)（sha256 前 16 位）与 userModVersion 0.2.3 全部与本文件计算值一致，
+    线上没有被手改过，NewVersion 覆盖元数据是安全的；本次只改 ModVersion 0.2.3 -> 0.3.0 与 ChangeLog。
+    发版后回读 `edit?version=8`：banner "Editing latest version · v0.3.0"，VERSION=0.3.0，
+    GAME VERSION=1.6.*，上述三字段哈希与本地逐项相同，CHANGELOG ENTRY 712 字符
+    sha 7ac509a4b9990860 == 本文件 ChangeLog 去掉首尾空白的值，并显示"本版本文件已上传"；
+    列表页 SIZE 107.72 -> 110.91 KB、LAST UPDATED 2026-10-01 22:24、仍 Private。
+    回读时 MOD INFO 的 MOD VER. 那一行整行消失（版本记录正在切换），公开 CHANGELOG 时间线顶端还是
+    v0.2.3——与 0.2.2/0.2.3 那两次同样的传播滞后，判断发版成功以 edit 页 + LAST UPDATED + SIZE 为准。
+    注意：编辑页地址必须带平台段 /Windows，写成 /mods/160529/edit 会被 SPA 退回首页。-->
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
 	<ModId Value="160529" />
