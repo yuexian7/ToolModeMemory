@@ -46,6 +46,8 @@
     列表页 SIZE 107.72 -> 110.91 KB、LAST UPDATED 2026-10-01 22:24、仍 Private。
     回读时 MOD INFO 的 MOD VER. 那一行整行消失（版本记录正在切换），公开 CHANGELOG 时间线顶端还是
     v0.2.3——与 0.2.2/0.2.3 那两次同样的传播滞后，判断发版成功以 edit 页 + LAST UPDATED + SIZE 为准。
+    22:33（发布后 9 分钟）再读列表页：MOD VER. 0.3.0 / SIZE 110.91 KB / CHANGELOG 顶端 v0.3.0 /
+    无 pending 横幅 / Private 徽章在，线上与本文件逐字段一致，没有被手改的痕迹。
     注意：编辑页地址必须带平台段 /Windows，写成 /mods/160529/edit 会被 SPA 退回首页。-->
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
