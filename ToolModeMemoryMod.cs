@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using Colossal.IO.AssetDatabase;
 using Colossal.Logging;
@@ -21,7 +22,7 @@ namespace ToolModeMemory
 	/// </summary>
 	public class ToolModeMemoryMod : IMod
 	{
-		public const string kVersion = "0.3.1";
+		public const string kVersion = "0.4.0";
 
 		public static ILog log = LogManager.GetLogger(nameof(ToolModeMemory)).SetShowsErrorsInUI(false);
 
@@ -33,6 +34,13 @@ namespace ToolModeMemory
 		private ToolMemorySystem m_System;
 		private bool m_QuitHooked;
 		private SaveIndex m_Index = new SaveIndex();
+
+		/// <summary>
+		/// 我们自己注册进本地化系统的 12 个词条源（卸载模组时必须一个个摘掉：
+		/// 本地化管理器是游戏对象，活得比模组久，留着就是对已卸载程序集的悬挂引用）。
+		/// </summary>
+		private string[] m_LocaleLocales;
+		private LocaleSource[] m_LocaleSources;
 
 		/// <summary>当前存档的 guid 文本（进档时解析出来就留着，用于索引）。</summary>
 		private string m_CurrentGuid;
@@ -64,10 +72,13 @@ namespace ToolModeMemory
 			try
 			{
 				string[] locales = LocaleTable.Locales;
+				m_LocaleSources = new LocaleSource[locales.Length];
 				for (int i = 0; i < locales.Length; i++)
 				{
-					GameManager.instance.localizationManager.AddSource(locales[i], new LocaleSource(m_Setting, locales[i]));
+					m_LocaleSources[i] = new LocaleSource(m_Setting, locales[i]);
+					GameManager.instance.localizationManager.AddSource(locales[i], m_LocaleSources[i]);
 				}
+				m_LocaleLocales = locales;
 				log.Info("Locale sources registered: " + locales.Length);
 			}
 			catch (Exception ex)
@@ -217,10 +228,15 @@ namespace ToolModeMemory
 				SaveIdentity.SaveMetaInfo metaInfo = guidText != null
 					? ReadSaveMeta(loadGuid) : new SaveIdentity.SaveMetaInfo();
 
+				// 只有真的进了自动存档才扫一次资产库（几条 metadata JSON，不读存档本体）。
+				// 扫它只为一件事：顺着 sessionGuid 找这份自动存档出自哪个手动存档。
+				SaveIdentity.SaveEntry[] siblings = (metaInfo.known && metaInfo.autoSave)
+					? CollectSaves(true) : null;
+
 				string resolved;
 				bool isPlaceholder;
 				bool named = SaveIdentity.TryResolveName(kind, guidText != null, guidText,
-					metaInfo, m_Index, out resolved, out isPlaceholder);
+					metaInfo, m_Index, siblings, out resolved, out isPlaceholder);
 
 				if (named)
 				{
@@ -236,7 +252,16 @@ namespace ToolModeMemory
 					}
 
 					// 记下 guid -> 存档名：资产库偶尔查不到（存档正在改名、云端只读副本）时还能认回来
-					if (!isPlaceholder && m_Index.Set(guidText, Store.SaveName)) SaveIndexToDisk();
+					if (!isPlaceholder)
+					{
+						bool changed = m_Index.Set(guidText, Store.SaveName);
+						// 顺带记「这条会话链属于哪个存档名」：原存档被删了也还认得它的自动存档
+						if (!string.IsNullOrEmpty(metaInfo.sessionGuid))
+						{
+							changed |= m_Index.Set(SaveIdentity.SessionKey(metaInfo.sessionGuid), Store.SaveName);
+						}
+						if (changed) SaveIndexToDisk();
+					}
 				}
 				else
 				{
@@ -299,6 +324,7 @@ namespace ToolModeMemory
 				}
 				info.cityName = target.cityName;
 				info.autoSave = target.autoSave;
+				info.sessionGuid = FormatSessionGuid(target.sessionGuid);
 				info.known = SaveIdentity.IsUsableName(info.name);
 			}
 			catch (Exception ex)
@@ -306,6 +332,64 @@ namespace ToolModeMemory
 				log.Warn("ReadSaveMeta: " + ex.GetType().Name + " " + ex.Message);
 			}
 			return info;
+		}
+
+		/// <summary>
+		/// 存档元数据里的 sessionGuid（"N" 格式）。Guid.Empty = 这条链无从判断
+		/// （1.6 之前存的档、或根本没写过这个字段的档），一律当未知。
+		/// </summary>
+		private static string FormatSessionGuid(Guid g)
+		{
+			if (g == Guid.Empty) return null;
+			return g.ToString("N");
+		}
+
+		/// <summary>扫描条数上限：正常玩家几十条存档，封顶只为防极端情况卡住进档。</summary>
+		private const int kMaxSaveScan = 300;
+
+		private static SaveIdentity.SaveEntry[] s_SaveScan;
+
+		/// <summary>
+		/// 扫资产库里所有存档的元数据，交给 SaveIdentity 判「这份自动存档出自哪个手动存档」。
+		/// reset=false 时复用上一次的结果（主菜单批量搬旧占位文件时不必每搬一条重扫一遍）。
+		///
+		/// 只在两个地方调用：进档（且进的是自动存档）与主菜单的一次性清理。
+		/// Metadata&lt;T&gt;.target 是懒读文件的（每条几 KB 的 JSON），一次扫描 = 几十次小文件读，
+		/// 亚毫秒级；绝不放进每帧路径（性能纪律见 开发笔记「不进每帧」一节）。
+		/// </summary>
+		private static SaveIdentity.SaveEntry[] CollectSaves(bool reset)
+		{
+			if (!reset && s_SaveScan != null) return s_SaveScan;
+			List<SaveIdentity.SaveEntry> list = new List<SaveIdentity.SaveEntry>(32);
+			try
+			{
+				IEnumerable<SaveGameMetadata> all = AssetDatabase.global.GetAssets<SaveGameMetadata>();
+				if (all != null)
+				{
+					foreach (SaveGameMetadata m in all)
+					{
+						if (m == null) continue;
+						if (list.Count >= kMaxSaveScan) break;
+						SaveInfo t;
+						try { t = m.target; } catch { continue; }
+						if (t == null) continue;
+						if (!SaveIdentity.IsUsableName(m.name)) continue;
+						SaveIdentity.SaveEntry e = new SaveIdentity.SaveEntry();
+						e.name = m.name;
+						e.cityName = t.cityName;
+						e.autoSave = t.autoSave;
+						e.sessionGuid = FormatSessionGuid(t.sessionGuid);
+						e.modified = t.lastModified.Ticks;
+						list.Add(e);
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				log.Warn("CollectSaves: " + ex.GetType().Name + " " + ex.Message);
+			}
+			s_SaveScan = list.ToArray();
+			return s_SaveScan;
 		}
 
 		private static bool TryGetInstigatorGuid(out Colossal.Hash128 guid)
@@ -334,6 +418,7 @@ namespace ToolModeMemory
 				if (Store == null) return;
 
 				string metaId = null;
+				string sessionGuid = null;
 				bool auto = true;
 				try
 				{
@@ -343,7 +428,11 @@ namespace ToolModeMemory
 						// 口径必须和 instigatorGuid 一致：Identifier.ToString() 会带 "[uri]"
 						Colossal.Hash128 metaGuid = meta.id;
 						if (metaGuid.isValid) metaId = metaGuid.ToString();
-						auto = meta.target == null ? true : meta.target.autoSave;
+						if (meta.target != null)
+						{
+							auto = meta.target.autoSave;
+							sessionGuid = FormatSessionGuid(meta.target.sessionGuid);
+						}
 					}
 				}
 				catch { }
@@ -355,9 +444,17 @@ namespace ToolModeMemory
 					return;
 				}
 
-				// 只允许把「本次会话的占位文件」改名接管；正式存档名之间不搬文件
-				Store.AdoptSaveName(saveName);
-				if (m_Index.Set(m_CurrentGuid ?? metaId, saveName)) SaveIndexToDisk();
+				// 占位名（新建城市第一次存盘）→ 把占位文件改名接管；
+				// 已经有正式名字了但玩家「另存为」成别的名字 → 复制一份给新档，本局之后按新名字写。
+				if (Store.IsPlaceholder) Store.AdoptSaveName(saveName);
+				else Store.CarryOverTo(saveName);
+				bool changed = m_Index.Set(m_CurrentGuid ?? metaId, saveName);
+				// 玩家手动存盘 = 这条会话链现在有了正式名字，记下来，之后它的自动存档就认这个名字
+				if (!string.IsNullOrEmpty(sessionGuid))
+				{
+					changed |= m_Index.Set(SaveIdentity.SessionKey(sessionGuid), saveName);
+				}
+				if (changed) SaveIndexToDisk();
 				if (m_System != null) m_System.FlushIfDirty();
 				else if (Store.Dirty) Store.SaveToDisk();
 				log.Info("Save named '" + saveName + "', memory flushed.");
@@ -409,6 +506,8 @@ namespace ToolModeMemory
 				string dir = MemoryStore.DataDirectory;
 				if (!System.IO.Directory.Exists(dir)) return;
 				string[] files = System.IO.Directory.GetFiles(dir, SaveIdentity.AUTO_PREFIX + "*.json");
+				if (files.Length == 0) return;
+				CollectSaves(true);   // 一次性扫库，下面每条旧文件都复用这份结果
 				int moved = 0;
 				for (int i = 0; i < files.Length; i++)
 				{
@@ -441,9 +540,13 @@ namespace ToolModeMemory
 			if (!Colossal.Hash128.TryParse(guidText, out g) || !g.isValid) return null;
 			bool placeholder;
 			string name;
+			SaveIdentity.SaveMetaInfo meta = ReadSaveMeta(g);
 			bool ok = SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, guidText,
-				ReadSaveMeta(g), new SaveIndex(), out name, out placeholder);
-			return ok ? name : null;
+				meta, s_Instance != null ? s_Instance.m_Index : new SaveIndex(),
+				(meta.known && meta.autoSave) ? CollectSaves(false) : null,
+				out name, out placeholder);
+			if (!ok || placeholder) return null;   // 认不准就不搬：留下的 _auto_ 文件比搬错强
+			return name;
 		}
 
 		private void OnApplicationQuitting()
@@ -476,6 +579,33 @@ namespace ToolModeMemory
 			}
 		}
 
+		/// <summary>
+		/// 把 OnLoad 注册的 12 个词条源逐个摘掉。本地化管理器是游戏的对象，会活得比我们久：
+		/// 留着 = 卸载后每次重载语言都要回调进一个已消失的程序集。
+		/// 注册到一半就失败的情况也覆盖（数组里允许出现 null）。
+		/// </summary>
+		private void RemoveLocaleSources()
+		{
+			if (m_LocaleSources == null || m_LocaleLocales == null) return;
+			Colossal.Localization.LocalizationManager lm = null;
+			try { lm = GameManager.instance != null ? GameManager.instance.localizationManager : null; } catch { }
+			if (lm == null) return;
+			int removed = 0;
+			for (int i = 0; i < m_LocaleLocales.Length && i < m_LocaleSources.Length; i++)
+			{
+				if (m_LocaleSources[i] == null) continue;
+				try
+				{
+					lm.RemoveSource(m_LocaleLocales[i], m_LocaleSources[i]);
+					removed++;
+				}
+				catch { }
+			}
+			m_LocaleSources = null;
+			m_LocaleLocales = null;
+			log.Info("Locale sources removed: " + removed);
+		}
+
 		public void OnDispose()
 		{
 			log.Info("Tool Mode Memory OnDispose");
@@ -503,6 +633,34 @@ namespace ToolModeMemory
 			catch { }
 
 			SafeFlush("dispose");
+
+			// 卸载模组 = 本程序集随时可能消失，凡是「挂在游戏对象上的东西」都必须当场摘干净，
+			// 否则玩家下次进存档就会看到因本模组卸载而引起的报错（需求 8）。
+			try
+			{
+				if (m_System != null) m_System.Detach();
+			}
+			catch (Exception ex)
+			{
+				log.Warn("System detach: " + ex.GetType().Name);
+			}
+
+			try
+			{
+				RemoveLocaleSources();
+			}
+			catch (Exception ex)
+			{
+				log.Warn("RemoveLocaleSources: " + ex.GetType().Name);
+			}
+
+			// 桥接类里缓存的都是当前 World 的对象（系统实例、prefabSystem、EntityManager、
+			// 工具栏 UI 系统、Anarchy 实例）：世界随时可能被销毁，退出前一律丢掉。
+			try
+			{
+				ToolMemoryBridge.ForgetNames();
+			}
+			catch { }
 
 			try
 			{

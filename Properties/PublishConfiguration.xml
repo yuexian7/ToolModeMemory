@@ -53,11 +53,16 @@
     但**没有执行 NewVersion，线上此刻仍是 v0.3.0**——本文件与线上故意不一致。
     下次要发布时先按纪律重新读编辑页逐字段核对（确认这期间没人在线上改过元数据），
     再决定直接 NewVersion 还是先把线上改动同步进来。
-    注意：编辑页地址必须带平台段 /Windows，写成 /mods/160529/edit 会被 SPA 退回首页。-->
+    注意：编辑页地址必须带平台段 /Windows，写成 /mods/160529/edit 会被 SPA 退回首页。
+    2026-10-02（v0.4.0）：v0.3.1 按 owner 要求从未上传，其内容（同类资产按服务对象归类）
+    已随 v0.4.0 一起发布，所以线上会一次性从 v0.3.0 跳到 v0.4.0；本文件此刻与线上故意不一致。
+    发版前必须再读一次 `edit?version=8`（或当时的最新版记录）逐字段核对
+    displayName / short / long 的 sha256[:16] 与长度，确认这期间没人在线上改过元数据，
+    有差异就先把差异同步进本文件再发，绝不用本地值覆盖 owner 在线上改过的地方。-->
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
 	<ModId Value="160529" />
-	<ModVersion Value="0.3.1" />
+	<ModVersion Value="0.4.0" />
 	<GameVersion Value="1.6.*" />
 	<!--Private = 不公开（用户要求）。若平台拒绝此值再改 Unlisted。-->
 	<AccessLevel Value="Private" />
@@ -71,16 +76,20 @@
 	<ExternalLink Type="kofi" Url="https://ko-fi.com/yuexian7" />
 	<ExternalLink Type="x" Url="https://x.com/yuexian777/status/2101942150447702427?s=20" />
 	<ChangeLog>
-v0.3.1
+v0.4.0
 
-*   "Same asset type" now groups assets by what they actually serve: alleys, roads of any width and bridges form one group, while pathways, metro tracks, train tracks and power cables are each their own, and primary and high school count as one - so lane count, size and level no longer split a setting.
-*   This scope no longer follows the toolbar layout: the "Compatible with other mods" switch now only covers Same group and Same menu.
-*   Reworded the "Same asset type" line and its examples in all 12 languages.
+*   The three Anarchy items (Anarchy, Left & Right, Regular) now actually take effect - they were silently doing nothing before.
+*   "Same asset type" now keeps bridges, quays and intersections separate from ordinary roads, while parking lots of different sizes count as one type.
+*   Memory files are named after the save you see in the Load Game list. Loading an auto save now uses the original save's memory file, and saving under a new name brings the memory along.
+*   Parallel mode description corrected: it is always two lines, and what you set is the spacing between them.
+*   Lower overhead while playing, cleaner removal, and items we advise against are now labelled "not recommended" instead of "off by default".
 
 中文
 
-*   「同类资产」改为按资产实际服务谁归类：小巷、各车道数的道路与桥梁算同一类，步行道、地铁轨道、火车轨道、电缆各算一类，小学与中学同类；车道数、大小、级别不再把同一项设置拆开。
-*   这一档不再跟随工具栏的排布：「是否兼容其它模组」开关从此只管「同组」和「同菜单」两档。
-*   12 种语言重写了「同类资产」这一行的说明和例子。
+*   Anarchy 的三个工具项（Anarchy、左侧和右侧、常规）终于真正生效，此前它们一直在空转。
+*   「同类资产」把桥梁、埠头、交叉路口与普通道路分开，不同规模的停车场则并成同一类。
+*   记忆文件改用「载入游戏」里看到的存档名命名；打开自动存档时使用它原存档名的记忆文件，另存为新存档时记忆也会跟过去。
+*   并列模式的说明改正：并列固定是两条线，能调的是两条之间的间距。
+*   降低游玩时的开销，卸载更干净；不建议开启的工具项在说明里改成「不推荐开」。
 </ChangeLog>
 </PublishConfiguration>

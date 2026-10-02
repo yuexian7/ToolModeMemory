@@ -64,6 +64,38 @@ namespace ToolModeMemory
 		public bool Tree;
 
 		/// <summary>
+		/// 桥梁：prefab 实体上有 BridgeData（官方编辑器同样用它的有无来分「道路 / 桥梁」两类，
+		/// 见 Game.UI.Editor.EditorAssetCategorySystem.GenerateRoadCategory: RoadData 且
+		/// ComponentType.Exclude&lt;BridgeData&gt;，GenerateBridgeCategory: ReadOnly&lt;BridgeData&gt;）。
+		/// 桥梁元素只能加在 Road/Track/Pathway prefab 上（Game.Prefabs.Bridge 的 ComponentMenu），
+		/// 所以 BridgeData 出现的实体一定同时带着某类通行对象——但它的服务对象是「让车流过河/过谷」，
+		/// 与同一条路的地面段不同，故单独成类。
+		/// </summary>
+		public bool Bridge;
+
+		/// <summary>
+		/// 埠头：PlaceableNetData.m_PlacementFlags 带 Game.Net.PlacementFlags.ShoreLine(0x400)。
+		/// 这个位只由 NetInitializeSystem 在 L2337-2339 对 BridgeBuildStyle.Quay 的桥写入，
+		/// 也就是「贴岸而建、下面不能过水」的那一类，玩家眼里既不是桥也不是路。
+		/// </summary>
+		public bool Quay;
+
+		/// <summary>
+		/// 路口预制件：AssetStampData + Game.Prefabs.SubNet 同时存在
+		/// （官方编辑器的 Intersections 类别用的就是这条查询，EditorAssetCategorySystem L794-795）。
+		/// 它是「按一下盖一整块交叉口/匝道」的印章资产，模式与高度语义都跟拉伸的路不同。
+		/// </summary>
+		public bool Intersection;
+
+		/// <summary>
+		/// 停车场：建筑 prefab 上有 ParkingFacilityData。官方 CityService 枚举里根本没有
+		/// 「停车」这一项，所以停车场过去既没有对象也没有服务可归类 → 每个资产各记一份；
+		/// 而「宽阔停车场 / 大型停车场」只是容量不同（ParkingFacilityData.m_GarageMarkerCapacity），
+		/// 服务的对象都是停车，故全部并成同一类。
+		/// </summary>
+		public bool Parking;
+
+		/// <summary>
 		/// 全空的事实。字段刻意设计成「默认值 = 什么都不知道」（服务用 HasService 标记而不是用
 		/// 序号 -1 当哨兵），这样漏填字段的后果是退化成不分类，而不是退化成某个真的类。
 		/// </summary>
@@ -76,9 +108,14 @@ namespace ToolModeMemory
 	/// <summary>
 	/// 「同类资产」判定：按**这件资产服务谁**归群，而不是按工具栏把它的图标摆在哪个分类下。
 	///
-	/// 归并规则（owner 2026-10-01 的原话：「按对象是否一致判断」）：
-	///   给车走的算一类（小巷 / 两车道道路 / 六车道道路 / 高架 / 各类桥梁 / 隧道 全部同类，
+	/// 归并规则（owner 2026-10-01 的原话：「按对象是否一致判断」；2026-10-02 补充：
+	/// 「桥梁、埠头和道路肯定不是同一类」「只是大小不一样的停车场肯定是同一类」）：
+	///   给车走的地面路算一类（小巷 / 两车道道路 / 六车道道路 / 高架 / 隧道 全部同类，
 	///     车道数、宽窄、级别都不算区别）；
+	///   桥梁单独一类（它的对象是「让车流跨过水面或谷底」，普通路面不需要这件事）；
+	///   埠头单独一类（贴岸而建，官方实现里它连抬升方式都和桥不一样）；
+	///   路口 / 匝道预制件单独一类（按一下盖一整块，不是拉伸出来的线）；
+	///   停车场全部一类（宽阔与大型只是容量差别，服务的都是停车）；
 	///   给人走的另算一类（步行道、人行天桥、自行车道 ≠ 车行路）；
 	///   火车轨道 / 地铁轨道 / 有轨电车轨道 各算一类（对象分别是火车、地铁、电车）；
 	///   航道不论宽窄都是船；电缆、高压线、接触网都算「输电」这一件事，
@@ -169,6 +206,13 @@ namespace ToolModeMemory
 		/// <summary>记忆键里分类段的固定前缀（与旧的 UI 分类名区分开，旧键自然失效，不会串到别的资产上）。</summary>
 		public const string KEY_PREFIX = "K:";
 
+		// 四类「不看通行对象，看这件资产到底是干什么用的」的类别名。
+		// 与上面 TOKEN_NAME 里的对象令牌区分开：这四类各成一组，不与对象令牌复合。
+		private const string NAME_BRIDGE = "bridge";
+		private const string NAME_QUAY = "quay";
+		private const string NAME_INTERSECTION = "intersection";
+		private const string NAME_PARKING = "parking";
+
 		/// <summary>
 		/// 算出「同类资产」的键片段；判不出来返回 null（调用方退化成按单个资产记忆）。
 		/// 永不抛异常：分类失败绝不能把异常传到游戏主循环。
@@ -177,6 +221,14 @@ namespace ToolModeMemory
 		{
 			try
 			{
+				// 先判这四类：它们的存在本身就已经说明「这件资产服务的是另一件事」，
+				// 比它底下铺了什么车道更具体，所以优先级最高。
+				// 埠头排在桥前面：埠头就是按 Quay 方式建的桥，两个标记会同时为真。
+				if (f.Quay) return KEY_PREFIX + NAME_QUAY;
+				if (f.Bridge) return KEY_PREFIX + NAME_BRIDGE;
+				if (f.Intersection) return KEY_PREFIX + NAME_INTERSECTION;
+				if (f.Parking) return KEY_PREFIX + NAME_PARKING;
+
 				ulong set = Tokens(f);
 				if (set == 0UL)
 				{

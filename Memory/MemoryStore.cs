@@ -125,6 +125,40 @@ namespace ToolModeMemory.Memory
 		}
 
 		/// <summary>
+		/// 「另存为」：玩家把当前城市存成一个新名字时，本份记忆**复制**给新存档名，
+		/// 之后本局按新名字写。旧存档的记忆文件原地不动（它还在那儿，下次进旧档还得用）。
+		/// 目标文件已存在时什么都不复制（以那份档自己的记忆为准），但本局仍然改用新名字写。
+		/// 与 AdoptSaveName 的区别：那个只搬占位文件，这个搬正式文件，而且是复制不是移动。
+		/// 返回是否真的换了名字。
+		/// </summary>
+		public bool CarryOverTo(string saveName)
+		{
+			if (string.IsNullOrEmpty(saveName)) return false;
+			if (m_WriteBlocked) return false;
+			string next = SanitizeFileName(saveName);
+			if (next == m_SaveName)
+			{
+				m_Placeholder = false;
+				return false;
+			}
+			string oldPath = CurrentFilePath();
+			m_SaveName = next;
+			m_Placeholder = false;
+			string newPath = CurrentFilePath();
+			try
+			{
+				if (!string.IsNullOrEmpty(oldPath) && !string.IsNullOrEmpty(newPath)
+					&& File.Exists(oldPath) && !File.Exists(newPath))
+				{
+					Directory.CreateDirectory(DataDirectory);
+					File.Copy(oldPath, newPath, false);
+				}
+			}
+			catch { }
+			return true;
+		}
+
+		/// <summary>
 		/// 一次性搬家：旧版本（认不出存档名时）写成 _auto_&lt;guid&gt;.json，
 		/// 现在名字确证了，就把那份记忆搬到正式名字下，玩家不必重设一遍。
 		/// 目标已存在时以正式名字为准，把旧占位文件当垃圾清掉（它只可能属于当前这个 guid）。

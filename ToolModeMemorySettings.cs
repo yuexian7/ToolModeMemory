@@ -466,7 +466,11 @@ namespace ToolModeMemory
 				{
 					sys = Unity.Entities.World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<Systems.ToolMemorySystem>();
 				}
-				if (sys != null && sys.MasterEnabled) sys.RequestApply();
+				if (sys == null) return;
+				// 玩家刚改的可能是「与其他模组兼容」或某一项的共用范围，两者都会改变键的算法；
+				// 系统的键缓存现在改成按工具/资产复用（性能），所以这里必须主动作废一次。
+				sys.ForgetKeysAndCache();
+				if (sys.MasterEnabled) sys.RequestApply();
 			}
 			catch { }
 		}

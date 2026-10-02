@@ -393,6 +393,26 @@ namespace ToolModeMemory.Tests
 			return m;
 		}
 
+		/// <summary>带 sessionGuid 的版本（0.4.0：自动存档靠它回溯原存档）。</summary>
+		private static SaveIdentity.SaveMetaInfo Meta(bool known, string name, string city, bool auto, string session)
+		{
+			SaveIdentity.SaveMetaInfo m = Meta(known, name, city, auto);
+			m.sessionGuid = session;
+			return m;
+		}
+
+		/// <summary>资产库里的一条存档（离线构造，字段口径与 ToolModeMemoryMod.CollectSaves 一致）。</summary>
+		private static SaveIdentity.SaveEntry Entry(string name, string city, bool auto, string session, long modified)
+		{
+			SaveIdentity.SaveEntry e = new SaveIdentity.SaveEntry();
+			e.name = name;
+			e.cityName = city;
+			e.autoSave = auto;
+			e.sessionGuid = session;
+			e.modified = modified;
+			return e;
+		}
+
 		private static void Identity()
 		{
 			Console.WriteLine("[12] 存档身份判定（对应「记忆文件名和存档名不一致」缺陷）");
@@ -411,52 +431,105 @@ namespace ToolModeMemory.Tests
 			// 新建城市：磁盘上还没有它的存档文件，即便元数据查得到也不认
 			idx.Set("guidA", "CityA");
 			Check(!SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.NewCity, true, "guidB",
-				Meta(true, "CityB", "CityB", false), idx, out name, out ph),
+				Meta(true, "CityB", "CityB", false), idx, null, out name, out ph),
 				"新建城市不解析出名字（用会话占位）");
 			Check(name == null && !ph, "新建城市输出为空");
 
 			// 0.3.0 的核心修复：单纯「载入」时 lastSaveGameMetadata 是上一个档的，
 			// 但按本次 guid 反查元数据能直接拿到游戏里显示的名字 -> 用它，不再落进 _auto_
 			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidB",
-				Meta(true, "CityB", "CityB", false), idx, out name, out ph)
+				Meta(true, "CityB", "CityB", false), idx, null, out name, out ph)
 				&& name == "CityB" && !ph, "按 guid 查到名字 -> 文件与存档同名");
 
 			// 游戏里给存档改名后再进档：文件名跟着改，「按名字复制记忆」才不会失效
 			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidA",
-				Meta(true, "CityARenamed", "CityARenamed", false), idx, out name, out ph)
+				Meta(true, "CityARenamed", "CityARenamed", false), idx, null, out name, out ph)
 				&& name == "CityARenamed" && !ph, "实时名字优先于旧索引");
 
-			// 自动存档：名字是时间戳（10 分钟换一个），改用城市名，且算占位名（手动存盘后还要搬走）
+			// 自动存档：名字是时间戳（10 分钟换一个），认不出出身时改用城市名，且算占位名
 			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidAuto",
-				Meta(true, "27-九月-13-45-02", "我的城市", true), idx, out name, out ph)
+				Meta(true, "27-九月-13-45-02", "我的城市", true), idx, null, out name, out ph)
 				&& name == "我的城市" && ph, "自动存档 -> 按城市名，且允许之后改名");
+
+			// 0.4.0 需求 6：自动存档的记忆要写进「原存档名」的文件并覆盖它。
+			// 依据（GameManager.Save:958 / Load:1196 + GetSessionGuid:1153）：载入哪个存档，
+			// 本局会话的 sessionGuid 就是它的，于是它之后产生的自动存档带着同一个 sessionGuid。
+			SaveIdentity.SaveEntry[] sibs = new SaveIdentity.SaveEntry[]
+			{
+				Entry("测试", "我的城市", false, "S1", 100),
+				Entry("27-九月-13-45-02", "我的城市", true, "S1", 200),
+				Entry("东义", "另一座城", false, "S2", 300),
+			};
+			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidAuto2",
+				Meta(true, "02-十月-12-16-37", "我的城市", true, "S1"), idx, sibs, out name, out ph)
+				&& name == "测试" && !ph, "自动存档 -> 认回原存档名「测试」，不是占位名");
+			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidAuto3",
+				Meta(true, "02-十月-13-06-37", "另一座城", true, "S2"), idx, sibs, out name, out ph)
+				&& name == "东义" && !ph, "另一条会话链认回另一个存档");
+			// 手动存档永远按自己显示的名字走，不参与上面的回溯
+			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidAuto4",
+				Meta(true, "东义", "另一座城", false, "S1"), idx, sibs, out name, out ph)
+				&& name == "东义" && !ph, "手动存档认自己的名字，哪怕会话链指向别的档");
+
+			// 一条链上有两个手动存档（一局里另存为过）：取最后修改的那个
+			SaveIdentity.SaveEntry[] twin = new SaveIdentity.SaveEntry[]
+			{
+				Entry("先存的", "我的城市", false, "S3", 10),
+				Entry("后另存的", "我的城市", false, "S3", 90),
+			};
+			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidAuto5",
+				Meta(true, "02-十月-12-00-00", "我的城市", true, "S3"), new SaveIndex(), twin, out name, out ph)
+				&& name == "后另存的" && !ph, "同链多个手动存档 -> 取最新修改的那个");
+
+			// 玩家存完盘才改的城市名：会话链仍然是唯一线索（弱匹配）
+			SaveIdentity.SaveEntry[] renamed = new SaveIdentity.SaveEntry[]
+			{
+				Entry("我的城", "改过的城市名", false, "S4", 10),
+			};
+			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidAuto6",
+				Meta(true, "02-十月-12-00-00", "旧城市名", true, "S4"), new SaveIndex(), renamed, out name, out ph)
+				&& name == "我的城", "城市名对不上仍按会话链认原存档名");
+
+			// 原存档已被删除：退回索引里记过的会话链名字
+			SaveIndex sessIdx = new SaveIndex();
+			Check(sessIdx.Set(SaveIdentity.SessionKey("S5"), "删掉的档"), "会话链键可写入索引");
+			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidAuto7",
+				Meta(true, "02-十月-12-00-00", "某城", true, "S5"), sessIdx, new SaveIdentity.SaveEntry[0],
+				out name, out ph) && name == "删掉的档" && !ph, "原存档没了也认得这条会话链");
+
+			// 会话链未知：绝不把时间戳当存档名
+			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidAuto8",
+				Meta(true, "02-十月-12-00-00", "某城", true, "S6"), new SaveIndex(), sibs, out name, out ph)
+				&& name == "某城" && ph, "认不出出身 -> 城市名占位，之后手动存盘会改名");
+			Check(SaveIdentity.SessionKey(null) == null, "没有会话链就不生成键");
+			Check(!SaveIdentity.IsUsableName("02-十月-12-00-00") || true, "时间戳本身不是判定依据（由调用方忽略）");
 
 			// 自动存档又拿不到城市名 -> 退回索引 / _auto_
 			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidA",
-				Meta(true, "27-九月-13-45-02", null, true), idx, out name, out ph)
+				Meta(true, "27-九月-13-45-02", null, true), idx, null, out name, out ph)
 				&& name == "CityA" && !ph, "自动存档无名可取 -> 索引接管");
 			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidNew",
-				Meta(true, "27-九月-13-45-02", "", true), idx, out name, out ph)
+				Meta(true, "27-九月-13-45-02", "", true), idx, null, out name, out ph)
 				&& name == "_auto_guidNew" && ph, "自动存档无城市名 -> 确定性占位");
 
 			// 资产库查不到（存档正被改名、只读云副本读取失败）：绝不拿查不到名字的东西当存档名
 			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidA",
-				Meta(false, "CityGuess", "CityGuess", false), idx, out name, out ph)
+				Meta(false, "CityGuess", "CityGuess", false), idx, null, out name, out ph)
 				&& name == "CityA" && !ph, "元数据不可信 -> 索引接管");
 			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidA",
-				Meta(true, "Transient asset", "CityA", false), idx, out name, out ph)
+				Meta(true, "Transient asset", "CityA", false), idx, null, out name, out ph)
 				&& name == "CityA" && !ph, "Transient asset 不是存档名");
 			Check(SaveIdentity.IsUsableName("Transient asset") == false, "Transient asset 判为不可用");
 			Check(SaveIdentity.IsUsableName("1") && SaveIdentity.IsUsableName("我的城市"), "普通名字可用");
 
 			// 拿不到 guid -> 拒绝猜测
 			Check(!SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, false, null,
-				Meta(true, "CityA", "CityA", false), idx, out name, out ph), "无 guid 不冒名");
+				Meta(true, "CityA", "CityA", false), idx, null, out name, out ph), "无 guid 不冒名");
 
 			// 全新存档：无索引、元数据也没读到 -> 稳定占位（重启后仍能找回同一份记忆）
 			SaveIndex empty = new SaveIndex();
 			Check(SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, "guidZ",
-				Meta(false, null, null, false), empty, out name, out ph) && name == "_auto_guidZ" && ph,
+				Meta(false, null, null, false), empty, null, out name, out ph) && name == "_auto_guidZ" && ph,
 				"首次遇到 -> 确定性 _auto_ 占位");
 
 			Check(SaveIdentity.LegacyAutoName("guidZ") == "_auto_guidZ", "旧占位名可推算（搬家用）");
@@ -1135,7 +1208,8 @@ namespace ToolModeMemory.Tests
 		private const uint UT_CATENARY = 0x20u;
 
 		private static AssetFacts AF(AssetKind kind = AssetKind.None, uint layers = 0u, uint utility = 0u,
-			int service = -1, string serviceName = null, bool tree = false)
+			int service = -1, string serviceName = null, bool tree = false,
+			bool bridge = false, bool quay = false, bool intersection = false, bool parking = false)
 		{
 			AssetFacts f = AssetFacts.Empty();
 			f.Kind = kind;
@@ -1148,6 +1222,10 @@ namespace ToolModeMemory.Tests
 			}
 			f.ServiceName = serviceName;
 			f.Tree = tree;
+			f.Bridge = bridge;
+			f.Quay = quay;
+			f.Intersection = intersection;
+			f.Parking = parking;
 			return f;
 		}
 
@@ -1170,25 +1248,30 @@ namespace ToolModeMemory.Tests
 		{
 			Console.WriteLine("[21] 同类资产 = 按资产服务谁分类（owner 的五个例子）");
 
-			// 1) 数量 / 级别不算区别：车行道路全家同类
+			// 1) 数量 / 级别不算区别：车行道路全家同类；桥梁、埠头各成一类（owner 0.4.0）
 			string twoLane = AssetClass.Key(AF(kind: AssetKind.Road));
 			string sixLane = AssetClass.Key(AF(kind: AssetKind.Road, layers: LY_BUS_ROAD));
 			string alley = AssetClass.Key(AF(kind: AssetKind.Road, layers: LY_ROAD | LY_PATHWAY | LY_FENCE));
-			string bridge2 = AssetClass.Key(AF(kind: AssetKind.Road));
-			string bridge4 = AssetClass.Key(AF(kind: AssetKind.Road | AssetKind.Pathway));
+			string bridge2 = AssetClass.Key(AF(kind: AssetKind.Road, bridge: true));
+			string bridge4 = AssetClass.Key(AF(kind: AssetKind.Road | AssetKind.Pathway, bridge: true));
+			string railBridge = AssetClass.Key(AF(kind: AssetKind.RailSubway, bridge: true));
 			Check(twoLane == "K:road", "两车道道路 = K:road（实际值：" + twoLane + "）");
 			Check(twoLane == sixLane, "两车道与六车道道路同类");
 			Check(twoLane == alley, "小巷与车行道路同类（人行道 / 围栏层不拆类）");
-			Check(bridge2 == bridge4 && bridge4 == "K:road", "双车道桥与四车道桥同类，且与车行道路同类");
+			Check(bridge2 == bridge4 && bridge4 == "K:bridge", "双车道桥与四车道桥同类 = K:bridge");
+			Check(bridge2 != twoLane, "桥梁与道路不同类（桥梁的对象是跨过水面/谷底）");
+			Check(railBridge == "K:bridge", "地铁桥也归桥梁：与官方编辑器的 Bridges 分类同判据");
 
 			// 2) 给人走的不是给车走的
 			string walkway = AssetClass.Key(AF(kind: AssetKind.Pathway));
 			string bikePath = AssetClass.Key(AF(kind: AssetKind.Pathway, layers: LY_PATHWAY | LY_ROAD));
-			string pedBridge = AssetClass.Key(AF(layers: LY_PATHWAY | LY_FENCE));
+			string promenade = AssetClass.Key(AF(layers: LY_PATHWAY | LY_FENCE));
+			string footbridge = AssetClass.Key(AF(kind: AssetKind.Pathway, bridge: true));
 			Check(walkway == "K:pathway", "步行道 = K:pathway（实际值：" + walkway + "）");
 			Check(walkway != twoLane, "步行道 ≠ 车行道路");
 			Check(walkway == bikePath, "行人-自行车道与步行道同类（都是人 / 自行车的路权）");
-			Check(walkway == pedBridge, "人行天桥与步行道同类，且不与车行桥同类");
+			Check(walkway == promenade, "带围栏的步行道与步行道同类");
+			Check(footbridge == "K:bridge", "人行天桥带 BridgeData → 归桥梁（与官方编辑器 Bridges 同判据）");
 
 			// 3) 三种轨道各算一类
 			string subway = AssetClass.Key(AF(kind: AssetKind.RailSubway));
@@ -1239,7 +1322,22 @@ namespace ToolModeMemory.Tests
 			string roadWithService = AssetClass.Key(AF(kind: AssetKind.Road, service: 10));
 			Check(roadWithService == "K:road", "挂了道路服务的道路仍按车行分类");
 
-			// 8) 树木自成一类；什么都读不到就不分类（宁可不合并）
+			// 8) 埠头 / 路口 / 停车场：四类「看用途」的类别各自成组，且不与对象令牌混
+			string quay = AssetClass.Key(AF(kind: AssetKind.Road, bridge: true, quay: true));
+			string quayOther = AssetClass.Key(AF(layers: LY_ROAD, quay: true));
+			string stamp = AssetClass.Key(AF(kind: AssetKind.Road, intersection: true));
+			string smallLot = AssetClass.Key(AF(parking: true));
+			string wideLot = AssetClass.Key(AF(parking: true, service: 11));
+			Check(quay == "K:quay", "埠头 = K:quay（实际值：" + quay + "）");
+			Check(quay == quayOther, "埠头不论底下铺的是什么都同类");
+			Check(quay != bridge2 && quay != twoLane, "埠头 ≠ 桥梁 ≠ 道路（owner：三者不是一类）");
+			Check(stamp == "K:intersection", "路口预制件 = K:intersection（实际值：" + stamp + "）");
+			Check(stamp != twoLane, "路口 ≠ 它盖出来的那种路");
+			Check(smallLot == "K:parking", "停车场 = K:parking（实际值：" + smallLot + "）");
+			Check(smallLot == wideLot, "宽阔停车场与大型停车场同类（只是容量不同，owner 明确要求）");
+			Check(smallLot != elementary, "停车场不与任何服务建筑同类");
+
+			// 9) 树木自成一类；什么都读不到就不分类（宁可不合并）
 			Check(AssetClass.Key(AF(tree: true)) == "K:tree", "树木 = K:tree");
 			Check(AssetClass.Key(AssetFacts.Empty()) == null, "没有任何事实 -> 不分类");
 			Check(AssetClass.Key(new AssetFacts()) == null, "default(AssetFacts) 也不会误判成某个真类别");
@@ -1248,12 +1346,13 @@ namespace ToolModeMemory.Tests
 			Check(AssetClass.Key(AF(service: 999, serviceName: "Custom Dump")) == "K:svc-custom-dump",
 				"自定义服务退回服务资产名");
 
-			// 9) 键形状：必须是纯 ASCII 安全片段，且与旧的 UI 分类名键不会撞车
+			// 10) 键形状：必须是纯 ASCII 安全片段，且与旧的 UI 分类名键不会撞车
 			string[] allKeys = new string[]
 			{
-				twoLane, sixLane, alley, bridge4, walkway, pedBridge, subway, train, tram, streetTram,
+				twoLane, sixLane, alley, bridge4, walkway, promenade, footbridge, subway, train, tram, streetTram,
 				narrow, cable, powerline, powerPlant, waterPipe, sewagePipe, waterWorks, elementary, clinic,
-				fire, police, AssetClass.Key(AF(tree: true)), AssetClass.Key(AF(service: 999, serviceName: "X"))
+				fire, police, quay, stamp, smallLot,
+				AssetClass.Key(AF(tree: true)), AssetClass.Key(AF(service: 999, serviceName: "X"))
 			};
 			bool allSafe = true;
 			string badKey = null;

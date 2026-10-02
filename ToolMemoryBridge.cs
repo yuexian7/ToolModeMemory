@@ -46,9 +46,10 @@ namespace ToolModeMemory
 	///
 	/// ── Anarchy（74604）的三项：anarchy / leftRight / general ──────────────────
 	///   值住在 Anarchy 的两个 UI 世界系统里（不在 ToolBaseSystem 上），而本项目**不引用**
-	///   Anarchy.dll（玩家可能没装），所以按类型全名反射解析并把 Type / FieldInfo /
-	///   PropertyInfo 缓存成静态字段，实例走 World.GetOrCreateSystemManaged（见下面的
-	///   Anarchy 反射段）。任何一环缺失都退化成 no-op：不外抛异常、日志最多一条。
+	///   Anarchy.dll（玩家可能没装），所以按类型全名反射解析，句柄整包缓存成一个小对象；
+	///   解析必须推迟到第一次真正要用时（Anarchy 常常比本模组晚几秒加载，见下面的 Anarchy
+	///   反射段），实例走 World.GetOrCreateSystemManaged。任何一环缺失都退化成 no-op：
+	///   不外抛异常、日志最多一条。
 	/// </summary>
 	public static class ToolMemoryBridge
 	{
@@ -109,8 +110,15 @@ namespace ToolModeMemory
 
 		// ---------- Anarchy（Paradox ModId 74604，程序集名 Anarchy）----------
 		// 本项目**不引用** Anarchy.dll（玩家可能没装），所以这三项的成员全部按类型全名
-		// 在已加载程序集里找，解析一次就存进这些静态字段，热路径只剩 GetValue/SetValue；
-		// 没装模组时全部为 null，anarchy / leftRight / general 三项自然退化成 no-op。
+		// 在已加载程序集里找。
+		// 关键：**必须等真要用的时候才找**。本类的静态初始化被 ToolModeMemorySettings 构造里
+		// 的 LiveHierarchy 赋值触发，那一刻我们的 dll 刚进来，Anarchy 的 dll 还没进 AppDomain
+		// （实测玩家日志：ToolModeMemory 08:40:43 loaded，Anarchy 08:40:45 loaded，差两秒）。
+		// 0.3.1 及以前把这些成员做成 static readonly 一次性解析 = 抢在这个窗口前面跑完，
+		// 类型永久为 null，anarchy / leftRight / general 三项静默退化成 no-op
+		// （玩家反馈「不管切哪个共用范围都没用」的真因）。
+		// 现在：懒解析 + 没装上就每隔 kAnarchyRetryMs 重试一次；一旦解析成功整包缓存，
+		// 热路径依旧只剩一次静态字段读 + GetValue/SetValue，不装 Anarchy 时也几乎没有开销。
 		// 事实来源：反编译 Anarchy.dll，见 research/extra/anarchy/
 		//   Anarchy.Systems.Common.AnarchyUISystem : UISystemBase
 		//     public bool AnarchyEnabled => m_AnarchyEnabled                     L179（字段 L85）
@@ -130,29 +138,50 @@ namespace ToolModeMemory
 		private const string ANARCHY_UI_TYPE_NAME = "Anarchy.Systems.Common.AnarchyUISystem";
 		private const string NETWORK_UI_TYPE_NAME = "Anarchy.Systems.NetworkAnarchy.NetworkAnarchyUISystem";
 
+		/// <summary>Anarchy 还没加载/没装时的重试间隔（毫秒）。装上后这条路径就不再走到。</summary>
+		private const int kAnarchyRetryMs = 2000;
+
+		/// <summary>重试次数上限：约 80 秒后认定玩家没装 Anarchy，不再扫程序集。</summary>
+		private const int kAnarchyMaxTries = 40;
+
 		/// <summary>Composition 的「地面 / 高架 / 隧道」三位，同一时刻只允许留一个。</summary>
 		private const int kCompositionLevelMask = 7;
 
-		private static readonly Type s_AnarchyUiType = FindLoadedType(ANARCHY_UI_TYPE_NAME);
-		private static readonly PropertyInfo s_AnarchyEnabledProp = FindProperty(s_AnarchyUiType, "AnarchyEnabled");
-		private static readonly FieldInfo s_AnarchyEnabledField = FindField(s_AnarchyUiType, "m_AnarchyEnabled");
+		/// <summary>
+		/// Anarchy 的全部反射句柄，一次解析整包缓存。任意为 null 只代表该版本 Anarchy 改了名，
+		/// 对应那一项自动退化成 no-op，不影响其它项和其它模组。
+		/// </summary>
+		private sealed class AnarchyHandles
+		{
+			public Type UiType;
+			public Type NetworkType;
+			public PropertyInfo EnabledProp;
+			public FieldInfo EnabledField;
+			public PropertyInfo LeftUpgradeProp;
+			public PropertyInfo RightUpgradeProp;
+			public PropertyInfo CompositionProp;
+			public FieldInfo LeftUpgradeField;
+			public FieldInfo RightUpgradeField;
+			public FieldInfo CompositionField;
 
-		private static readonly Type s_NetworkUiType = FindLoadedType(NETWORK_UI_TYPE_NAME);
-		private static readonly PropertyInfo s_LeftUpgradeProp = FindProperty(s_NetworkUiType, "LeftUpgrade");
-		private static readonly PropertyInfo s_RightUpgradeProp = FindProperty(s_NetworkUiType, "RightUpgrade");
-		private static readonly PropertyInfo s_CompositionProp = FindProperty(s_NetworkUiType, "NetworkComposition");
-		private static readonly FieldInfo s_LeftUpgradeField = FindField(s_NetworkUiType, "m_LeftUpgrade");
-		private static readonly FieldInfo s_RightUpgradeField = FindField(s_NetworkUiType, "m_RightUpgrade");
-		private static readonly FieldInfo s_CompositionField = FindField(s_NetworkUiType, "m_Composition");
+			/// <summary>每个 ValueBindingHelper 闭合类型自己的 public Value 属性（写回走它才带 UI 更新）。</summary>
+			public PropertyInfo LeftHelperValue;
+			public PropertyInfo RightHelperValue;
+			public PropertyInfo CompositionHelperValue;
 
-		/// <summary>每个 ValueBindingHelper 闭合类型自己的 public Value 属性（写回走它才带 UI 更新）。</summary>
-		private static readonly PropertyInfo s_LeftHelperValue = FindValueProperty(s_LeftUpgradeField);
-		private static readonly PropertyInfo s_RightHelperValue = FindValueProperty(s_RightUpgradeField);
-		private static readonly PropertyInfo s_CompositionHelperValue = FindValueProperty(s_CompositionField);
+			/// <summary>两个位掩码枚举类型（取自公开属性的返回类型），用来把整数造回枚举值。</summary>
+			public Type SideUpgradesType;
+			public Type CompositionType;
+		}
 
-		/// <summary>两个位掩码枚举类型（取自公开属性的返回类型），用来把整数造回枚举值。</summary>
-		private static readonly Type s_SideUpgradesType = FindEnumType(s_LeftUpgradeProp);
-		private static readonly Type s_CompositionType = FindEnumType(s_CompositionProp);
+		/// <summary>解析好的句柄；null = 还没解析出来（没装 Anarchy，或它比我们先加载完之前）。</summary>
+		private static AnarchyHandles s_Anarchy;
+
+		/// <summary>下一次允许重试解析的时刻（Environment.TickCount 口径）。</summary>
+		private static int s_AnarchyNextTry;
+
+		/// <summary>已经重试解析的次数（见 kAnarchyMaxTries）。</summary>
+		private static int s_AnarchyTries;
 
 		/// <summary>World 的 GetOrCreateSystemManaged 泛型方法定义（类型参数只有运行时才知道）。</summary>
 		private static readonly MethodInfo s_SystemFactory = FindSystemFactory();
@@ -402,6 +431,11 @@ namespace ToolModeMemory
 		//   NetCompositionLane / SubLane 引用的车道实体挂的是 CarLaneData / TrackLaneData /
 		//   PedestrianLaneData / UtilityLaneData。
 		//   树木：TreeData。
+		//   另有四类看的是「这件资产是干什么用的」而不是「铺了什么车道」，判据直接对齐
+		//   官方资产编辑器的分类查询（EditorAssetCategorySystem）：
+		//     桥梁 BridgeData；埠头 PlaceableNetData.m_PlacementFlags & ShoreLine；
+		//     路口 AssetStampData + Game.Prefabs.SubNet；停车场 ParkingFacilityData。
+		//   这四类各自成组（桥 ≠ 路 ≠ 埠头），并且优先于对象令牌判定。
 		// 一个都读不到就返回 null（装饰物、区域样式等），调用方退化成按单个资产记忆。
 
 		/// <summary>
@@ -487,6 +521,27 @@ namespace ToolModeMemory
 
 			TreeData tree;
 			if (em.TryGetComponent(e, out tree)) f.Tree = true;
+
+			// 桥梁 / 埠头 / 路口 / 停车场：这四类看的不是「车上装的什么车道」，而是这件资产
+			// 本身是干什么用的，组件名与判据全部对齐官方编辑器的分类查询（证据见 AssetFacts 注释）。
+			BridgeData bridge;
+			if (em.TryGetComponent(e, out bridge)) f.Bridge = true;
+
+			PlaceableNetData placeable;
+			if (em.TryGetComponent(e, out placeable)
+				&& (placeable.m_PlacementFlags & Game.Net.PlacementFlags.ShoreLine) != 0)
+			{
+				f.Quay = true;
+			}
+
+			AssetStampData stamp;
+			if (em.TryGetComponent(e, out stamp) && em.HasComponent<Game.Prefabs.SubNet>(e))
+			{
+				f.Intersection = true;
+			}
+
+			ParkingFacilityData parking;
+			if (em.TryGetComponent(e, out parking)) f.Parking = true;
 
 			return f;
 		}
@@ -755,9 +810,9 @@ namespace ToolModeMemory
 					case F_BRUSH_SIZE: return CaptureBrush(tool, true, out value);
 					case F_BRUSH_STRENGTH: return CaptureBrush(tool, false, out value);
 					case F_ANARCHY: return CaptureAnarchyEnabled(out value);
-					case F_LR_LEFT: return CaptureAnarchyFlags(tool, s_LeftUpgradeProp, out value);
-					case F_LR_RIGHT: return CaptureAnarchyFlags(tool, s_RightUpgradeProp, out value);
-					case F_GENERAL: return CaptureAnarchyFlags(tool, s_CompositionProp, out value);
+					case F_LR_LEFT: return CaptureAnarchySide(tool, true, out value);
+					case F_LR_RIGHT: return CaptureAnarchySide(tool, false, out value);
+					case F_GENERAL: return CaptureAnarchyGeneral(tool, out value);
 					default:
 						return false;
 				}
@@ -928,14 +983,40 @@ namespace ToolModeMemory
 		private static bool CaptureAnarchyEnabled(out int value)
 		{
 			value = 0;
+			AnarchyHandles h = Anarchy();
+			if (h == null) return false;
 			object ui = AnarchyUi();
 			if (ui == null) return false;
 			object raw = null;
-			if (s_AnarchyEnabledProp != null) raw = s_AnarchyEnabledProp.GetValue(ui, null);
-			if (raw == null && s_AnarchyEnabledField != null) raw = s_AnarchyEnabledField.GetValue(ui);
+			if (h.EnabledProp != null) raw = h.EnabledProp.GetValue(ui, null);
+			if (raw == null && h.EnabledField != null) raw = h.EnabledField.GetValue(ui);
 			if (!(raw is bool)) return false;
 			value = (bool)raw ? 1 : 0;
 			return true;
+		}
+
+		/// <summary>捕获「左侧」/「右侧」的 SideUpgrades：句柄没解析出来就是「本项不存在」。</summary>
+		private static bool CaptureAnarchySide(ToolBaseSystem tool, bool left, out int value)
+		{
+			AnarchyHandles h = Anarchy();
+			if (h == null)
+			{
+				value = 0;
+				return false;
+			}
+			return CaptureAnarchyFlags(tool, left ? h.LeftUpgradeProp : h.RightUpgradeProp, out value);
+		}
+
+		/// <summary>捕获「常规」的 Composition，同上。</summary>
+		private static bool CaptureAnarchyGeneral(ToolBaseSystem tool, out int value)
+		{
+			AnarchyHandles h = Anarchy();
+			if (h == null)
+			{
+				value = 0;
+				return false;
+			}
+			return CaptureAnarchyFlags(tool, h.CompositionProp, out value);
 		}
 
 		/// <summary>
@@ -984,8 +1065,8 @@ namespace ToolModeMemory
 					case F_BRUSH_SIZE: return ApplyBrush(tool, true, value);
 					case F_BRUSH_STRENGTH: return ApplyBrush(tool, false, value);
 					case F_ANARCHY: return ApplyAnarchyEnabled(value);
-					case F_LR_LEFT: return ApplySideUpgrade(tool, s_LeftUpgradeField, s_LeftHelperValue, value);
-					case F_LR_RIGHT: return ApplySideUpgrade(tool, s_RightUpgradeField, s_RightHelperValue, value);
+					case F_LR_LEFT: return ApplySideUpgrade(tool, true, value);
+					case F_LR_RIGHT: return ApplySideUpgrade(tool, false, value);
 					case F_GENERAL: return ApplyComposition(tool, value);
 					default:
 						return false;
@@ -1188,9 +1269,10 @@ namespace ToolModeMemory
 		/// </summary>
 		private static bool ApplyAnarchyEnabled(int value)
 		{
+			AnarchyHandles h = Anarchy();
 			object ui = AnarchyUi();
-			if (ui == null || s_AnarchyEnabledField == null) return false;
-			s_AnarchyEnabledField.SetValue(ui, value != 0);
+			if (ui == null || h == null || h.EnabledField == null) return false;
+			h.EnabledField.SetValue(ui, value != 0);
 			return true;
 		}
 
@@ -1198,11 +1280,14 @@ namespace ToolModeMemory
 		/// 左侧 / 右侧的 SideUpgrades 位掩码。写的是 ValueBindingHelper.Value（它的 setter
 		/// 就是 Binding.Update，所以状态与面板一次到位）。门槛与捕获一致：只有道路工具才有这一行。
 		/// </summary>
-		private static bool ApplySideUpgrade(ToolBaseSystem tool, FieldInfo helperField, PropertyInfo helperValue, int value)
+		private static bool ApplySideUpgrade(ToolBaseSystem tool, bool left, int value)
 		{
 			if (!(tool is NetToolSystem)) return false;
+			AnarchyHandles h = Anarchy();
+			if (h == null) return false;
 			object ui = NetworkUi();
-			return WriteAnarchyFlags(ui, helperField, helperValue, s_SideUpgradesType, value, false);
+			return WriteAnarchyFlags(ui, left ? h.LeftUpgradeField : h.RightUpgradeField,
+				left ? h.LeftHelperValue : h.RightHelperValue, h.SideUpgradesType, value, false);
 		}
 
 		/// <summary>
@@ -1214,8 +1299,10 @@ namespace ToolModeMemory
 		private static bool ApplyComposition(ToolBaseSystem tool, int value)
 		{
 			if (!(tool is NetToolSystem)) return false;
+			AnarchyHandles h = Anarchy();
+			if (h == null) return false;
 			object ui = NetworkUi();
-			return WriteAnarchyFlags(ui, s_CompositionField, s_CompositionHelperValue, s_CompositionType, value, true);
+			return WriteAnarchyFlags(ui, h.CompositionField, h.CompositionHelperValue, h.CompositionType, value, true);
 		}
 
 		/// <summary>
@@ -1380,26 +1467,86 @@ namespace ToolModeMemory
 			return null;
 		}
 
-		/// <summary>AnarchyUISystem 实例（懒取；没装模组 = null = 三项 no-op）。</summary>
-		private static object AnarchyUi()
+		/// <summary>
+		/// 取 Anarchy 句柄：拿到过就一直复用；没拿到过就每 kAnarchyRetryMs 试一次
+		/// （Anarchy 可能比我们的模组晚加载几秒，玩家也可能根本没装）。
+		/// </summary>
+		private static AnarchyHandles Anarchy()
 		{
-			if (s_AnarchyUiType == null)
+			AnarchyHandles h = s_Anarchy;
+			if (h != null) return h;
+			int now = Environment.TickCount;
+			if (unchecked(now - s_AnarchyNextTry) < 0) return null;
+			// 模组都在启动时一次性加载，Anarchy 只可能比我们先加载完的这几秒内出现；
+			// 重试次数用完就认定「玩家没装」，不再扫程序集，免得每 2 秒白跑一次 GetAssemblies()。
+			if (++s_AnarchyTries > kAnarchyMaxTries)
 			{
+				s_AnarchyNextTry = unchecked(now + int.MaxValue / 2);
 				WarnNoAnarchy();
 				return null;
 			}
-			return ResolveAnarchySystem(s_AnarchyUiType, ref s_AnarchyUi, ref s_AnarchyUiResolved);
+			s_AnarchyNextTry = unchecked(now + kAnarchyRetryMs);
+			h = BuildAnarchyHandles();
+			if (h == null) return null;   // 还没出现：静默等下一次重试，别提前写「没装」
+			s_Anarchy = h;
+			// 系统实例属于当前 World，句柄是刚解析出来的，两者可能在不同的 Anarchy 版本之间
+			// 换过，所以这里把实例缓存重开一次。
+			s_AnarchyUi = null;
+			s_AnarchyUiResolved = false;
+			s_NetworkUi = null;
+			s_NetworkUiResolved = false;
+			try
+			{
+				ToolModeMemoryMod.log.Info("Anarchy handles resolved (anarchy / leftRight / general active).");
+			}
+			catch { }
+			return h;
+		}
+
+		/// <summary>
+		/// 一次性解析 Anarchy 的句柄。两个类型都找不到才判「没装」（返回 null，稍后重试）；
+		/// 只缺个别成员时照常返回句柄，缺哪一项就哪一项 no-op。
+		/// </summary>
+		private static AnarchyHandles BuildAnarchyHandles()
+		{
+			AnarchyHandles h = new AnarchyHandles();
+			h.UiType = FindLoadedType(ANARCHY_UI_TYPE_NAME);
+			h.NetworkType = FindLoadedType(NETWORK_UI_TYPE_NAME);
+			if (h.UiType == null && h.NetworkType == null) return null;
+
+			h.EnabledProp = FindProperty(h.UiType, "AnarchyEnabled");
+			h.EnabledField = FindField(h.UiType, "m_AnarchyEnabled");
+
+			h.LeftUpgradeProp = FindProperty(h.NetworkType, "LeftUpgrade");
+			h.RightUpgradeProp = FindProperty(h.NetworkType, "RightUpgrade");
+			h.CompositionProp = FindProperty(h.NetworkType, "NetworkComposition");
+			h.LeftUpgradeField = FindField(h.NetworkType, "m_LeftUpgrade");
+			h.RightUpgradeField = FindField(h.NetworkType, "m_RightUpgrade");
+			h.CompositionField = FindField(h.NetworkType, "m_Composition");
+
+			h.LeftHelperValue = FindValueProperty(h.LeftUpgradeField);
+			h.RightHelperValue = FindValueProperty(h.RightUpgradeField);
+			h.CompositionHelperValue = FindValueProperty(h.CompositionField);
+
+			h.SideUpgradesType = FindEnumType(h.LeftUpgradeProp);
+			h.CompositionType = FindEnumType(h.CompositionProp);
+			return h;
+		}
+
+		/// <summary>AnarchyUISystem 实例（懒取；没装模组 = null = 该项 no-op）。</summary>
+		private static object AnarchyUi()
+		{
+			AnarchyHandles h = Anarchy();
+			if (h == null || h.UiType == null) return null;
+			return ResolveAnarchySystem(h.UiType, ref s_AnarchyUi, ref s_AnarchyUiResolved);
 		}
 
 		/// <summary>NetworkAnarchyUISystem 实例，同上。</summary>
 		private static object NetworkUi()
 		{
-			if (s_NetworkUiType == null)
-			{
-				WarnNoAnarchy();
-				return null;
-			}
-			return ResolveAnarchySystem(s_NetworkUiType, ref s_NetworkUi, ref s_NetworkUiResolved);
+			AnarchyHandles h = Anarchy();
+			if (h == null || h.NetworkType == null) return null;
+			return ResolveAnarchySystem(h.NetworkType, ref s_NetworkUi, ref s_NetworkUiResolved);
 		}
 
 		/// <summary>

@@ -24,19 +24,36 @@ namespace ToolModeMemory.Systems
 		private bool m_EventsHooked;
 		private Entity m_LastPrefabEntity;
 		private bool m_WarnedBlocked;
+		private bool m_WarnedWriteFail;
 
 		// 实时落盘防抖：玩家**停止改动** kFlushDelay 秒后才写盘。频繁切换工具的玩家
 		// 一次游戏能产生上百次改动，逐次写盘既伤硬盘又没必要（记忆只在下次进档时才用）。
 		// 10 秒的代价：闪退最多丢掉这 10 秒内的改动，而且写的是 tmp+替换，不会留下半截文件；
 		// 回主菜单、退出游戏、存档成功这三处都会立刻强制落盘，正常流程一点都不丢。
 		private const float kFlushDelay = 10f;
+
+		// 写盘失败时的退避：0.4.0 性能审查发现的第二个坑 —— Dirty 在写成功前不会清，
+		// 而防抖的判断是「到点 且 Dirty 就写」。目标文件被占用 / 目录只读 / 磁盘满时，
+		// 这等于**每帧**做一次「建目录 + 写临时文件 + 替换」并抛一次异常，
+		// 玩家看到的就是一路掉帧。失败后按 10→20→40→…→300 秒退避，成功一次立刻回到 10 秒。
+		private const float kWriteRetryMax = 300f;
+		private float m_WriteRetry = kFlushDelay;
 		private long m_SeenSerial;
 		private float m_FlushAt;
 
-		// 一次 Capture/Apply 之内，完整键（域+层级+家族）与裸层级键各最多解析 5 次
-		// （五档共用范围，12 个工具项共用同一份缓存：同一趟里 prefab/tool 是同一个），
-		// 跨调用必须重开。m_KeyPass 与 m_LevelKeyPass 在 CaptureNow/ApplyNow 顶端各自 +1。
-		private int m_KeyPass;
+		// 一次 Capture/Apply 之内，完整键（域+层级+家族）与裸层级键各最多解析一遍
+		// （五档共用范围，12 个工具项共用同一份缓存：同一趟里 prefab/tool 是同一个）。
+		// 0.4.0 性能审查：以前这两个缓存在**每次** CaptureNow/ApplyNow 顶端作废，
+		// 而捕获是每帧跑的，等于每帧重算五档键 —— 每帧二三十次字符串分配 + 十几次数值查找，
+		// 稳态下全是白给（长时间游玩的周期性卡顿来源之一）。现在改成「m_KeyEpoch 有效期内复用」：
+		// 只有换了工具或换了资产、或过了 kKeyRefreshSeconds 才重算一次。
+		// （键的内容只可能因为「工具/资产/工具栏层级」而变；层级被别的模组中途重排是分钟级事件，
+		//  两秒的重算窗口足够跟上，而 s_NameCache 本来就是按实体缓存名字。）
+		private int m_KeyEpoch;
+		private ToolBaseSystem m_KeyTool;
+		private PrefabBase m_KeyPrefab;
+		private float m_KeyAt;
+		private const float kKeyRefreshSeconds = 2f;
 		private readonly string[] m_Keys = new string[5];
 		private readonly int[] m_KeyPasses = new int[5];
 
@@ -46,7 +63,7 @@ namespace ToolModeMemory.Systems
 		private readonly string[] m_FilterKeys = new string[2];
 		private readonly List<string> m_FilterNames = new List<string>(32);
 		// 裸层级键缓存：槽 = 范围 × 2 +「同类资产是否按工具栏层级」，5 档范围两种口径共 10 槽
-		private int m_LevelKeyPass;
+		// 失效条件与 m_Keys 完全同步（同一个 m_KeyEpoch），两批必须看到同一个 prefab/tool。
 		private readonly string[] m_LevelKeys = new string[10];
 		private readonly int[] m_LevelKeyPasses = new int[10];
 
@@ -77,6 +94,21 @@ namespace ToolModeMemory.Systems
 		{
 			UnhookEvents();
 			base.OnDestroy();
+		}
+
+		/// <summary>
+		/// 模组卸载（IMod.OnDispose）时用的彻底脱离：先停用自己（Enabled=false，
+		/// 不再进 OnUpdate），再把挂在原版 ToolSystem 事件字段上的两个委托摘掉。
+		/// 光靠 OnDestroy 不够：本系统是用 GetOrCreateSystemManaged 建在游戏的 World 里的，
+		/// World 不重建就一直存在， OnDestroy 也就不会来 —— 那时若还挂着事件，
+		/// 玩家每次切工具/切资产都会调用进一个已经卸载的程序集里，正是「卸载模组后疯狂报错」的形态。
+		/// </summary>
+		public void Detach()
+		{
+			base.Enabled = false;
+			m_PendingApplyFrames = 0;
+			UnhookEvents();
+			ForgetKeysAndCache();
 		}
 
 		private void HookEvents()
@@ -176,6 +208,24 @@ namespace ToolModeMemory.Systems
 			if (now < m_FlushAt) return;
 			if (!store.Dirty) return;
 			store.SaveToDisk(true);
+			if (!store.Dirty)
+			{
+				// 写成功：退回正常防抖节奏
+				m_WriteRetry = kFlushDelay;
+				m_FlushAt = now + kFlushDelay;
+				return;
+			}
+			// 还是脏的 = 这次写盘失败了（被占用 / 没权限 / 磁盘满）。
+			// 绝不能保持「到点就写」，否则从现在起每帧都要重跑一遍写文件并抛异常 ——
+			// 那才是真正会把模拟拖慢的地方。指数退避，最多五分钟试一次。
+			m_WriteRetry = m_WriteRetry * 2f > kWriteRetryMax ? kWriteRetryMax : m_WriteRetry * 2f;
+			m_FlushAt = now + m_WriteRetry;
+			if (!m_WarnedWriteFail)
+			{
+				m_WarnedWriteFail = true;
+				log.Warn("Could not write memory file, retrying every " + (int)m_WriteRetry
+					+ "s: " + store.CurrentFilePath());
+			}
 		}
 
 		public void RequestApply()
@@ -191,7 +241,9 @@ namespace ToolModeMemory.Systems
 		{
 			if (base.Enabled == on) return;
 			base.Enabled = on;
-			// 关掉期间玩家动过筛选，再打开时不能拿关着的基线比现在：重开就作废
+			// 关着的这段时间里玩家可能换了资产、别的模组重排了工具栏：
+			// 重开时键缓存与筛选项基线一律作废，不能拿关着时的旧状态当基线。
+			ForgetKeysAndCache();
 			ResetFilterBaseline();
 			if (!on)
 			{
@@ -199,7 +251,6 @@ namespace ToolModeMemory.Systems
 				return;
 			}
 			m_LastPrefabEntity = Entity.Null;
-			ResetFilterBaseline();
 			m_PendingApplyFrames = 1;
 		}
 
@@ -214,10 +265,10 @@ namespace ToolModeMemory.Systems
 
 			int slot = (int)scope;
 			if (slot < 0 || slot >= m_Keys.Length) slot = 0;
-			if (m_Keys[slot] != null && m_KeyPasses[slot] == m_KeyPass) return m_Keys[slot];
+			if (m_Keys[slot] != null && m_KeyPasses[slot] == m_KeyEpoch) return m_Keys[slot];
 			string key = ToolMemoryBridge.ResolveKey(scope, prefab, tool, m_PrefabSystem, base.EntityManager);
 			m_Keys[slot] = key;
-			m_KeyPasses[slot] = m_KeyPass;
+			m_KeyPasses[slot] = m_KeyEpoch;
 			return key;
 		}
 
@@ -356,7 +407,7 @@ namespace ToolModeMemory.Systems
 
 		/// <summary>
 		/// 裸层级键（不套资产/功能域、不套枚举家族）：工具栏筛选项与「全局共用 + 游戏里
-		/// 只有一份值」的工具项共用这条通道。每趟 Capture/Apply 由 m_LevelKeyPass 作废缓存。
+		/// 只有一份值」的工具项共用这条通道。失效条件与 m_Keys 同一次（m_KeyEpoch）。
 		/// 缓存槽按「范围 × 是否按 UI 层级分同类」编号，两种口径不会互相顶掉。
 		/// </summary>
 		private string LevelKeyCached(MemoryScope scope, bool categoryByUiHierarchy, PrefabBase prefab,
@@ -364,26 +415,50 @@ namespace ToolModeMemory.Systems
 		{
 			int slot = (int)scope * 2 + (categoryByUiHierarchy ? 1 : 0);
 			if (slot < 0 || slot >= m_LevelKeys.Length) slot = 0;
-			if (m_LevelKeys[slot] != null && m_LevelKeyPasses[slot] == m_LevelKeyPass) return m_LevelKeys[slot];
+			if (m_LevelKeys[slot] != null && m_LevelKeyPasses[slot] == m_KeyEpoch) return m_LevelKeys[slot];
 			string key = ToolMemoryBridge.ResolveLevelKey(scope, prefab, tool, m_PrefabSystem,
 				base.EntityManager, categoryByUiHierarchy);
 			m_LevelKeys[slot] = key;
-			m_LevelKeyPasses[slot] = m_LevelKeyPass;
+			m_LevelKeyPasses[slot] = m_KeyEpoch;
 			return key;
+		}
+
+		/// <summary>
+		/// 键缓存的统一失效判断：工具换了、资产换了、或者隔了 kKeyRefreshSeconds
+		/// （给「别的模组中途重排工具栏」留的活口）。同一帧里 Capture 与 Apply 互相复用。
+		/// </summary>
+		private void RefreshKeyCache(ToolBaseSystem tool, PrefabBase prefab)
+		{
+			float now = UnityEngine.Time.unscaledTime;
+			if (ReferenceEquals(tool, m_KeyTool) && ReferenceEquals(prefab, m_KeyPrefab)
+				&& now - m_KeyAt < kKeyRefreshSeconds)
+			{
+				return;
+			}
+			m_KeyTool = tool;
+			m_KeyPrefab = prefab;
+			m_KeyAt = now;
+			m_KeyEpoch++;
+		}
+
+		/// <summary>强制重算所有键（换档、总开关重开、兼容口径改动）。</summary>
+		public void ForgetKeysAndCache()
+		{
+			m_KeyTool = null;
+			m_KeyPrefab = null;
+			m_KeyAt = 0f;
+			m_KeyEpoch++;
 		}
 
 		public void CaptureNow()
 		{
-			m_KeyPass++;
-			// 裸层级键的缓存同样一趟一作废：CaptureNow 里既有用到完整键的工具项，
-			// 也有只用层级键的筛选项，两批必须看到同一个 prefab/tool。
-			m_LevelKeyPass++;
 			ToolModeMemorySettings setting = ToolModeMemorySettings.Instance;
 			MemoryStore store = ToolModeMemoryMod.Store;
 			if (setting == null || !setting.Enabled || store == null) return;
 			ToolBaseSystem tool = m_ToolSystem != null ? m_ToolSystem.activeTool : null;
 			if (tool == null) return;
 			PrefabBase prefab = m_ToolSystem.activePrefab;
+			RefreshKeyCache(tool, prefab);
 
 			ToolItemDef[] items = ToolItemCatalog.Items;
 			for (int i = 0; i < items.Length; i++)
@@ -413,14 +488,13 @@ namespace ToolModeMemory.Systems
 
 		public void ApplyNow()
 		{
-			m_KeyPass++;
-			m_LevelKeyPass++;
 			ToolModeMemorySettings setting = ToolModeMemorySettings.Instance;
 			MemoryStore store = ToolModeMemoryMod.Store;
 			if (setting == null || !setting.Enabled || store == null) return;
 			ToolBaseSystem tool = m_ToolSystem != null ? m_ToolSystem.activeTool : null;
 			if (tool == null) return;
 			PrefabBase prefab = m_ToolSystem.activePrefab;
+			RefreshKeyCache(tool, prefab);
 
 			ToolItemDef[] items = ToolItemCatalog.Items;
 			for (int i = 0; i < items.Length; i++)
@@ -489,7 +563,11 @@ namespace ToolModeMemory.Systems
 			if (store == null) return true;
 			bool ok = store.LoadForCurrentSave();
 			ToolMemoryBridge.ForgetNames();
+			ForgetKeysAndCache();
 			m_LastPrefabEntity = Entity.Null;
+			// 写盘退避是按「这台机器此刻写不写得进去」累积出来的，换档（甚至换台机器）不该带着走
+			m_WriteRetry = kFlushDelay;
+			m_WarnedWriteFail = false;
 			// 筛选项的指纹与层级键都是按档记录的：换档（World 重建、记忆重读）必须作废，
 			// 否则会拿上一档的基线去比这一档的工具栏状态。
 			ResetFilterBaseline();
