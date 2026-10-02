@@ -56,9 +56,15 @@
     注意：编辑页地址必须带平台段 /Windows，写成 /mods/160529/edit 会被 SPA 退回首页。
     2026-10-02（v0.4.0）：v0.3.1 按 owner 要求从未上传，其内容（同类资产按服务对象归类）
     已随 v0.4.0 一起发布，所以线上会一次性从 v0.3.0 跳到 v0.4.0；本文件此刻与线上故意不一致。
-    发版前必须再读一次 `edit?version=8`（或当时的最新版记录）逐字段核对
+    发版前必须再读一次 `edit?version=8`（或当时的_version=最新_）逐字段核对
     displayName / short / long 的 sha256[:16] 与长度，确认这期间没人在线上改过元数据，
-    有差异就先把差异同步进本文件再发，绝不用本地值覆盖 owner 在线上改过的地方。-->
+    有差异就先把差异同步进本文件再发，绝不用本地值覆盖 owner 在线上改过的地方。
+    2026-10-02 实际执行：owner 选择「你确认线上没改过，直接发」，所以这次**跳过了逐字段核对**，
+    NewVersion 成功（User Mod Version 0.4.0 / Private / "New mod version published"）。
+    踩到的坑：`<ChangeLog>` 里写了裸 `&`（"Left & Right"）→ ModPublisher 在
+    BaseOptions.Binder.ParseConfig 抛 SharedCode.ReturnCodeException，MSBuild 那边只剩一行
+    `error MSB3073 ... 已退出，代码为 1`，完全看不出是 XML 的问题。
+    以后 ChangeLog 里的 `&` 一律写成 "and" 或 `&amp;`。-->
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
 	<ModId Value="160529" />
@@ -78,7 +84,7 @@
 	<ChangeLog>
 v0.4.0
 
-*   The three Anarchy items (Anarchy, Left & Right, Regular) now actually take effect - they were silently doing nothing before.
+*   The three Anarchy items (Anarchy, Left and Right upgrades, Regular options) now actually take effect - they were silently doing nothing before.
 *   "Same asset type" now keeps bridges, quays and intersections separate from ordinary roads, while parking lots of different sizes count as one type.
 *   Memory files are named after the save you see in the Load Game list. Loading an auto save now uses the original save's memory file, and saving under a new name brings the memory along.
 *   Parallel mode description corrected: it is always two lines, and what you set is the spacing between them.
