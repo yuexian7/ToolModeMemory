@@ -39,8 +39,8 @@ RETIRED = ["elevationStep"]
 SCALAR_KEYS = [
     "mod.name", "tab.mod", "tab.about",
     "group.master", "group.official", "group.anarchy",
-    "group.reset", "group.compat", "group.about",
-    "enabled.label", "enabled.desc", "compat.label", "compat.desc",
+    "group.reset", "group.about",
+    "enabled.label", "enabled.desc",
     "scope.label", "scope.desc",
     "scope.line.group", "scope.line.menu", "scope.line.category",
     "scope.line.shared", "scope.line.sharedSingle", "scope.line.unique", "scope.note",

@@ -107,12 +107,12 @@ def main():
     helpers = re.findall(r"public bool (Is\w+ScopeDisabled)\(\) \{ return IsMasterOff\(\) \|\| !GetEnabled", s)
     check(len(helpers) == 12, "12 个变灰判定都是「总开关关 或 本项没开」")
 
-    # ---- 3. 出厂默认：两个开关都是打开 ----
+    # ---- 3. 出厂默认：总开关打开，兼容开关（v0.6.0 已取消）不允许再出现 ----
     defaults = body_of(s, "public override void SetDefaults()")
     check(defaults is not None, "SetDefaults() 存在")
     if defaults:
         check("m_Enabled = true;" in defaults, "总开关出厂默认 = 开")
-        check("m_CompatOtherMods = true;" in defaults, "兼容开关出厂默认 = 开")
+        check("m_CompatOtherMods" not in defaults, "SetDefaults() 里已经没有兼容开关（该设置项已取消）")
         check("InitItemDefaults();" in defaults, "每一项的出厂值走目录里的推荐值")
 
     ctor = body_of(s, "public ToolModeMemorySettings(IMod mod) : base(mod)")
@@ -121,13 +121,16 @@ def main():
 
     field = re.search(r"private bool m_Enabled\s*=\s*(\w+);", s)
     check(field is not None and field.group(1) == "true", "m_Enabled 字段初值也是 true")
-    field2 = re.search(r"private bool m_CompatOtherMods\s*=\s*(\w+);", s)
-    check(field2 is not None and field2.group(1) == "true", "m_CompatOtherMods 字段初值也是 true")
+    check("CompatOtherMods" not in s and "m_CompatOtherMods" not in s,
+          "设置页里没有 CompatOtherMods 这一项（属性 / 字段 / Section 特性都已删干净）")
     bridge = io.open(os.path.join(ROOT, "ToolMemoryBridge.cs"), encoding="utf-8-sig").read()
-    check("s_LiveHierarchy = true" in bridge, "ToolMemoryBridge 的实时层级默认 true")
+    check("s_LiveHierarchy" not in bridge and "LiveHierarchy" not in bridge,
+          "ToolMemoryBridge 不再有实时层级开关：层级恒为实时（其它模组调整完的那份）")
+    check("s_FrozenPos" not in re.sub(r"^\s*///.*$", "", bridge, flags=re.M),
+          "ToolMemoryBridge 不再冻结第一次解析到的层级（代码里没有 s_FrozenPos，只剩注释提到它）")
     check("m_Setting.AfterLoaded();" in io.open(os.path.join(ROOT, "ToolModeMemoryMod.cs"),
                                                 encoding="utf-8-sig").read(),
-          "读盘完成后调用 AfterLoaded()，把文件里的兼容开关推给 Bridge")
+          "读盘完成后调用 AfterLoaded()，把文件里的设置补推一次")
 
     # ---- 4. 「重置所有设置项」= SetDefaults，不再自己抄一份 ----
     reset = body_of(s, "private void DoResetAllSettings()")

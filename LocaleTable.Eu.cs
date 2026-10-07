@@ -23,13 +23,10 @@ namespace ToolModeMemory
 			d["group.official"] = "Einstellungen der offiziellen Werkzeuge";
 			d["group.anarchy"] = "Einstellungen der Anarchy-Werkzeuge";
 			d["group.reset"] = "Speicherverwaltung";
-			d["group.compat"] = "Kompatibilität";
 			d["group.about"] = "Informationen und Links";
 
 			d["enabled.label"] = "Werkzeugmodus-Gedächtnis aktivieren";
 			d["enabled.desc"] = "Standardmäßig aktiviert. Solange dies aktiviert ist, wird jeder Wert fortlaufend aufgezeichnet; beim nächsten Laden eines Spielstands sind die Panels wieder so, wie du sie verlassen hast. Ein einzelner Punkt deaktiviert nur seine Wiederherstellung - die Werte werden weiterhin aufgezeichnet. Nur wenn du diesen Hauptschalter ausschaltest, endet jede Aufzeichnung und jedes Werkzeug verhält sich wieder wie im Original.";
-			d["compat.label"] = "Kompatibel mit anderen Mods";
-			d["compat.desc"] = "Standardmäßig aktiviert. Aktiviert: Das Gedächtnis nutzt die von anderen Mods angepassten Menü- und Gruppennamen, Mods wie Asset UI Manager verlagern Assets in ein anderes Menü oder eine neue Gruppe, und ein verlagertes Asset folgt seinem neuen Platz. Deaktiviert: Die zuerst gesehene Einordnung bleibt erhalten, was stabiler ist, wenn das Layout mitten in einer Sitzung umgebaut wird. Dieser Schalter betrifft nur die Stufen „Selbe Gruppe“ und „Selbes Menü“ sowie die Frage, nach welcher Gruppe sich die Zeilen Thema und Paket richten; „Selber Asset-Typ“ hängt davon ab, was ein Asset tatsächlich versorgt, und ist deshalb bei beiden Einstellungen gleich. Beachte: Bei einem benutzerdefinierten Asset, dessen Autor die Spuren oder die versorgte Einrichtung nicht richtig festgelegt hat, erkennt dieser Mod die Bestimmung nicht, also wird es nur für sich allein gemerkt. Bereits aufgezeichnete Werte gehen in beiden Fällen nicht verloren.";
 			d["scope.label"] = "Gemeinsamer Bereich";
 			d["scope.desc"] = "Wie weit der Wert dieses Punkts geteilt wird. Die Klammern in der Dropdown-Liste zeigen, was das Original tut und was wir empfehlen.";
 			d["scope.line.group"] = "Selbe Gruppe: {0}";
@@ -54,7 +51,7 @@ namespace ToolModeMemory
 			d["reset.warn"] = "Das kann nicht rückgängig gemacht werden.";
 			d["reset.confirm"] = "Alle gemerkten Werkzeugeinstellungen zurücksetzen?";
 			d["resetall.label"] = "Alle Einstellungen zurücksetzen";
-			d["resetall.desc"] = "Setzt jede Option dieses Mods auf den empfohlenen Standardwert zurück: Hauptschalter und Kompatibilitätsschalter werden wieder aktiviert, auch Aktivierung und gemeinsamer Bereich jedes Punkts werden wiederhergestellt. Das bereits gespeicherte Gedächtnis der Spielstände bleibt unberührt.";
+			d["resetall.desc"] = "Setzt jede Option dieses Mods auf den empfohlenen Standardwert zurück: der Hauptschalter wird wieder aktiviert, auch Aktivierung und gemeinsamer Bereich jedes Punkts werden wiederhergestellt. Das bereits gespeicherte Gedächtnis der Spielstände bleibt unberührt.";
 			d["resetall.warn"] = "Das kann nicht rückgängig gemacht werden.";
 			d["resetall.confirm"] = "Wirklich alle Einstellungen zurücksetzen?";
 			d["folder.label"] = "Gedächtnisdateien aller Spielstände verwalten";
@@ -95,7 +92,7 @@ namespace ToolModeMemory
 
 			// ---------- 3 Höhe ----------
 			d["item.elevation.label"] = "Höhe";
-			d["item.elevation.desc"] = "Merkt die Höhe, mit der ein Werkzeug verlassen wurde, einschließlich des Ergebnisses von Erhöhen und Absenken. Der Höhenunterschied (wie weit dich ein einzelner Druck versetzt; Anarchy nennt diese Zeile Höhenschritt) wird zusammen mit der Höhe gemerkt und nutzt denselben gemeinsamen Bereich. Die Höhe von Kreuzungen ist nicht enthalten.";
+			d["item.elevation.desc"] = "Merkt die Höhe, mit der ein Werkzeug verlassen wurde, einschließlich des Ergebnisses von Erhöhen und Absenken. Der Höhenunterschied (wie weit dich ein einzelner Druck versetzt; Anarchy nennt diese Zeile Höhenschritt) wird zusammen mit der Höhe gemerkt und nutzt denselben gemeinsamen Bereich. Die Höhe von Kreuzungen ist nicht enthalten. Einige Assets haben eine eigene zulässige Höhe: Liegt der geteilte Wert außerhalb dessen, was das gewählte Asset darf, behält dieses Asset eine für es zulässige Höhe, und der gespeicherte geteilte Wert bleibt unverändert.";
 			d["item.elevation.ex.group"] = "zum Beispiel hebst du eine zweispurige kleine Straße auf 10 m, andere kleine Straßen gehen ebenfalls auf 10 m, eine große Straße aber nicht auf 10 m";
 			d["item.elevation.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, liegt auf 10 m, im Menü Strom dagegen nicht auf 10 m";
 			d["item.elevation.ex.category"] = "wechselt man zu einer sechsspurigen Straße, bleibt es bei 10 m, aber eine Brücke oder doppelte Bahngleise gehen zurück auf 0 m und brauchen eine eigene Einstellung, obwohl alle im Menü Straßen liegen";
@@ -164,13 +161,10 @@ namespace ToolModeMemory
 			d["group.official"] = "Ajustes de las herramientas oficiales";
 			d["group.anarchy"] = "Ajustes de las herramientas de Anarchy";
 			d["group.reset"] = "Gestión de la memoria";
-			d["group.compat"] = "Compatibilidad";
 			d["group.about"] = "Información y enlaces";
 
 			d["enabled.label"] = "Activar Memoria de modo de herramienta";
 			d["enabled.desc"] = "Activado por defecto. Mientras esté activado, todos los valores se registran sin parar, así que al volver a una partida los paneles quedan como los dejaste. Desactivar un solo elemento solo impide restaurarlo a él; sus valores siguen registrándose. Solo al desactivar este interruptor general se deja de registrar y cada herramienta vuelve a comportarse como en el juego original.";
-			d["compat.label"] = "Compatible con otros mods";
-			d["compat.desc"] = "Activado por defecto. Activado: la memoria se clasifica según los nombres de menú y grupo tal como los ajustan otros mods; mods como Asset UI Manager mueven activos a otro menú o a un grupo nuevo, y un activo movido sigue su nueva ubicación. Desactivado: se mantiene la clasificación que este mod vio primero, que es más estable cuando la disposición cambia a mitad de sesión. Este interruptor solo cubre las opciones «Mismo grupo» y «Mismo menú», además de en qué grupo se registran las filas Temática y Paquete; «Mismo tipo de activo» se decide según a quién sirve de verdad el activo, así que da igual que esté activado o apagado. Ten en cuenta que un activo personalizado cuyo autor no definió bien sus carriles o la instalación que sirve no se puede reconocer, así que se recuerda únicamente para ese activo. Ninguna de las dos opciones borra los valores ya registrados.";
 			d["scope.label"] = "Ámbito compartido";
 			d["scope.desc"] = "Hasta qué punto se comparte el valor de este elemento. Los paréntesis de la lista desplegable indican qué hace el juego original y qué recomendamos.";
 			d["scope.line.group"] = "Mismo grupo: {0}";
@@ -195,7 +189,7 @@ namespace ToolModeMemory
 			d["reset.warn"] = "No se puede deshacer.";
 			d["reset.confirm"] = "¿Restablecer los ajustes de herramienta recordados?";
 			d["resetall.label"] = "Restablecer todos los ajustes";
-			d["resetall.desc"] = "Devuelve cada opción de este mod a su valor recomendado: el interruptor general y el de compatibilidad vuelven a activarse, y también se restauran el estado de activación y el ámbito compartido de cada elemento. La memoria ya registrada de las partidas no se toca.";
+			d["resetall.desc"] = "Devuelve cada opción de este mod a su valor recomendado: el interruptor general vuelve a activarse, y también se restauran el estado de activación y el ámbito compartido de cada elemento. La memoria ya registrada de las partidas no se toca.";
 			d["resetall.warn"] = "No se puede deshacer.";
 			d["resetall.confirm"] = "¿Restablecer todos los ajustes?";
 			d["folder.label"] = "Gestionar los archivos de memoria de todas las partidas";
@@ -236,7 +230,7 @@ namespace ToolModeMemory
 
 			// ---------- 3 Elevación ----------
 			d["item.elevation.label"] = "Elevación";
-			d["item.elevation.desc"] = "Recuerda la elevación con la que dejaste la herramienta, incluido el resultado de Aumentar la elevación y Disminuir la elevación. El Escalón de elevación (lo que avanza con una sola pulsación; Anarchy llama a esa fila Paso de Elevación) se recuerda junto con ella y usa el mismo ámbito compartido. No cubre la elevación de los intercambiadores.";
+			d["item.elevation.desc"] = "Recuerda la elevación con la que dejaste la herramienta, incluido el resultado de Aumentar la elevación y Disminuir la elevación. El Escalón de elevación (lo que avanza con una sola pulsación; Anarchy llama a esa fila Paso de Elevación) se recuerda junto con ella y usa el mismo ámbito compartido. No cubre la elevación de los intercambiadores. Algunos activos tienen su propia franja de elevación permitida: si el valor compartido queda fuera de lo que permite el activo seleccionado, este conserva una elevación que le sea válida y el valor compartido guardado no cambia.";
 			d["item.elevation.ex.group"] = "por ejemplo, subes una carretera de dos carriles a 10 m y las otras carreteras pequeñas también quedan a 10 m, mientras que una carretera grande no está a 10 m";
 			d["item.elevation.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras están a 10 m, pero al pasar al menú de Electricidad no están a 10 m";
 			d["item.elevation.ex.category"] = "cambiar a una carretera de seis carriles sigue dando 10 m, pero un puente o unas vías de tren dobles vuelven a 0 m y necesitan su propio ajuste, aunque todos estén en el menú de Carreteras";
@@ -305,13 +299,10 @@ namespace ToolModeMemory
 			d["group.official"] = "Réglages des outils officiels";
 			d["group.anarchy"] = "Réglages des outils d'Anarchy";
 			d["group.reset"] = "Gestion de la mémoire";
-			d["group.compat"] = "Compatibilité";
 			d["group.about"] = "Informations et liens";
 
 			d["enabled.label"] = "Activer la mémoire du mode d'outil";
 			d["enabled.desc"] = "Cette option est activée par défaut. Tant qu'elle est active, chaque valeur est enregistrée en continu, et le panneau retrouve l'état où vous l'avez laissé en revenant dans la partie. Désactiver un seul élément arrête seulement sa restauration ; ses valeurs continuent d'être enregistrées. Seul cet interrupteur général, une fois coupé, arrête tout l'enregistrement et chaque outil retrouve son comportement d'origine.";
-			d["compat.label"] = "Compatible avec d'autres mods";
-			d["compat.desc"] = "Activé par défaut. Activé : la mémoire se classe selon les noms de menu et de groupe tels que d'autres mods les ont ajustés ; des mods comme Asset UI Manager déplacent des assets vers un autre menu ou un nouveau groupe, et un asset déplacé suit donc son nouvel emplacement. Désactivé : la classification vue pour la première fois est conservée, ce qui est plus stable quand l'agencement change en pleine session. Cet interrupteur ne couvre que « Même groupe » et « Même menu », ainsi que le groupe auquel se rattachent les lignes Thème et Pack ; « Même type d'actif » se décide d'après ce à quoi sert réellement l'asset, donc cela ne change rien dans les deux cas. Notez qu'un asset personnalisé dont l'auteur n'a pas correctement réglé les voies ou l'équipement servi ne peut pas être reconnu, et il est donc mémorisé tout seul. Dans les deux cas, les valeurs déjà enregistrées ne sont pas perdues.";
 			d["scope.label"] = "Portée de partage";
 			d["scope.desc"] = "Dans quelle mesure la valeur de cet élément est partagée. Les parenthèses de la liste déroulante indiquent le comportement d'origine et notre recommandation.";
 			d["scope.line.group"] = "Même groupe : {0}";
@@ -336,7 +327,7 @@ namespace ToolModeMemory
 			d["reset.warn"] = "Irréversible.";
 			d["reset.confirm"] = "Réinitialiser les réglages d'outil mémorisés ?";
 			d["resetall.label"] = "Réinitialiser tous les réglages";
-			d["resetall.desc"] = "Remet chaque option de ce mod à son réglage recommandé : l'interrupteur général et celui de compatibilité se réactivent, et l'état comme la portée de partage de chaque élément sont rétablis. La mémoire déjà enregistrée pour les parties n'est pas touchée.";
+			d["resetall.desc"] = "Remet chaque option de ce mod à son réglage recommandé : l'interrupteur général se réactive, et l'état comme la portée de partage de chaque élément sont rétablis. La mémoire déjà enregistrée pour les parties n'est pas touchée.";
 			d["resetall.warn"] = "Irréversible.";
 			d["resetall.confirm"] = "Réinitialiser tous les réglages ?";
 			d["folder.label"] = "Gérer les fichiers mémoire de toutes les parties";
@@ -377,7 +368,7 @@ namespace ToolModeMemory
 
 			// ---------- 3 Élévation ----------
 			d["item.elevation.label"] = "Élévation";
-			d["item.elevation.desc"] = "Mémorise l'élévation laissée sur l'outil, y compris le résultat de Augmenter l'élévation et Diminuer l'élévation. L'Étape d'élévation (le déplacement d'une seule pression ; l'interface Anarchy nomme cette ligne Incrément d'élévation) est mémorisée avec elle et utilise la même portée de partage. L'élévation des croisements n'est pas concernée.";
+			d["item.elevation.desc"] = "Mémorise l'élévation laissée sur l'outil, y compris le résultat de Augmenter l'élévation et Diminuer l'élévation. L'Étape d'élévation (le déplacement d'une seule pression ; l'interface Anarchy nomme cette ligne Incrément d'élévation) est mémorisée avec elle et utilise la même portée de partage. L'élévation des croisements n'est pas concernée. Certains assets ont leur propre plage d'élévation : si la valeur partagée sort de ce que permet l'asset sélectionné, celui-ci conserve une élévation qui lui est possible et la valeur partagée mémorisée reste inchangée.";
 			d["item.elevation.ex.group"] = "par exemple, montez une route à deux voies à 10 m, les autres petites routes passent aussi à 10 m, mais une grande route n'est pas à 10 m";
 			d["item.elevation.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes sont à 10 m, mais dans le menu Électricité ils ne sont pas à 10 m";
 			d["item.elevation.ex.category"] = "passer à une route à six voies donne toujours 10 m, mais un pont ou une double voie ferrée repart à 0 m et réclame son propre réglage, bien que tous soient dans le menu Routes";
@@ -446,13 +437,10 @@ namespace ToolModeMemory
 			d["group.official"] = "Impostazioni degli strumenti ufficiali";
 			d["group.anarchy"] = "Impostazioni degli strumenti di Anarchy";
 			d["group.reset"] = "Gestione memoria";
-			d["group.compat"] = "Compatibilità";
 			d["group.about"] = "Informazioni e collegamenti";
 
 			d["enabled.label"] = "Abilita Memoria modalità strumento";
 			d["enabled.desc"] = "Attivo per impostazione predefinita. Finché è attivo, ogni valore viene registrato di continuo e al ritorno in partita i pannelli sono esattamente come li hai lasciati. Disattivare una singola voce ne blocca solo il ripristino; i valori continuano a essere registrati. Solo spegnendo questo interruttore generale si interrompe ogni registrazione e ogni strumento torna al comportamento originale.";
-			d["compat.label"] = "Compatibile con altri mod";
-			d["compat.desc"] = "Attivo per impostazione predefinita. Attivo: la memoria usa i nomi di menu e gruppo come adattati da altri mod; mod come Asset UI Manager spostano gli asset in un altro menu o in un nuovo gruppo, e un asset spostato segue la sua nuova posizione. Disattivo: viene mantenuta la classificazione che questo mod ha visto per prima, più stabile se la disposizione cambia a sessione avviata. Questo interruttore riguarda solo le opzioni «Stesso gruppo» e «Stesso menu», oltre al gruppo a cui si rifanno le righe Tema e Pacchetto; «Stesso tipo di asset» dipende da a cosa serve davvero l'asset, quindi è uguale in entrambi i casi. Nota che un asset personalizzato il cui autore non ha impostato correttamente le corsie o l'impianto servito non viene riconosciuto, quindi viene ricordato soltanto per conto suo. In entrambi i casi i valori già registrati non vengono persi.";
 			d["scope.label"] = "Ambito di condivisione";
 			d["scope.desc"] = "Quanto viene condiviso il valore di questa voce. Le parentesi nel menu a tendina mostrano cosa fa l'originale e cosa consigliamo.";
 			d["scope.line.group"] = "Stesso gruppo: {0}";
@@ -477,7 +465,7 @@ namespace ToolModeMemory
 			d["reset.warn"] = "Non annullabile.";
 			d["reset.confirm"] = "Reimpostare le impostazioni degli strumenti memorizzate?";
 			d["resetall.label"] = "Reimposta tutte le impostazioni";
-			d["resetall.desc"] = "Riporta ogni opzione di questo mod al suo valore consigliato predefinito: l'interruttore generale e quello di compatibilità si riattivano, e vengono ripristinati anche lo stato di attivazione e l'ambito di condivisione di ogni voce. La memoria già registrata delle partite non viene toccata.";
+			d["resetall.desc"] = "Riporta ogni opzione di questo mod al suo valore consigliato predefinito: l'interruttore generale si riattiva, e vengono ripristinati anche lo stato di attivazione e l'ambito di condivisione di ogni voce. La memoria già registrata delle partite non viene toccata.";
 			d["resetall.warn"] = "Non annullabile.";
 			d["resetall.confirm"] = "Reimpostare tutte le impostazioni?";
 			d["folder.label"] = "Gestisci i file di memoria di tutte le partite";
@@ -518,7 +506,7 @@ namespace ToolModeMemory
 
 			// ---------- 3 Elevazione ----------
 			d["item.elevation.label"] = "Elevazione";
-			d["item.elevation.desc"] = "Ricorda l'elevazione a cui lasci lo strumento, incluso il risultato di Aumenta elevazione e Diminuisci elevazione. Il Livello elevazione (quanto sposta una singola pressione; Anarchy chiama questa riga Step di elevazione) viene ricordato insieme ad essa e usa lo stesso ambito di condivisione. L'elevazione degli incroci non è inclusa.";
+			d["item.elevation.desc"] = "Ricorda l'elevazione a cui lasci lo strumento, incluso il risultato di Aumenta elevazione e Diminuisci elevazione. Il Livello elevazione (quanto sposta una singola pressione; Anarchy chiama questa riga Step di elevazione) viene ricordato insieme ad essa e usa lo stesso ambito di condivisione. L'elevazione degli incroci non è inclusa. Alcuni asset hanno un proprio intervallo di elevazione consentito: se il valore condiviso esce da ciò che l'asset selezionato ammette, questo conserva un'elevazione a esso possibile e il valore condiviso memorizzato resta invariato.";
 			d["item.elevation.ex.group"] = "per esempio, porti una strada a due corsie a 10 m e anche le altre piccole strade vanno a 10 m, mentre una strada grande non è a 10 m";
 			d["item.elevation.ex.menu"] = "tutti gli asset che clicchi nel menu Strade sono a 10 m, ma passando al menu Elettricità non sono a 10 m";
 			d["item.elevation.ex.category"] = "passando a una strada a sei corsie restano 10 m, ma un ponte o un binario ferroviario doppio ripartono da 0 m e necessitano un'impostazione propria, benché tutti siano nel menu Strade";

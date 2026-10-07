@@ -175,6 +175,9 @@ namespace ToolModeMemory.Tests
 			FilterOptionMemory();
 			LegacyFileHousekeeping();
 			AssetClassification();
+			EntryGate();
+			RealFieldFiles();
+			AssetValueLimits();
 
 			Console.WriteLine();
 			Console.WriteLine(s_Fails == 0
@@ -1367,6 +1370,272 @@ namespace ToolModeMemory.Tests
 				"完整层级键 = C:K:road（带 K: 段，绝不会等于旧的 UI 分类名键）");
 			Check(MemoryKeys.Category(twoLane).IndexOf('/') < 0 && MemoryKeys.Category(twoLane).IndexOf('$') < 0,
 				"层级键不含家族分隔符与斜杠");
+		}
+
+		/// <summary>
+		/// [22] 进档闸门 <see cref="SaveSessionGate"/>。
+		/// 玩家日志 2026-10-07 16:41:46 里那条「开机进主菜单也写出了 _unsaved_xxxx.json」
+		/// 就是没有这道闸门的后果；而「把原版进档后重置出来的默认值当成玩家的选择记下去」
+		/// 是「下一次进档全是出厂值」的永久化路径。两条规则都在这里钉死。
+		/// </summary>
+		private static void EntryGate()
+		{
+			Console.WriteLine("[22] 进档闸门：不在存档里不捕获、稳定期里只写回");
+			const float settle = SaveSessionGate.kSettleSeconds;
+
+			SaveSessionGate g = new SaveSessionGate();
+
+			// 1) 开局 / 主菜单：一次都不许捕获
+			Check(!g.InSave, "刚创建 = 不在存档里");
+			Check(!g.Settling(0f) && !g.Settling(1e6f), "没进档时不存在稳定期");
+			Check(!g.AllowCapture(0f) && !g.AllowCapture(1e6f), "没进档时任何时刻都不许捕获");
+			Check(!g.AllowFinalCapture(), "没进档时连退出前的强制捕获也不许");
+
+			// 2) 进档：稳定期内写回但不捕获
+			g.Open(100f);
+			Check(g.InSave, "Open = 进入存档");
+			Check(g.Settling(100f) && g.Settling(100f + settle * 0.5f), "稳定期内 Settling=true");
+			Check(!g.AllowCapture(100f) && !g.AllowCapture(100f + settle * 0.5f),
+				"稳定期内不捕获（否则原版重置值会被记成玩家的选择）");
+			Check(g.AllowFinalCapture(), "稳定期不挡退出前那一次强制捕获");
+
+			// 3) 稳定期过后恢复正常捕获
+			Check(!g.Settling(100f + settle) && g.AllowCapture(100f + settle), "到点当帧起放行");
+			Check(g.AllowCapture(100f + settle + 500f), "之后每帧都可以捕获");
+
+			// 4) 离开存档：立刻全关，且不许残留稳定期状态
+			g.Close();
+			Check(!g.InSave && !g.AllowCapture(100f + settle + 1f) && !g.AllowFinalCapture(),
+				"Close 之后一切捕获停止");
+			Check(!g.Settling(100f), "Close 后旧时间戳不会被当成稳定期");
+
+			// 5) 换下一个存档必须重新计时（不能拿上一档的过期窗口直接放行）
+			g.Open(1200f);
+			Check(g.Settling(1200f) && !g.AllowCapture(1200f), "下一档重新进入稳定期");
+			Check(g.AllowCapture(1200f + settle), "下一档到点照样放行");
+
+			// 6) settleSeconds<=0 = 明确不要稳定期，绝不能变成「永不捕获」
+			g.Open(2000f, 0f);
+			Check(!g.Settling(2000f) && g.AllowCapture(2000f), "settleSeconds=0 -> 立即放行捕获");
+
+			// 7) 负数时钟（理论上不该出现，但要确定行为）
+			g.Open(-5f, settle);
+			Check(g.AllowCapture(-5f + settle) && !g.AllowCapture(-5f), "负时间戳同样按窗口判断");
+
+			// 8) 诊断字段：日志里要能区分「读到空记忆」与「读到了 N 个值」
+			FreshDir("entrygate_diag");
+			MemoryStore s = new MemoryStore();
+			Check(s.IsEmpty && s.EntryCount == 0, "新记忆 = 空");
+			s.UseSaveName("Diag");
+			s.Set(ToolItemCatalog.kToolMode, K(MemoryKeys.Shared(), false, "net"), 1);
+			s.Set(ToolItemCatalog.kToolMode, K(MemoryKeys.Shared(), false, "obj"), 0);
+			Check(s.EntryCount == 2 && !s.IsEmpty, "两个键 = 2 个值");
+			s.Set(ToolItemCatalog.kToolMode, K(MemoryKeys.Shared(), false, "net"), 1);
+			Check(s.EntryCount == 2, "同值重复 Set 不增加计数");
+			Check(s.SaveToDisk(true), "写盘");
+			MemoryStore r = new MemoryStore();
+			r.UseSaveName("Diag");
+			Check(r.LoadForCurrentSave() && r.EntryCount == 2, "读回来的值个数一致");
+			r.StartUnnamedSession();
+			Check(r.IsEmpty && r.EntryCount == 0, "StartUnnamedSession 清空内存（本局专属临时名）");
+		}
+
+		/// <summary>
+		/// [23] 真机记忆文件回放：把这台机器上玩家自己玩出来的记忆文件拷进临时目录，
+		/// 逐个走「解析 → 载入 → 再序列化」，并要求每一项都能被当前目录认出来。
+		///
+		/// 为什么要它：<c>CommitParsed</c> 会把 <c>ToolItemCatalog.Find</c> 认不出的桶**静默丢掉**，
+		/// 而「静默丢掉」在玩家屏幕上长得和「这个档没记忆」一模一样。
+		/// 0.4.0 玩家反馈「同一个存档重新进入后没有恢复上次的记忆」，
+		/// 第一件要排除的就是这种「文件在、读得懂、但值被丢光」的情况。
+		/// 只读副本，绝不碰真实目录（<c>LoadForCurrentSave</c> 成功时会删掉同目录的 .tmp）。
+		/// </summary>
+		private static void RealFieldFiles()
+		{
+			Console.WriteLine("[23] 真机记忆文件回放（存在才测，缺文件只跳过不算失败）");
+			string profile = Environment.GetEnvironmentVariable("USERPROFILE");
+			string fieldDir = string.IsNullOrEmpty(profile)
+				? null
+				: Path.Combine(profile, "AppData", "LocalLow", "Colossal Order",
+					"Cities Skylines II", "ModsData", "ToolModeMemory");
+			if (fieldDir == null || !Directory.Exists(fieldDir))
+			{
+				Console.WriteLine("  SKIP 这台机器上没有 " + fieldDir);
+				return;
+			}
+			string[] files = Directory.GetFiles(fieldDir, "*.json");
+			if (files.Length == 0)
+			{
+				Console.WriteLine("  SKIP 目录里没有记忆文件");
+				return;
+			}
+			FreshDir("field_replay");   // 副本一律写进测试目录，真实目录只读
+			int checkedFiles = 0;
+			for (int i = 0; i < files.Length; i++)
+			{
+				string dst = Path.Combine(MemoryStore.DataDirectory, Path.GetFileName(files[i]));
+				try { File.Copy(files[i], dst, true); }
+				catch { continue; }
+				checkedFiles++;
+
+				string text = File.ReadAllText(dst, Encoding.UTF8);
+				Dictionary<string, Dictionary<string, int>> parsed =
+					new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal);
+				int version;
+				Check(MemoryStore.Parse(text, parsed, out version),
+					Path.GetFileName(files[i]) + " 解析通过");
+				Check(version <= MemoryStore.kVersion,
+					Path.GetFileName(files[i]) + " 版本 " + version + " 不高于当前 " + MemoryStore.kVersion);
+
+				// 每个桶的 id 必须在当前目录里认识，否则读进来就被静默丢掉
+				string unknown = null;
+				foreach (KeyValuePair<string, Dictionary<string, int>> kv in parsed)
+				{
+					if (ToolItemCatalog.Find(kv.Key) != null) continue;
+					unknown = kv.Key;
+					break;
+				}
+				Check(unknown == null, Path.GetFileName(files[i]) + " 的每一项都被当前目录认识（未知项：" + unknown + "）");
+
+				// 载入：条目数必须与文件里的值个数一致（CommitParsed 不许丢）
+				string stem = Path.GetFileNameWithoutExtension(dst);
+				MemoryStore s = new MemoryStore();
+				s.UseSaveName(stem);
+				Check(s.LoadForCurrentSave(), stem + " 走生产路径载入成功");
+				int inFile = 0;
+				foreach (KeyValuePair<string, Dictionary<string, int>> kv in parsed) inFile += kv.Value.Count;
+				Check(s.EntryCount == inFile,
+					stem + " 载入到 " + s.EntryCount + " 个值，文件里 " + inFile + " 个（不能被丢弃）");
+
+				// 往返稳定：原样再写一次，内容个数不变
+				File.WriteAllText(dst, s.Serialize(), new UTF8Encoding(false));
+				MemoryStore again = new MemoryStore();
+				again.UseSaveName(stem);
+				Check(again.LoadForCurrentSave() && again.EntryCount == inFile,
+					stem + " 重写后再读，值个数不变");
+			}
+			Check(checkedFiles > 0, "至少回放了 " + checkedFiles + " 个真实文件");
+		}
+
+		/// <summary>
+		/// [24] 资产自带的取值限制（v0.6.0）：共用的值超出这件资产自己的范围时不共用，
+		/// 值回到范围内时又恢复共用。
+		///
+		/// 需求原话（owner）：水管的高度最高只能到 -10m，就算「高度」全局共用、
+		/// 别的资产是 0m，点到水管上也不可能变成 0m；别的资产若是 -20m，水管就该跟着变 -20m。
+		/// 判据来自资产数据（<c>PlaceableNetData.m_ElevationRange</c>，原版
+		/// <c>NetToolSystem.CheckElevationRange</c> 夹的就是它），这里用纯规则复现同一判定。
+		///
+		/// 两侧各自的规矩（缺一不可，理由见 ValueLimit 的注释）：
+		///   写回侧 Accepts/Blocks —— 超限的共用值不落在这件资产上（原版自己也会夹，
+		///     我们绝不能把面板写成资产做不到的 0m）；
+		///   捕获侧 ShouldSkipCapture —— 判的是**这个值本身**够不够得着：从道路切到水管时
+		///     工具里留着的是道路的 0m，那不属于水管，记下去要么污染共用桶、
+		///     要么变成水管永远用不了、还会挡掉后续真值的死值。
+		///     玩家在水管上主动改出的 -30m 则照常记：共用范围带着整组一起变本就是共用的定义。
+		/// </summary>
+		private static void AssetValueLimits()
+		{
+			Console.WriteLine("[24] 资产取值限制：超限不共用，回到范围内恢复共用");
+
+			// 水管：m_ElevationRange = { min = -100, max = -10 }（米）
+			ValueLimit pipe = ValueLimit.FromRange(-100f, -10f);
+			Check(pipe.Known, "读到范围即为 Known");
+			Check(pipe.Min == -100f && pipe.Max == -10f, "min/max 原样保留");
+
+			// owner 给的两个用例，逐字对上
+			Check(pipe.Blocks(0f), "共用值 0m 超出水管上限 → 水管不共用");
+			Check(!pipe.Accepts(0f), "同上：Accepts(0m) = false");
+			Check(!pipe.Blocks(-20f), "共用值回到 -20m → 重新可以共用");
+			Check(pipe.Accepts(-20f), "Accepts(-20m) = true");
+			Check(pipe.Accepts(-100f) && pipe.Accepts(-10f), "闭区间：两个端点都算允许");
+			Check(!pipe.Accepts(-9.9f) && !pipe.Accepts(-100.1f), "越界一点点也不行（原版同样会夹回去）");
+
+			// 宽容度：吃掉浮点往返误差，但绝不吃掉真实的限制粒度
+			// （水管的上限是 -10m，「超限」指的是比 -10 更高，即 -9.9x）
+			Check(pipe.Accepts(-9.96f), "上限之上 4cm 在宽容度内（判定误差，不是玩家选的档位）");
+			Check(!pipe.Accepts(-9.94f), "上限之上 6cm 判为超限");
+			Check(pipe.Accepts(-100.04f), "下限之下 4cm 在宽容度内");
+			Check(!pipe.Accepts(-100.06f), "下限之下 6cm 判为超限");
+			Check(ValueLimit.kTolerance < 0.1f, "宽容度小于 10cm：远小于任何一个可用的高度档位");
+
+			// NaN / 残缺范围：一律退化成「不限制」，绝不因为读坏数据而拒绝写回
+			Check(!pipe.Accepts(float.NaN), "有限制时 NaN 值视为超限（不写回一个坏数）");
+			ValueLimit brokenRange = ValueLimit.FromRange(5f, -5f);
+			Check(!brokenRange.Known, "min > max 的残缺范围当不限制");
+			Check(brokenRange.Accepts(999999f) && !brokenRange.Blocks(999999f), "不限制放行任何值");
+			Check(!ValueLimit.FromRange(float.NaN, 1f).Known, "NaN 端点当不限制");
+			Check(!ValueLimit.FromRange(0f, float.PositiveInfinity).Known, "无穷端点当不限制");
+			Check(!ValueLimit.None.Known, "None = 不限制");
+
+			// 捕获侧：判的是这个值本身，不是桶里原来有什么
+			Check(pipe.ShouldSkipCapture(0f), "道路留下的 0m 不记到水管头上");
+			Check(!pipe.ShouldSkipCapture(-30f), "玩家在水管上改出的 -30m 照常记");
+			Check(!pipe.ShouldSkipCapture(-10f), "记到本资产的上限也照常（那是它真实的状态）");
+			Check(!ValueLimit.None.ShouldSkipCapture(12345f), "没有范围的资产永远不跳过捕获");
+
+			// 「死值」回归：0.6.0 第一版规则（比桶里的旧值）会让水管再也记不进自己那份
+			FreshDir("limits");
+			MemoryStore dead = new MemoryStore();
+			dead.UseSaveName("dead_value_case");
+			const string elevation = "elevation";
+			const float scale = 100f;      // 与 ToolMemoryBridge.kScale 一致：按 1cm 存整数
+			string pipeKey = MemoryKeys.WithDomain(
+				MemoryKeys.Asset("Game.Prefabs.NetPrefab:Water Pipe"), false);
+			dead.Set(elevation, pipeKey, (int)Math.Round(0f * scale));   // 切过来时残留的非法值
+			int leftover = dead.Get(elevation, pipeKey, out bool found);
+			Check(found && leftover == 0 && pipe.ShouldSkipCapture(leftover / scale),
+				"残留的 0m 既不该被记下来，也不该挡住后面");
+			int wanted = (int)Math.Round(-30f * scale);
+			Check(!pipe.ShouldSkipCapture(wanted / scale), "玩家改到 -30m：允许捕获");
+			dead.Set(elevation, pipeKey, wanted);
+			Check(dead.Get(elevation, pipeKey, out found) == wanted && found,
+				"水管那份记忆真的更新成 -30m（旧值不会把新值挡掉）");
+
+			// 端到端：「全局共用」在资产域里只有一个桶，道路和水管共用同一个键。
+			// 限制改变的不是桶的个数，而是「这个桶的值能不能落到这件资产上」。
+			string sharedKey = MemoryKeys.WithDomain(MemoryKeys.Shared(), false);
+			MemoryStore store = new MemoryStore();
+			store.UseSaveName("limit_case");
+			store.Set(elevation, sharedKey, (int)Math.Round(0f * scale));
+			int bucket = store.Get(elevation, sharedKey, out found);
+			Check(found && bucket == 0, "共用桶 = 0m（道路那侧记下来的）");
+			Check(pipe.Blocks(bucket / scale), "0m 超水管范围：选中水管时不把 0m 写回去");
+			Check(pipe.ShouldSkipCapture(bucket / scale),
+				"水管此时带着道路留下的 0m：也不把它记回同一个桶（道路的记忆不动）");
+
+			// 道路改成 -20m：水管重新进入范围，共用应当恢复
+			store.Set(elevation, sharedKey, (int)Math.Round(-20f * scale));
+			bucket = store.Get(elevation, sharedKey, out found);
+			Check(!pipe.Blocks(bucket / scale), "-20m 在水管范围内：共用重新生效（owner 要求的回程）");
+			Check(!pipe.ShouldSkipCapture(bucket / scale), "-20m 时水管照旧参与捕获");
+
+			// 玩家在共用状态下把水管调到 -30m：合法值，整组跟着走（与原版同一个数）
+			store.Set(elevation, sharedKey, (int)Math.Round(-30f * scale));
+			bucket = store.Get(elevation, sharedKey, out found);
+			Check(bucket == -3000 && !pipe.Blocks(bucket / scale),
+				"水管主动改的 -30m 记进共用桶，且对水管自己可用");
+
+			// 1cm 量化不许翻转判定：范围端点附近来回存一次
+			string[] probes = new string[] { "-10", "-10.01", "-10.04", "-9.99", "-100", "-100.04", "-50" };
+			int flipped = 0;
+			for (int i = 0; i < probes.Length; i++)
+			{
+				float m = float.Parse(probes[i], System.Globalization.CultureInfo.InvariantCulture);
+				int stored = (int)Math.Round(m * scale);
+				float back = stored / scale;
+				if (pipe.Accepts(m) != pipe.Accepts(back)) flipped++;
+			}
+			Check(flipped == 0, "按 1cm 存取一次不会翻转判定（翻转项数=" + flipped + "）");
+
+			// 落盘再读一次：限制判的就是文件里那个值，读回来判定得照样成立
+			Check(store.SaveToDisk(), "带限制的存档写盘成功");
+			MemoryStore reloaded = new MemoryStore();
+			reloaded.UseSaveName("limit_case");
+			Check(reloaded.LoadForCurrentSave(), "重进存档读回");
+			int sharedBack = reloaded.Get(elevation, sharedKey, out found);
+			Check(found && sharedBack == -3000 && !pipe.Blocks(sharedBack / scale),
+				"共用桶读回来还是 -30m，对水管依旧可用");
 		}
 	}
 }

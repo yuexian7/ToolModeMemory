@@ -20,14 +20,15 @@ namespace ToolModeMemory
 	/// v0.2.2 结构：模组设置 = 三个板块 —— 顶部总开关（**不显示板块名**）、
 	/// 「官方工具项设置」（原版 9 项）、「Anarchy工具项设置」（该模组的 3 项）；
 	/// 序号跨板块连续 1..12；每项 = 是否恢复 + 共用范围，五种共用范围的定义写在
-	/// 每一项自己的共用范围说明里。关于 = 记忆管理 + 兼容性 + 版本/作者/链接按钮。
+	/// 每一项自己的共用范围说明里。关于 = 记忆管理 + 版本/作者/链接按钮（v0.6.0 起「兼容性」那一块已去掉：
+	/// 工具栏层级只有被其它模组改写过的这一份数据，那个开关关掉也一样按对方的分组记，留着只会误导）。
 	/// 总开关关闭时，下面所有工具项仍然变灰不可点（DisableByCondition 仍挂在每一项上）。
 	/// 全部改动实时生效（setter 内 Sync + Persist）。
 	/// </summary>
 	[FileLocation(nameof(ToolModeMemory))]
 	[SettingsUITabOrder(kTabMod, kTabAbout)]
-	[SettingsUIGroupOrder(kGroupMaster, kGroupOfficial, kGroupAnarchy, kGroupMemory, kGroupCompat, kGroupInfo)]
-	[SettingsUIShowGroupName(kGroupOfficial, kGroupAnarchy, kGroupMemory, kGroupCompat)]
+	[SettingsUIGroupOrder(kGroupMaster, kGroupOfficial, kGroupAnarchy, kGroupMemory, kGroupInfo)]
+	[SettingsUIShowGroupName(kGroupOfficial, kGroupAnarchy, kGroupMemory)]
 	public class ToolModeMemorySettings : ModSetting
 	{
 		public const string kTabMod = "ModSettings";
@@ -40,8 +41,10 @@ namespace ToolModeMemory
 		/// <summary>第三方模组板块：一个模组一块，板块名 = 模组名 + 「工具项设置」。</summary>
 		public const string kGroupAnarchy = "AnarchyItems";
 		public const string kGroupMemory = "MemoryFiles";
-		/// <summary>需求 9：关于页中间的兼容性板块。</summary>
-		public const string kGroupCompat = "Compatibility";
+		// v0.6.0 删掉了「与其他模组兼容」那一整块（原 kGroupCompat）：工具栏的菜单/分组在运行期内
+		// 只有被其它模组就地改写过的这一份数据，没有「原版那份」可回退，所以那个开关关掉也一样
+		// 按对方调整后的分组记（owner 实机反馈 + UIObjectData 只有一份的事实）。
+		// 整行去掉，永远跟随当前 UI 层级。
 		/// <summary>关于页底部信息板块（不显示板块名）。</summary>
 		public const string kGroupInfo = "AboutInfo";
 
@@ -54,7 +57,6 @@ namespace ToolModeMemory
 		public static bool Ready;
 
 		private bool m_Enabled = true;
-		private bool m_CompatOtherMods = true;
 		private readonly Dictionary<string, bool> m_ItemEnabled = new Dictionary<string, bool>(StringComparer.Ordinal);
 		private readonly Dictionary<string, int> m_ItemScope = new Dictionary<string, int>(StringComparer.Ordinal);
 
@@ -274,30 +276,9 @@ namespace ToolModeMemory
 			set { DoResetAllSettings(); }
 		}
 
-		// ---------- 关于页：兼容性（需求 9） ----------
-
-		/// <summary>
-		/// 开：按其它模组调整后的菜单/分类名去记忆（Asset UI Manager、ExtraLib 等会直接改
-		/// 工具栏层级数据，资产被移到别的菜单后记忆会跟着新位置）。
-		/// 关：本档内第一次解析到的菜单/分类名会一直沿用，不受中途重排影响。
-		/// </summary>
-		[SettingsUISection(kTabAbout, kGroupCompat)]
-		public bool CompatOtherMods
-		{
-			get { return m_CompatOtherMods; }
-			set
-			{
-				m_CompatOtherMods = value;
-				Sync();
-				Persist();
-			}
-		}
-
-		public bool CompatEnabled { get { return m_CompatOtherMods; } }
-
 		/// <summary>
 		/// 读盘完成（Ready 已置真）后调用一次：LoadSettings 是用属性 setter 反序列化的，
-		/// 期间 Sync 被屏蔽，所以这里补一次，让存进文件的兼容开关真的生效。
+		/// 期间 Sync 被屏蔽，所以这里补一次，让文件里的设置真的作用到运行中的工具上。
 		/// </summary>
 		public void AfterLoaded()
 		{
@@ -457,8 +438,6 @@ namespace ToolModeMemory
 			if (!Ready) return;
 			try
 			{
-				// 兼容开关的唯一落地位置：setter、重置按钮、读盘完成都经过这里
-				ToolMemoryBridge.LiveHierarchy = m_CompatOtherMods;
 				ToolModeMemoryMod.RefreshActive();
 				if (!m_Enabled) return;
 				Systems.ToolMemorySystem sys = null;
@@ -467,15 +446,15 @@ namespace ToolModeMemory
 					sys = Unity.Entities.World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<Systems.ToolMemorySystem>();
 				}
 				if (sys == null) return;
-				// 玩家刚改的可能是「与其他模组兼容」或某一项的共用范围，两者都会改变键的算法；
-				// 系统的键缓存现在改成按工具/资产复用（性能），所以这里必须主动作废一次。
+				// 玩家刚改的可能是某一项的共用范围或「是否恢复」，这些都会改变键的算法；
+				// 系统的键缓存是按工具/资产复用的（性能），所以这里必须主动作废一次。
 				sys.ForgetKeysAndCache();
 				if (sys.MasterEnabled) sys.RequestApply();
 			}
 			catch { }
 		}
 
-		/// <summary>需求 1：退回出厂推荐值（含总开关与兼容开关，两者默认都是开）。</summary>
+		/// <summary>需求 1：退回出厂推荐值（含总开关；每一项的是否恢复与共用范围也一起退回）。</summary>
 		private void DoResetAllSettings()
 		{
 			try
@@ -542,15 +521,14 @@ namespace ToolModeMemory
 		}
 
 		/// <summary>
-		/// 出厂默认：总开关开、兼容开关开、每一项按 ToolItemCatalog 的推荐值。
+		/// 出厂默认：总开关开、每一项按 ToolItemCatalog 的推荐值。
 		/// 「重置所有设置项」按钮也走这里（需求 1 + 本轮「默认打开」）。
 		/// 这里不碰 ToolMemoryBridge：构造期（LoadSettings 之前）不该触发它的静态反射初始化，
-		/// 由 Sync() 统一把开关推给它。
+		/// 运行态一律由 Sync() 推。
 		/// </summary>
 		public override void SetDefaults()
 		{
 			m_Enabled = true;
-			m_CompatOtherMods = true;
 			InitItemDefaults();
 		}
 	}

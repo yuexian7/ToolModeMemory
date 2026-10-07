@@ -24,13 +24,10 @@ namespace ToolModeMemory
 			d["group.official"] = "Ustawienia oficjalnych narzędzi";
 			d["group.anarchy"] = "Ustawienia narzędzi Anarchy";
 			d["group.reset"] = "Zarządzanie pamięcią";
-			d["group.compat"] = "Zgodność";
 			d["group.about"] = "Informacje i linki";
 
 			d["enabled.label"] = "Włącz pamięć trybu narzędzia";
 			d["enabled.desc"] = "Domyślnie włączone. Dopóki to włączone, każda wartość jest zapisywana na bieżąco, więc po powrocie do zapisu panele wyglądają tak, jak je zostawiłeś. Wyłączenie pojedynczej pozycji tylko ją wyłącza z przywracania - jej wartości nadal są zapisywane. Dopiero wyłączenie tego głównego przełącznika zatrzymuje zapisowanie i każde narzędzie wraca do zachowania z gry.";
-			d["compat.label"] = "Zgodność z innymi modami";
-			d["compat.desc"] = "Domyślnie włączone. Włączone: pamięć używa nazw menu i grup w postaci, w jakiej dostosowały je inne mody (Asset UI Manager, ExtraLib i podobne), więc przeniesiony zasób podąża za nowym miejscem. Wyłączone: zachowywana jest klasyfikacja widziana po raz pierwszy, co jest stabilniejsze, gdy układ zmienia się w trakcie gry. Ten przełącznik obejmuje tylko zakresy «Ta sama grupa» i «To samo menu» oraz to, pod którą grupę trafiają wiersze Motyw i Pakiet; «Ten sam typ zasobu» zależy od tego, komu zasób faktycznie służy, więc przy włączonym i wyłączonym jest tak samo. Uwaga: własnego zasobu, któremu autor nie przypisał właściwych pasów ani obsługiwanej instalacji, mod nie potrafi rozpoznać, więc zapamiętuje go osobno. W obu przypadkach już zapisane wartości nie giną.";
 			d["scope.label"] = "Zakres współdzielenia";
 			d["scope.desc"] = "Jak szeroko współdzielona jest wartość tej pozycji. Nawiasy na liście rozwijanej pokazują, co robi gra oryginalna i co polecamy.";
 			d["scope.line.group"] = "Ta sama grupa: {0}";
@@ -55,7 +52,7 @@ namespace ToolModeMemory
 			d["reset.warn"] = "Nie można cofnąć.";
 			d["reset.confirm"] = "Zresetować zapamiętane ustawienia narzędzi?";
 			d["resetall.label"] = "Zresetuj wszystkie ustawienia";
-			d["resetall.desc"] = "Przywraca każdą opcję tego moda do zalecanej wartości domyślnej: przełącznik główny i przełącznik zgodności znowu się włączają, a stan włączenia i zakres współdzielenia każdej pozycji też zostają przywrócone. Pamięć już zapisana dla zapisów gry pozostaje nienaruszona.";
+			d["resetall.desc"] = "Przywraca każdą opcję tego moda do zalecanej wartości domyślnej: przełącznik główny znowu się włącza, a stan włączenia i zakres współdzielenia każdej pozycji też zostają przywrócone. Pamięć już zapisana dla zapisów gry pozostaje nienaruszona.";
 			d["resetall.warn"] = "Nie można cofnąć.";
 			d["resetall.confirm"] = "Zresetować wszystkie ustawienia tego moda do wartości zalecanych?";
 			d["folder.label"] = "Zarządzaj plikami pamięci wszystkich zapisów";
@@ -90,7 +87,7 @@ namespace ToolModeMemory
 			d["item.toolMode.ex.menu"] = "każdy zasób kliknięty w menu Drogi jest na trybie Jeden zakręt, ale po przejściu do menu Elektryczność już nie";
 			d["item.toolMode.ex.category"] = "przełączenie na drogę sześciopasmową nadal daje Jeden zakręt, ale most albo podwójne tory kolejki metra wracają do swojego trybu domyślnego i wymagają własnego ustawienia, choć wszystkie są w menu Drogi";
 			d["item.elevation.label"] = "Wzniesienie";
-			d["item.elevation.desc"] = "Zapamiętuje wysokość, na jakiej zostawiono narzędzie, wraz z wynikiem Zwiększ wzniesienie i Zmniejsz wzniesienie. Stopień wzniesienia, czyli o ile przesuwa jedno naciśnięcie Zwiększ wzniesienie albo Zmniejsz wzniesienie (w panelu moda Anarchy ten wiersz nazywa się tak samo), jest zapamiętywany razem z wysokością i używa tego samego zakresu współdzielenia. Wysokość skrzyżowań i węzłów nie jest objęta.";
+			d["item.elevation.desc"] = "Zapamiętuje wysokość, na jakiej zostawiono narzędzie, wraz z wynikiem Zwiększ wzniesienie i Zmniejsz wzniesienie. Stopień wzniesienia, czyli o ile przesuwa jedno naciśnięcie Zwiększ wzniesienie albo Zmniejsz wzniesienie (w panelu moda Anarchy ten wiersz nazywa się tak samo), jest zapamiętywany razem z wysokością i używa tego samego zakresu współdzielenia. Wysokość skrzyżowań i węzłów nie jest objęta. Część zasobów ma własny dopuszczalny zakres wzniesienia: jeśli współdzielona wartość wykracza poza to, na co pozwala wybrany zasób, zasób ten zachowuje wzniesienie możliwe dla niego, a zapamiętana wartość współdzielona pozostaje bez zmian.";
 			d["item.elevation.ex.group"] = "na przykład podniesiesz małą dwupasmową drogę do 10 m i inne małe drogi też pójdą na 10 m, a duża droga nie będzie na 10 m";
 			d["item.elevation.ex.menu"] = "każdy zasób kliknięty w menu Drogi jest na 10 m, ale po przejściu do menu Elektryczność nie jest na 10 m";
 			d["item.elevation.ex.category"] = "przełączenie na drogę sześciopasmową nadal daje 10 m, ale most albo podwójne tory kolejowe wracają do 0 m i wymagają własnego ustawienia, choć wszystkie są w menu Drogi";
@@ -144,13 +141,10 @@ namespace ToolModeMemory
 			d["group.official"] = "Configurações das ferramentas oficiais";
 			d["group.anarchy"] = "Configurações das ferramentas do Anarchy";
 			d["group.reset"] = "Gestão de memória";
-			d["group.compat"] = "Compatibilidade";
 			d["group.about"] = "Informações e links";
 
 			d["enabled.label"] = "Ativar Memória do modo de ferramenta";
 			d["enabled.desc"] = "Ligado por padrão. Enquanto estiver ligado, todos os valores ficam sendo gravados sem parar, então ao voltar a um jogo os painéis estão exatamente como você deixou. Desligar um item só impede que ele seja restaurado; os valores dele continuam sendo gravados. Só desligando este interruptor geral a gravação para e cada ferramenta volta ao comportamento original.";
-			d["compat.label"] = "Compatível com outros mods";
-			d["compat.desc"] = "Ligado por padrão. Ligado: a memória usa os nomes de menu e grupo conforme ajustados por outros mods (Asset UI Manager, ExtraLib e semelhantes), então um ativo que você moveu segue o novo lugar. Desligado: mantém a classificação que este mod viu primeiro, o que é mais estável quando o layout muda no meio da sessão. Este interruptor só cobre «Mesmo grupo» e «Mesmo menu», além de dizer em qual grupo as linhas Tema e Pacote ficam guardadas; «Mesmo tipo de ativo» depende do que o ativo realmente atende, então é igual nos dois casos. Note que um ativo personalizado cujo autor não acertou as faixas ou o serviço atendido não pode ser reconhecido, então ele passa a ser lembrado sozinho. Nenhuma das duas escolhas apaga valores já gravados.";
 			d["scope.label"] = "Âmbito de partilha";
 			d["scope.desc"] = "Até que ponto o valor deste item é partilhado. Os parênteses na lista suspensa mostram o que o jogo original faz e o que recomendamos.";
 			d["scope.line.group"] = "Mesmo grupo: {0}";
@@ -175,7 +169,7 @@ namespace ToolModeMemory
 			d["reset.warn"] = "Não pode ser desfeito.";
 			d["reset.confirm"] = "Repor as definições de ferramenta memorizadas?";
 			d["resetall.label"] = "Repor todas as definições";
-			d["resetall.desc"] = "Devolve cada opção deste mod ao seu padrão recomendado: o interruptor geral e o de compatibilidade voltam a ligar, e o estado de ativação e o âmbito de partilha de cada item também são restaurados. A memória já gravada dos jogos não é afetada.";
+			d["resetall.desc"] = "Devolve cada opção deste mod ao seu padrão recomendado: o interruptor geral volta a ligar, e o estado de ativação e o âmbito de partilha de cada item também são restaurados. A memória já gravada dos jogos não é afetada.";
 			d["resetall.warn"] = "Não pode ser desfeito.";
 			d["resetall.confirm"] = "Repor todas as definições deste mod aos valores recomendados?";
 			d["folder.label"] = "Gerir os arquivos de memória de todos os jogos";
@@ -210,7 +204,7 @@ namespace ToolModeMemory
 			d["item.toolMode.ex.menu"] = "todo ativo que você clica no menu Vias está em Curva simples, mas ao mudar para o menu Eletricidade já não";
 			d["item.toolMode.ex.category"] = "mudar para uma via de 6 faixas ainda dá Curva simples, mas uma ponte ou um trilho duplo de metrô volta ao seu modo padrão e precisa do próprio ajuste, embora todos estejam no menu Vias";
 			d["item.elevation.label"] = "Elevação";
-			d["item.elevation.desc"] = "Lembra a elevação em que a ferramenta ficou, incluindo o resultado de Aumentar elevação e Reduzir elevação. O Passo de elevação, o quanto se anda com um toque em Aumentar elevação ou Reduzir elevação (no painel do Anarchy essa linha tem o mesmo nome), é lembrado junto com a elevação e usa o mesmo âmbito de partilha. A elevação de cruzamentos e passagens não é coberta.";
+			d["item.elevation.desc"] = "Lembra a elevação em que a ferramenta ficou, incluindo o resultado de Aumentar elevação e Reduzir elevação. O Passo de elevação, o quanto se anda com um toque em Aumentar elevação ou Reduzir elevação (no painel do Anarchy essa linha tem o mesmo nome), é lembrado junto com a elevação e usa o mesmo âmbito de partilha. A elevação de cruzamentos e passagens não é coberta. Alguns ativos têm a sua própria faixa de elevação permitida: se o valor compartilhado estiver fora daquilo que o ativo selecionado permite, este mantém uma elevação que lhe é possível e o valor compartilhado memorizado permanece o mesmo.";
 			d["item.elevation.ex.group"] = "por exemplo, você sobe uma rua de 2 faixas a 10 m e as outras ruas pequenas também vão a 10 m, enquanto uma via grande não está a 10 m";
 			d["item.elevation.ex.menu"] = "todo ativo que você clica no menu Vias está a 10 m, mas ao mudar para o menu Eletricidade não está a 10 m";
 			d["item.elevation.ex.category"] = "mudar para uma via de 6 faixas ainda dá 10 m, mas uma ponte ou um trilho duplo volta a 0 m e precisa do próprio ajuste, embora todos estejam no menu Vias";
@@ -264,13 +258,10 @@ namespace ToolModeMemory
 			d["group.official"] = "Настройки официальных инструментов";
 			d["group.anarchy"] = "Настройки инструментов Anarchy";
 			d["group.reset"] = "Управление памятью";
-			d["group.compat"] = "Совместимость";
 			d["group.about"] = "Сведения и ссылки";
 
 			d["enabled.label"] = "Включить память режима инструмента";
 			d["enabled.desc"] = "По умолчанию включено. Пока это включено, каждое значение записывается постоянно, и при возврате к сохранению панели будут такими, какими вы их оставили. Отключение одного пункта лишь убирает его восстановление, а значения всё равно записываются. Запись прекращается только при выключении этого главного переключателя, и каждый инструмент возвращается к обычному поведению.";
-			d["compat.label"] = "Совместимость с другими модами";
-			d["compat.desc"] = "По умолчанию включено. Включено: память раскладывается по названиям меню и групп в том виде, как их изменили другие моды (Asset UI Manager, ExtraLib и подобные), поэтому перемещённый объект следует за новым местом. Выключено: сохраняется классификация, которую мод увидел первой, это устойчивее при смене раскладки во время сессии. Этот переключатель влияет только на «Та же группа» и «То же меню», а также на то, по какой группе запоминаются строки «Тема» и «Набор»; «Тот же тип объекта» определяется тем, кому объект реально служит, и от переключателя не зависит. Учтите: пользовательский объект, у которого автор не задал правильно полосы или обслуживаемое учреждение, мод не может распознать, поэтому запоминает его отдельно. В обоих случаях уже записанные значения не теряются.";
 			d["scope.label"] = "Область общего доступа";
 			d["scope.desc"] = "Насколько широко разделяется значение этого пункта. Скобки в раскрывающемся списке показывают, как поступает оригинал и что мы рекомендуем.";
 			d["scope.line.group"] = "Та же группа: {0}";
@@ -295,7 +286,7 @@ namespace ToolModeMemory
 			d["reset.warn"] = "Отменить нельзя.";
 			d["reset.confirm"] = "Сбросить запомненные настройки инструментов?";
 			d["resetall.label"] = "Сбросить все настройки";
-			d["resetall.desc"] = "Возвращает каждую настройку этого мода к рекомендованному значению: главный переключатель и переключатель совместимости снова включаются, а также восстанавливаются состояние включения и область общего доступа каждого пункта. Уже записанная память сохранений не затрагивается.";
+			d["resetall.desc"] = "Возвращает каждую настройку этого мода к рекомендованному значению: главный переключатель снова включается, а также восстанавливаются состояние включения и область общего доступа каждого пункта. Уже записанная память сохранений не затрагивается.";
 			d["resetall.warn"] = "Отменить нельзя.";
 			d["resetall.confirm"] = "Сбросить все настройки этого мода к рекомендованным значениям?";
 			d["folder.label"] = "Управление файлами памяти всех сохранений";
@@ -330,7 +321,7 @@ namespace ToolModeMemory
 			d["item.toolMode.ex.menu"] = "у любого объекта, выбранного в меню «Дороги», стоит режим «Простая кривая», но в меню «Электричество» уже нет";
 			d["item.toolMode.ex.category"] = "переход на шестиполосную дорогу тоже даёт простую кривую, но мост или двухпутный тоннель метро возвращается к своему режиму по умолчанию и требует собственной настройки, хотя все они находятся в меню «Дороги»";
 			d["item.elevation.label"] = "Эстакада";
-			d["item.elevation.desc"] = "Запоминает высоту, на которой оставлен инструмент, включая результат от Увеличить подъем и Уменьшить подъем. Шаг подъема (насколько сдвигает одно нажатие Увеличить подъем или Уменьшить подъем; в панели мода Anarchy эта строка называется так же) запоминается вместе с высотой и делит с ней область общего доступа. Высота перекрёстков и развязок не запоминается.";
+			d["item.elevation.desc"] = "Запоминает высоту, на которой оставлен инструмент, включая результат от Увеличить подъем и Уменьшить подъем. Шаг подъема (насколько сдвигает одно нажатие Увеличить подъем или Уменьшить подъем; в панели мода Anarchy эта строка называется так же) запоминается вместе с высотой и делит с ней область общего доступа. Высота перекрёстков и развязок не запоминается. У отдельных объектов есть свой допустимый диапазон высот: если общее значение выходит за пределы, доступные выбранному объекту, объект сохраняет высоту, которая ему доступна, а запомненное общее значение остаётся прежним.";
 			d["item.elevation.ex.group"] = "например, поднимите двухполосную дорогу до 10 м, и другие небольшие дороги тоже поднимутся до 10 м, а большая дорога на 10 м не будет";
 			d["item.elevation.ex.menu"] = "у любого объекта, выбранного в меню «Дороги», высота 10 м, но в меню «Электричество» уже не 10 м";
 			d["item.elevation.ex.category"] = "переход на шестиполосную дорогу тоже даёт 10 м, но мост или двойные железнодорожные пути возвращаются к 0 м и требуют собственной настройки, хотя все они находятся в меню «Дороги»";

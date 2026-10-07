@@ -7,5 +7,7 @@ state/publish-*.log
 .vs/
 # 反编译产物与本地脚本，绝不入库/进包
 research/
+# Qoder 会话画布记录（含对话原文），绝不入库
+.qoder-credits/
 __pycache__/
 *.pyc

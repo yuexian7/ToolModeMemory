@@ -64,17 +64,64 @@
     踩到的坑：`<ChangeLog>` 里写了裸 `&`（"Left & Right"）→ ModPublisher 在
     BaseOptions.Binder.ParseConfig 抛 SharedCode.ReturnCodeException，MSBuild 那边只剩一行
     `error MSB3073 ... 已退出，代码为 1`，完全看不出是 XML 的问题。
-    以后 ChangeLog 里的 `&` 一律写成 "and" 或 `&amp;`。-->
+    以后 ChangeLog 里的 `&` 一律写成 "and" 或 `&amp;`。
+    2026-10-07（v0.5.0）：owner 要求「开发好本地测试，不需要上传」，所以本文件已写成
+    ModVersion 0.5.0 + v0.5.0 中英 ChangeLog（displayName / short / long 一字未动），
+    **没有执行 NewVersion，线上此刻仍是 v0.4.0**——本文件与线上故意不一致。
+    要发布时先按纪律读编辑页逐字段核对，再决定直接 NewVersion 还是先把线上改动同步进来。
+    2026-10-07（v0.6.0）：v0.5.0 同样没上传，所以本条 ChangeLog 一次覆盖两轮内容（进档修复 + 本版两项）。
+    本版**故意改了 <LongDescription>**：删掉「the compatibility switch」与「兼容性开关」那两处（设置项已取消），
+    并在两种语言里各加一句「资产自带取值限制」的说明。除此之外 name / short 一字未动。
+    发布前本应逐字段核对线上（尤其 LongDescription 这一整段——如果 owner 在线上动过其它部分，
+    要把他的改动并回来再发，不能拿本地值覆盖）。
+    2026-10-07 实际执行：owner 说「直接上传到线上，还是 private，描述你看着改就行，反正我都要检查修改的」。
+    试过读线上：内嵌浏览器会话已掉登录（`/mods/160529/Windows` 连 `?nocache=1` 两次都跳回首页、
+    顶部显示 "Log in"；Private 模组的页面对未登录会话不渲染），所以**这一次同样跳过了逐字段核对**，
+    只有发布器自证：`Mod Id: 160529` / `User Mod Version: 0.6.0` / `Access Control Level State: Private` /
+    `New mod version published` / `Publishing new version updating process finished successfully`，退出码 0，
+    全量日志 `state/publish-newversion-0.6.0.log`。上传的是部署目录里的 dll
+    （md5 3e52633bfbca8bfc912509a26d5ebb04 == 当时验证过的产物；字节复核 0.6.0、12 语言新文案在，
+    CompatOtherMods 已不存在）。若 owner 在 v0.4.0 之后在线上改过描述，本次覆盖会冲掉那部分——
+    改动前的元数据在 git 里（`git show HEAD:Properties/PublishConfiguration.xml`），随时可以并回来。
+    线上回读（`edit?version=10` + 列表页 MOD VER./SIZE/LAST UPDATED）等重新登录后补做。
+    2026-10-08（v0.6.1，**只写好，没有上传**）：owner 要求复核每帧开销 / 模拟速度 / 挂载点。
+    结论：CPU 侧可忽略，问题是每帧的堆分配（Mono/Boehm 不分代，垃圾攒够就全堆扫）。
+    代码只改两处（配色探针按 prefab 记忆、写回时 default(Bounds1) 只装一次），
+    LongDescription / ChangeLog 之外的元数据一字未动；ChangeLog 只有「内部效率」一条，
+    行为与 0.6.0 完全一致。
+    **发布前置条件**：`NewVersion` 上传的是游戏 Mods 部署目录，而 `dotnet build` 的 DeployWIP 在
+    游戏运行时删不掉被占用的 `ToolModeMemory_win_x86_64.dll`（MSB3231），此刻部署目录只剩那个 2 KB 壳、
+    主 dll 已被删。必须先关游戏 → 重新 `dotnet build -c Release` 部署 → 比对 md5 → 才能 NewVersion。
+    2026-10-08 实际执行（v0.6.1，已上传）：owner 要求「发布前先把线上数据同步到本地，他在改过描述与图片，
+    之后只传模组文件 + 版本号 + 更新日志，其它数据一律不动，保持 Private」。
+    登录态编辑页 edit?version=10 读出的线上值与本文件比对：NAME 仍是 "Tool Mode Memory"（16 字符，
+    FNV1a 093b5991）；SHORT 已被他删掉中文尾巴（111 字符，e7ed646a，本地原本是 124 字符带「　工具面板设置模式自动记忆」）；
+    LONG 已被他整段重写（3426 字符 / UTF-8 4668 B，70d1326a，英中两段 + Features/How to Use/Compatibility
+    + RAINBOW系列链接），本地旧的 1689 字符版本作废；缩略图换成了 cover_10.jpg（1254x1254，422 KB），
+    画廊里另有 4 张截图（3 PNG + 1 rainbow.jpg）。
+    处理：SHORT/LONG 逐字同步进本文件（写回后从 XML 反解出来算同一 FNV 校验，全部一致），
+    `Properties/Thumbnail.jpg` 用线上 cover_10.jpg 的原字节替换（NewVersion 总会重传本地缩略图，
+    不替换就会把他换的图盖回旧图）；**XML 里不加任何 Screenshot 条目**——发布器只有在本地列了截图时才
+    调 WithScreenshots（Program.decompiled.cs L301-303），空列表就不动他线上那 4 张；这 4 张与封面
+    都另存了一份在 research/live_backup_20261008/（gitignore 内）作退路。
+    执行时游戏又开着（PID 21100），第一次 `dotnet publish` 在 DeployWIP 处 MSB3231 失败且**没有上传任何东西**；
+    那次失败还把部署目录里的主 dll 删了、只剩旧的 win burst 壳（与 0.6.1 产物不同字节），
+    所以没有用「游戏目录里那套混着的文件」上传，而是把 bin\Release\net48 整套 6 个文件
+    （dll md5 e9890b1afe28d68f184a1df9c42781cd，内含 0.6.1）拷到临时目录，按 Mod.targets L148 的同一条
+    命令直接跑发布器，只把 -c 指到该目录：结果 Mod Id 160529 / User Mod Version 0.6.1 /
+    Access Control Level State: Private / New mod version published / finished successfully，退出码 0，
+    日志 state/publish-newversion-0.6.1.log。回读要等版本切换（MOD VER. 与 edit?version=11 常滞后 3~12 分钟）。
+    另外：本地游戏目录那份部署要等游戏关掉后重跑一次 `dotnet build -c Release` 才会重新自洽。-->
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
 	<ModId Value="160529" />
-	<ModVersion Value="0.4.0" />
+	<ModVersion Value="0.6.1" />
 	<GameVersion Value="1.6.*" />
 	<!--Private = 不公开（用户要求）。若平台拒绝此值再改 Unlisted。-->
 	<AccessLevel Value="Private" />
 	<DisplayName Value="Tool Mode Memory" />
-	<ShortDescription Value="Remembers tool panel settings per savegame (tool mode, snapping, elevation...) with configurable sharing scope.　工具面板设置模式自动记忆" />
-	<LongDescription Value="## **English**&#xA;&#xA;Tired of redoing the same tool options every time you enter a save? **Tool Mode Memory** remembers how you left the tool panel — tool mode, snapping, parallel mode, elevation, underground mode and more — and brings those choices back when you return.&#xA;&#xA;Every savegame gets its own memory file, saved as you work, so a crash does not cost you the options you just set. Leave a save, come back later, and your setup is still there.&#xA;&#xA;**Sharing scope** is configurable per tool item:&#xA;&#xA;*   Same group (e.g. all small roads)&#xA;*   Same menu (roads, electricity, ...)&#xA;*   Same asset type (alley, metro track, ...)&#xA;*   Shared globally&#xA;*   Not shared at all&#xA;&#xA;Each item states these five scopes on its own row, with an example that fits that item. Options added by the Anarchy mod can be remembered too, and those rows only do anything when that mod is installed.&#xA;&#xA;Turn the master switch **off** for 100% vanilla behaviour. Memory management (reset memory / manage memory files for all saves / reset all settings), the compatibility switch and the links live on the About tab.&#xA;&#xA;## **中文**&#xA;&#xA;每次进档都要把工具选项重设一遍？**Tool Mode Memory** 会记住你离开时的工具选项——工具模式、对齐、并列模式、高度、地下模式等——下次进入该存档自动恢复。&#xA;&#xA;每个存档单独一份记忆，边玩边实时保存，中途闪退也不会丢掉刚设好的选项。&#xA;&#xA;**共用范围**可按工具项配置：同组 / 同菜单 / 同类资产 / 全局共用 / 全部不共用；每一项的共用范围说明里都按该项自己的例子写清了这五档的含义。&#xA;&#xA;装了 Anarchy 时还能记住它提供的选项，没装时那几项不做任何事。&#xA;&#xA;总开关关闭 = 完全原版行为。重置记忆、管理所有存档的记忆文件、重置所有设置项、兼容性开关与链接都在「关于」页。" />
+	<ShortDescription Value="Remembers tool panel settings per savegame (tool mode, snapping, elevation...) with configurable sharing scope." />
+	<LongDescription Value="# **Tool Mode Memory**（中文在下面）&#xA;&#xA;The goal of **Tool Mode Memory** is simple: make tool operation smoother and more seamless, so that after switching assets or loading a save, you do not have to keep reconfiguring the same commonly used tool options over and over again.&#xA;&#xA;If you are getting annoyed because you keep toggling &quot;Snap to Road&quot; on and off while placing props and parks,  &#xA;if you are tired of constantly readjusting the height step precision when building interchanges,  &#xA;if you want every road to start in curve mode instead of having to click it every time,  &#xA;and if you are frustrated by having to set up all of these tools again every time you load a save,  &#xA;then this mod is your lifesaver.&#xA;&#xA;### **Features**&#xA;&#xA;1.  Supports real-time memory of each tool option’s shared scope based on configuration. Available scopes: **Same Group / Same Menu / Same Category / Global Shared / Completely Separate**&#xA;    &#xA;2.  Automatically saves by save name and restores settings on the next load&#xA;    &#xA;3.  Currently compatible with the 3 tool items added by the **ANARCHY** mod: the anarchy toggle, left/right road upgrade, and the general tool&#xA;    &#xA;&#xA;A simple example: in the vanilla game, **Height** is shared by menu. That means if you raise a two-lane road to 10 m, switching to a four-lane or eight-lane road will still keep it at 10 m. With this mod, you can change it to be shared only within the same group, so when you switch to a four-lane or eight-lane road, it stays at 0 m.&#xA;&#xA;### **How to Use**&#xA;&#xA;1.  Subscribe to and enable the mod.&#xA;    &#xA;2.  Enter the game and use roads, buildings, zones, and other tools as you normally would.&#xA;    &#xA;3.  If the behavior feels unfamiliar, adjust the shared scope in the mod settings to match your preference.&#xA;    &#xA;4.  If you only want settings to be restored from the last time you quit the game, and do not want to change the shared scope rules, you can set all tool items’ shared scope back to the vanilla behavior.&#xA;    &#xA;&#xA;Turning the master switch off = completely vanilla behavior. Functions such as **Reset Memory** and **Manage Memory Files for All Saves** can be found under the **About** section in the options menu.&#xA;&#xA;### **Compatibility**&#xA;&#xA;This mod does not change any in-game behavior, so it should not conflict with other mods. It currently supports memory for tool items added by the **ANARCHY** mod, and more mod support may be added in the future.&#xA;&#xA;If you run into any functional or performance issues, feel free to report them in the discussion area.&#xA;&#xA;Browse my other mods and support: [RAINBOW系列](https://rainbow-series-hvpma89wi25.qoder.zone/#top)&#xA;&#xA;## **中文**&#xA;&#xA;**Tool Mode Memory** 的目标很简单：把工具操作变得更连贯、更顺手，让你在切换资产、读档之后，不必反复把常用工具项重新调一遍。&#xA;&#xA;如果你在摆件和公园之间因为反复开关“对齐路边”而感到烦躁， 如果你修建立交时总是要来回调整高度变化的精度， 如果你希望所有道路都能直接按曲线模式摆放，而不是每次都要点一下， 如果你苦恼每次读档都要重头设置一遍这些工具， 那么这个模组是你的救星。&#xA;&#xA;### **功能**&#xA;&#xA;1、支持按配置 实时记忆每个工具项的共用范围，配置方式支持 同组 / 同菜单 / 同类资产 / 全局共用 / 全部不共用 2、按存档名称自动保存，下次读档自动恢复 3、目前已兼容ANARCHY模组的3个工具项（anarchy开关、左侧和右侧道路升级、常规工具）&#xA;&#xA;举个简单例子，原版游戏中，高度是同菜单共用的，也就是你摆放两车道道路抬高到10m，那么切换到四车道、八车道依然还是10m。而模组可以让你实现只在同组内共用，即切换到四车道、八车道还是0m。&#xA;&#xA;### **使用方法**&#xA;&#xA;1.  订阅并启用模组。&#xA;2.  进入游戏后像平时一样使用道路、建筑、区域等工具。&#xA;3.  如果感到不习惯，在模组选项界面按你的习惯调整共用范围。&#xA;4.  如果你只希望每次读档能恢复上次退出游戏时的设置，并不需要改写共用范围，可以将全部工具项的共用范围调整回原版。&#xA;&#xA;总开关关闭 = 完全原版行为。重置记忆、管理所有存档的记忆文件等功能都在选项界面的「关于」。&#xA;&#xA;### **兼容性**&#xA;&#xA;模组不改变游戏内的任何行为，所以不会和其它模组产生冲突。目前已支持记忆ANARCHY模组添加的工具项，未来会支持更多模组。&#xA;&#xA;如果你碰到功能或性能上的问题，可以在讨论区反馈。&#xA;&#xA;浏览我的其它模组并支持：[RAINBOW系列](https://rainbow-series-hvpma89wi25.qoder.zone/#top)" />
 	<Thumbnail Value="Properties/Thumbnail.jpg" />
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/tool-mode-memory.1942676/" />
 	<Tag Value="Code Mod" />
@@ -82,20 +129,12 @@
 	<ExternalLink Type="kofi" Url="https://ko-fi.com/yuexian7" />
 	<ExternalLink Type="x" Url="https://x.com/yuexian777/status/2101942150447702427?s=20" />
 	<ChangeLog>
-v0.4.0
+v0.6.1
 
-*   The three Anarchy items (Anarchy, Left and Right upgrades, Regular options) now actually take effect - they were silently doing nothing before.
-*   "Same asset type" now keeps bridges, quays and intersections separate from ordinary roads, while parking lots of different sizes count as one type.
-*   Memory files are named after the save you see in the Load Game list. Loading an auto save now uses the original save's memory file, and saving under a new name brings the memory along.
-*   Parallel mode description corrected: it is always two lines, and what you set is the spacing between them.
-*   Lower overhead while playing, cleaner removal, and items we advise against are now labelled "not recommended" instead of "off by default".
+*   No feature or wording change: this release only audits what the mod does every frame and removes the leftover memory churn (the per-asset colour probe was the main one). That kind of garbage is invisible in a short session but shows up as occasional stutter after hours of play, so it is worth being quiet about. Sharing scopes, remembering and restoring behave exactly as in 0.6.0.
 
 中文
 
-*   Anarchy 的三个工具项（Anarchy、左侧和右侧、常规）终于真正生效，此前它们一直在空转。
-*   「同类资产」把桥梁、埠头、交叉路口与普通道路分开，不同规模的停车场则并成同一类。
-*   记忆文件改用「载入游戏」里看到的存档名命名；打开自动存档时使用它原存档名的记忆文件，另存为新存档时记忆也会跟过去。
-*   并列模式的说明改正：并列固定是两条线，能调的是两条之间的间距。
-*   降低游玩时的开销，卸载更干净；不建议开启的工具项在说明里改成「不推荐开」。
+*   功能与文案都没有变化：这一版只复核了模组每帧做的事，并清掉多余的内存分配（主要是配色那处每帧重复探测）。这类垃圾在短时间游玩里完全看不出来，往往是连着玩几小时后才以偶发卡顿的形式露头，所以还是安静地把它消掉。共用范围、记忆与恢复的表现与 0.6.0 完全一致。
 </ChangeLog>
 </PublishConfiguration>

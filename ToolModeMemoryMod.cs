@@ -22,7 +22,7 @@ namespace ToolModeMemory
 	/// </summary>
 	public class ToolModeMemoryMod : IMod
 	{
-		public const string kVersion = "0.4.0";
+		public const string kVersion = "0.6.1";
 
 		public static ILog log = LogManager.GetLogger(nameof(ToolModeMemory)).SetShowsErrorsInUI(false);
 
@@ -47,6 +47,14 @@ namespace ToolModeMemory
 
 		/// <summary>当前是否真的在「存档」里（编辑器 / 主菜单不算）。</summary>
 		private bool m_InSave;
+
+		/// <summary>
+		/// 本局的记忆文件名定了没有（正式名与临时会话名都算定了）。
+		/// 认名那一步半路抛出时它是 false，<see cref="EnterSave"/> 会补一个**本局专属**的
+		/// 临时名 —— 绝不能沿用上一个存档的文件名继续写：game→game 直接切档不经过主菜单，
+		/// 名字还留着别人的，那样等于把 A 存档的记忆覆盖到 B 存档的文件上。
+		/// </summary>
+		private bool m_NameDecided;
 
 		public void OnLoad(UpdateSystem updateSystem)
 		{
@@ -175,6 +183,68 @@ namespace ToolModeMemory
 			}
 		}
 
+		// ---------- 诊断与隔离 ----------
+
+		/// <summary>
+		/// 失败记录，**一定要带堆栈**。
+		/// 0.4.0 的玩家日志里只有
+		/// 「OnGameLoadingComplete: NullReferenceException Object reference not set to an instance of an object」
+		/// 一行，没有任何位置信息：模组从此整局不工作，却查不出是哪一行。
+		/// 从现在起进档 / 存盘回调的所有 catch 都走这里。
+		/// </summary>
+		private static void Fail(string step, Exception ex)
+		{
+			if (ex == null)
+			{
+				log.Warn(step + " failed");
+				return;
+			}
+			log.Warn(step + " failed: " + ex.GetType().Name + " " + ex.Message + " @ " + ShortStack(ex));
+			Exception inner = ex.InnerException;
+			if (inner != null)
+			{
+				log.Warn(step + " inner: " + inner.GetType().Name + " " + inner.Message + " @ " + ShortStack(inner));
+			}
+		}
+
+		/// <summary>堆栈只留前 5 帧：我们的帧在最上面，够定位了，也别把玩家日志刷爆。</summary>
+		private static string ShortStack(Exception ex)
+		{
+			string st = ex.StackTrace;
+			if (string.IsNullOrEmpty(st) && ex.InnerException != null) st = ex.InnerException.StackTrace;
+			if (string.IsNullOrEmpty(st)) return "(no stack)";
+			string[] lines = st.Split('\n');
+			StringBuilder sb = new StringBuilder(st.Length);
+			int take = lines.Length < 5 ? lines.Length : 5;
+			for (int i = 0; i < take; i++)
+			{
+				if (i > 0) sb.Append(" <- ");
+				sb.Append(lines[i].Trim());
+			}
+			return sb.ToString();
+		}
+
+		/// <summary>
+		/// 跑一步；出事就记日志并返回 false。
+		/// 这个方法存在的意义是**隔离**：进档那一串动作里任何一步失败，都不该牵连后面的步骤。
+		/// 0.4.0 那两条玩家反馈就是这么来的 —— 认名与「启用系统 + 写回面板」写在同一个 try 里，
+		/// 认名抛出后面三步全部没跑：系统一直保持 Enabled=false（不进 OnUpdate、不订阅工具事件），
+		/// 玩家看到的就是「模组明明开着，进档却什么都不生效；把开关拨一遍又好了」。
+		/// </summary>
+		private bool RunStep(string step, Action action)
+		{
+			try
+			{
+				action();
+				return true;
+			}
+			catch (Exception ex)
+			{
+				Fail(step, ex);
+				return false;
+			}
+		}
+
 		private void OnGamePreload(Purpose purpose, GameMode mode)
 		{
 			// 原版在这里 ResetToolPreferences；我们在 LoadingComplete 之后恢复
@@ -182,112 +252,169 @@ namespace ToolModeMemory
 
 		private void OnGameLoadingComplete(Purpose purpose, GameMode mode)
 		{
+			// 里面每一步都已经各自隔离过了，这里只剩最后一层网：
+			// 绝不让本模组的异常冒进原版的事件广播里（那会连带打断其它模组的回调）。
 			try
 			{
 				bool inGame = mode.IsGame();
 				bool inEditor = mode.IsEditor();
-
-				if (!inGame && !inEditor)
-				{
-					// 回主菜单：落盘后清场，主菜单里不再捕获，也不会生成空文件
-					if (m_System != null) m_System.OnLeavingGame();
-					else if (Store != null && Store.Dirty) Store.SaveToDisk();
-					m_InSave = false;
-					RefreshActive();
-					if (Store != null) Store.BeginMainMenu();
-					RecoverPlaceholderFiles();
-					log.Info("Back to main menu.");
-					return;
-				}
-
-				if (Store == null) Store = new MemoryStore();
-
-				if (inEditor)
-				{
-					// 资产/地图编辑器没有「存档」概念：完全不参与，避免污染上一次游玩的记忆
-					m_InSave = false;
-					RefreshActive();
-					Store.BeginMainMenu();
-					log.Info("Editor mode: tool memory inactive.");
-					return;
-				}
-
-				m_InSave = true;
-
-				LoadIndex();
-
-				// 只有「载入已有存档」才认这个 guid：新建城市时 instigatorGuid 是地图的 id，
-				// 拿它建索引会让同一张地图上的两座新城共用记忆文件。
-				SaveIdentity.PurposeKind kind = SaveIdentity.Classify((int)purpose);
-				Colossal.Hash128 loadGuid;
-				bool haveGuid = TryGetInstigatorGuid(out loadGuid);
-				string guidText = (kind == SaveIdentity.PurposeKind.LoadedSave && haveGuid)
-					? loadGuid.ToString() : null;
-				m_CurrentGuid = guidText;
-
-				SaveIdentity.SaveMetaInfo metaInfo = guidText != null
-					? ReadSaveMeta(loadGuid) : new SaveIdentity.SaveMetaInfo();
-
-				// 只有真的进了自动存档才扫一次资产库（几条 metadata JSON，不读存档本体）。
-				// 扫它只为一件事：顺着 sessionGuid 找这份自动存档出自哪个手动存档。
-				SaveIdentity.SaveEntry[] siblings = (metaInfo.known && metaInfo.autoSave)
-					? CollectSaves(true) : null;
-
-				string resolved;
-				bool isPlaceholder;
-				bool named = SaveIdentity.TryResolveName(kind, guidText != null, guidText,
-					metaInfo, m_Index, siblings, out resolved, out isPlaceholder);
-
-				if (named)
-				{
-					if (isPlaceholder) Store.UsePlaceholderName(resolved);
-					else Store.UseSaveName(resolved);
-
-					// 0.2.3 及以前认不出存档名，把记忆写在 _auto_<guid>.json 里。
-					// 现在名字确证了，先搬家再读，玩家升级后第一次进档就接得上。
-					if (Store.MigrateLegacyFile(SaveIdentity.LegacyAutoName(guidText)))
-					{
-						log.Info("Moved legacy memory file '" + SaveIdentity.LegacyAutoName(guidText)
-							+ "' to '" + Store.SaveName + "'.");
-					}
-
-					// 记下 guid -> 存档名：资产库偶尔查不到（存档正在改名、云端只读副本）时还能认回来
-					if (!isPlaceholder)
-					{
-						bool changed = m_Index.Set(guidText, Store.SaveName);
-						// 顺带记「这条会话链属于哪个存档名」：原存档被删了也还认得它的自动存档
-						if (!string.IsNullOrEmpty(metaInfo.sessionGuid))
-						{
-							changed |= m_Index.Set(SaveIdentity.SessionKey(metaInfo.sessionGuid), Store.SaveName);
-						}
-						if (changed) SaveIndexToDisk();
-					}
-				}
-				else
-				{
-					// 新建城市 / 身份未确证：强制换成本次会话的占位名。
-					// 不能用 EnsureSessionName —— game→game 直接切换不经过主菜单时
-					// 名字还留着上一个存档的，空转就等于沿用别人的文件。
-					Store.StartUnnamedSession();
-				}
-
-				if (m_System != null)
-				{
-					m_System.OnEnteredGame();
-				}
-				RefreshActive();
-				if (m_Setting != null && m_Setting.Enabled && m_System != null)
-				{
-					m_System.RequestApply();
-				}
-				log.Info("Entered game as '" + Store.SaveName + "'"
-					+ (Store.IsPlaceholder ? " (placeholder)" : "") + " purpose=" + purpose);
+				if (inGame) { EnterSave(purpose); return; }
+				if (inEditor) { EnterEditor(); return; }
+				ReturnToMenu();
 			}
 			catch (Exception ex)
 			{
-				log.Warn("OnGameLoadingComplete: " + ex.GetType().Name + " " + ex.Message);
+				Fail("entry", ex);
 			}
 		}
+
+		/// <summary>
+		/// 进存档：认名 → 读记忆 → 启用并写回 → 汇报，四步各自隔离。
+		/// 第 3 步是「模组开着却不生效」的直接解药 —— 它以前写在同一个 try 的最后一行，
+		/// 前面任何一步抛出都轮不到它。
+		/// </summary>
+		private void EnterSave(Purpose purpose)
+		{
+			if (Store == null) Store = new MemoryStore();
+			m_InSave = true;
+			m_NameDecided = false;
+
+			// 1) 认名：这一局的记忆该写进哪个文件。
+			RunStep("entry.identify", delegate { IdentifySave(purpose); });
+			if (!m_NameDecided)
+			{
+				// 认到一半失败：绝不能继续用上一个存档的文件名（game→game 直接切档不经过主菜单，
+				// 名字还留着别人的），换成本局专属的临时会话名。
+				log.Warn("Could not identify this save; using a temporary memory file for this session.");
+				RunStep("entry.placeholder", delegate
+				{
+					Store.StartUnnamedSession();
+					m_NameDecided = true;
+				});
+			}
+
+			// 2) 读这一档的记忆（同时打开捕获闸门、进入进档稳定期）。读不到也要继续往下走。
+			RunStep("entry.load", delegate
+			{
+				if (m_System == null) RefreshActive();   // 让它从 World 里重新取一次系统实例
+				if (m_System != null) m_System.OnEnteredGame();
+				else log.Warn("ToolMemorySystem unavailable: memory stays unloaded this session.");
+			});
+
+			// 3) 启用状态对齐「总开关 且 在存档里」，并请求写回一次。
+			RunStep("entry.activate", delegate
+			{
+				RefreshActive();
+				if (m_Setting != null && m_Setting.Enabled && m_System != null) m_System.RequestApply();
+			});
+
+			// 4) 汇报：文件名 / 是否临时名 / 读到多少个值 / 系统到底开没开。
+			//    最后两项是排查用的关键：玩家说「模组开着却完全不生效」时，
+			//    日志里这一行直接区分「没读到记忆」与「系统没跑起来」。
+			RunStep("entry.report", delegate
+			{
+				log.Info("Entered game as '" + Store.SaveName + "'"
+					+ (Store.IsPlaceholder ? " (temporary name)" : "")
+					+ ", memory entries=" + Store.EntryCount
+					+ ", system=" + (m_System == null ? "missing"
+						: (m_System.MasterEnabled ? "on" : "off"))
+					+ " purpose=" + purpose);
+			});
+		}
+
+		/// <summary>
+		/// 决定本局记忆文件名并设置到 Store 上；结束时必把 <see cref="m_NameDecided"/> 置真。
+		/// 只在 <see cref="EnterSave"/> 的第一步里调用。
+		/// </summary>
+		private void IdentifySave(Purpose purpose)
+		{
+			LoadIndex();
+
+			// 只有「载入已有存档」才认这个 guid：新建城市时 instigatorGuid 是地图的 id，
+			// 拿它建索引会让同一张地图上的两座新城共用记忆文件。
+			SaveIdentity.PurposeKind kind = SaveIdentity.Classify((int)purpose);
+			Colossal.Hash128 loadGuid;
+			bool haveGuid = TryGetInstigatorGuid(out loadGuid);
+			string guidText = (kind == SaveIdentity.PurposeKind.LoadedSave && haveGuid)
+				? loadGuid.ToString() : null;
+			m_CurrentGuid = guidText;
+
+			SaveIdentity.SaveMetaInfo metaInfo = guidText != null
+				? ReadSaveMeta(loadGuid) : new SaveIdentity.SaveMetaInfo();
+
+			// 只有真的进了自动存档才扫一次资产库（几条 metadata JSON，不读存档本体）。
+			// 扫它只为一件事：顺着 sessionGuid 找这份自动存档出自哪个手动存档。
+			SaveIdentity.SaveEntry[] siblings = (metaInfo.known && metaInfo.autoSave)
+				? CollectSaves(true) : null;
+
+			string resolved;
+			bool isPlaceholder;
+			bool named = SaveIdentity.TryResolveName(kind, guidText != null, guidText,
+				metaInfo, m_Index, siblings, out resolved, out isPlaceholder);
+
+			if (!named)
+			{
+				// 新建城市 / 身份未确证：强制换成本次会话的占位名。
+				// 不能用 EnsureSessionName —— game→game 直接切换不经过主菜单时
+				// 名字还留着上一个存档的，空转就等于沿用别人的文件。
+				Store.StartUnnamedSession();
+				m_NameDecided = true;
+				return;
+			}
+
+			if (isPlaceholder) Store.UsePlaceholderName(resolved);
+			else Store.UseSaveName(resolved);
+			m_NameDecided = true;
+
+			// 0.2.3 及以前认不出存档名，把记忆写在 _auto_<guid>.json 里。
+			// 现在名字确证了，先搬家再读，玩家升级后第一次进档就接得上。
+			if (Store.MigrateLegacyFile(SaveIdentity.LegacyAutoName(guidText)))
+			{
+				log.Info("Moved legacy memory file '" + SaveIdentity.LegacyAutoName(guidText)
+					+ "' to '" + Store.SaveName + "'.");
+			}
+
+			// 记下 guid -> 存档名：资产库偶尔查不到（存档正在改名、云端只读副本）时还能认回来
+			if (!isPlaceholder)
+			{
+				bool changed = m_Index.Set(guidText, Store.SaveName);
+				// 顺带记「这条会话链属于哪个存档名」：原存档被删了也还认得它的自动存档
+				if (!string.IsNullOrEmpty(metaInfo.sessionGuid))
+				{
+					changed |= m_Index.Set(SaveIdentity.SessionKey(metaInfo.sessionGuid), Store.SaveName);
+				}
+				if (changed) SaveIndexToDisk();
+			}
+		}
+
+		/// <summary>回主菜单：先落盘再清场（顺序反了就等于把这一局的记忆丢掉）。</summary>
+		private void ReturnToMenu()
+		{
+			RunStep("leave.flush", delegate
+			{
+				if (m_System != null) m_System.OnLeavingGame();
+				else if (Store != null && Store.Dirty) Store.SaveToDisk();
+			});
+			m_InSave = false;
+			RunStep("leave.deactivate", delegate { RefreshActive(); });
+			RunStep("leave.clear", delegate { if (Store != null) Store.BeginMainMenu(); });
+			RunStep("leave.housekeeping", delegate { RecoverPlaceholderFiles(); });
+			log.Info("Back to main menu.");
+		}
+
+		/// <summary>资产 / 地图编辑器没有「存档」概念：完全不参与，避免污染上一次游玩的记忆。</summary>
+		private void EnterEditor()
+		{
+			RunStep("editor.flush", delegate
+			{
+				if (m_System != null) m_System.OnLeavingGame();
+			});
+			m_InSave = false;
+			RunStep("editor.deactivate", delegate { RefreshActive(); });
+			RunStep("editor.clear", delegate { if (Store != null) Store.BeginMainMenu(); });
+			log.Info("Editor mode: tool memory inactive.");
+		}
+
 
 		/// <summary>
 		/// 按本次载入的 guid 反查存档元数据，取游戏里显示的那个存档名。
@@ -409,45 +536,75 @@ namespace ToolModeMemory
 			catch { return false; }
 		}
 
+		/// <summary>
+		/// 原版存盘事件：里面每一步都已隔离，这层只是最后一道网，
+		/// 不让本模组的异常冒进原版的事件广播。
+		/// </summary>
 		private void OnGameSaveLoad(string saveName, string previewUri, bool start, bool success)
 		{
 			try
 			{
-				if (start) return;
-				if (!m_InSave) return;
-				if (Store == null) return;
+				HandleSaveLoad(saveName, start, success);
+			}
+			catch (Exception ex)
+			{
+				Fail("save", ex);
+			}
+		}
 
-				string metaId = null;
-				string sessionGuid = null;
-				bool auto = true;
-				try
+		/// <summary>
+		/// 玩家存盘（手动存盘 / 另存为）后的处理：改名接管、记索引、把记忆落盘。
+		/// 每一步各自隔离 —— 「记忆没写下去」对玩家来说比「文件名没换对」严重得多，
+		/// 所以落盘那一步必须无论如何都跑。
+		/// </summary>
+		private void HandleSaveLoad(string saveName, bool start, bool success)
+		{
+			if (start) return;
+			if (!m_InSave) return;
+			if (Store == null) return;
+
+			string metaId = null;
+			string sessionGuid = null;
+			bool auto = true;
+			// 元数据只是参考，读不到就用默认值继续（auto 保守取 true：认不准就不改名）
+			try
+			{
+				SaveGameMetadata meta = GameManager.instance.settings.userState.lastSaveGameMetadata;
+				if (meta != null)
 				{
-					SaveGameMetadata meta = GameManager.instance.settings.userState.lastSaveGameMetadata;
-					if (meta != null)
+					// 口径必须和 instigatorGuid 一致：Identifier.ToString() 会带 "[uri]"
+					Colossal.Hash128 metaGuid = meta.id;
+					if (metaGuid.isValid) metaId = metaGuid.ToString();
+					if (meta.target != null)
 					{
-						// 口径必须和 instigatorGuid 一致：Identifier.ToString() 会带 "[uri]"
-						Colossal.Hash128 metaGuid = meta.id;
-						if (metaGuid.isValid) metaId = metaGuid.ToString();
-						if (meta.target != null)
-						{
-							auto = meta.target.autoSave;
-							sessionGuid = FormatSessionGuid(meta.target.sessionGuid);
-						}
+						auto = meta.target.autoSave;
+						sessionGuid = FormatSessionGuid(meta.target.sessionGuid);
 					}
 				}
-				catch { }
+			}
+			catch (Exception ex)
+			{
+				Fail("save.meta", ex);
+			}
 
-				// 自动存档的名字是 "dd-MMMM-HH-mm-ss"，认了就会把记忆搬进时间戳文件
-				if (!SaveIdentity.ShouldAdoptOnSave(success, auto, saveName))
-				{
-					if (success && !auto) log.Info("Save event without usable name, ignored.");
-					return;
-				}
+			// 自动存档的名字是 "dd-MMMM-HH-mm-ss"，认了就会把记忆搬进时间戳文件
+			if (!SaveIdentity.ShouldAdoptOnSave(success, auto, saveName))
+			{
+				if (success && !auto) log.Info("Save event without usable name, ignored.");
+				// 名字不能认，但记忆照样要落盘：玩家刚存过盘，这是最不该丢的时机。
+				RunStep("save.flush", delegate { FlushMemoryNow(); });
+				return;
+			}
 
-				// 占位名（新建城市第一次存盘）→ 把占位文件改名接管；
-				// 已经有正式名字了但玩家「另存为」成别的名字 → 复制一份给新档，本局之后按新名字写。
+			// 占位名（新建城市第一次存盘）→ 把占位文件改名接管；
+			// 已经有正式名字了但玩家「另存为」成别的名字 → 复制一份给新档，本局之后按新名字写。
+			RunStep("save.rename", delegate
+			{
 				if (Store.IsPlaceholder) Store.AdoptSaveName(saveName);
 				else Store.CarryOverTo(saveName);
+			});
+			RunStep("save.index", delegate
+			{
 				bool changed = m_Index.Set(m_CurrentGuid ?? metaId, saveName);
 				// 玩家手动存盘 = 这条会话链现在有了正式名字，记下来，之后它的自动存档就认这个名字
 				if (!string.IsNullOrEmpty(sessionGuid))
@@ -455,14 +612,23 @@ namespace ToolModeMemory
 					changed |= m_Index.Set(SaveIdentity.SessionKey(sessionGuid), saveName);
 				}
 				if (changed) SaveIndexToDisk();
-				if (m_System != null) m_System.FlushIfDirty();
-				else if (Store.Dirty) Store.SaveToDisk();
-				log.Info("Save named '" + saveName + "', memory flushed.");
-			}
-			catch (Exception ex)
+			});
+			// 改名与索引都只影响「写进哪个文件」，落盘本身不能被它们拖累；
+			// 顺带把系统状态再对齐一次：进档回调若半路出过事，这里是最后一个自动恢复点。
+			RunStep("save.activate", delegate { RefreshActive(); });
+			RunStep("save.flush", delegate { FlushMemoryNow(); });
+			RunStep("save.report", delegate
 			{
-				log.Warn("OnGameSaveLoad: " + ex.GetType().Name);
-			}
+				log.Info("Save named '" + saveName + "', memory flushed to " + Store.CurrentFilePath()
+					+ ", entries=" + Store.EntryCount);
+			});
+		}
+
+		/// <summary>把当前记忆写盘（不抛）。系统还在跑就先补一次捕获，再落盘。</summary>
+		private void FlushMemoryNow()
+		{
+			if (m_System != null) m_System.FlushIfDirty();
+			else if (Store != null && Store.Dirty) Store.SaveToDisk();
 		}
 
 		private void LoadIndex()
@@ -575,7 +741,7 @@ namespace ToolModeMemory
 			}
 			catch (Exception ex)
 			{
-				log.Warn("Flush on " + reason + " failed: " + ex.GetType().Name);
+				Fail("flush." + reason, ex);
 			}
 		}
 

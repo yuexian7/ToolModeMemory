@@ -111,8 +111,8 @@ namespace ToolModeMemory
 		// ---------- Anarchy（Paradox ModId 74604，程序集名 Anarchy）----------
 		// 本项目**不引用** Anarchy.dll（玩家可能没装），所以这三项的成员全部按类型全名
 		// 在已加载程序集里找。
-		// 关键：**必须等真要用的时候才找**。本类的静态初始化被 ToolModeMemorySettings 构造里
-		// 的 LiveHierarchy 赋值触发，那一刻我们的 dll 刚进来，Anarchy 的 dll 还没进 AppDomain
+		// 关键：**必须等真要用的时候才找**。本类的静态初始化在我们的 dll 刚被加载时就跑完了，
+		// 那一刻 Anarchy 的 dll 还没进 AppDomain
 		// （实测玩家日志：ToolModeMemory 08:40:43 loaded，Anarchy 08:40:45 loaded，差两秒）。
 		// 0.3.1 及以前把这些成员做成 static readonly 一次性解析 = 抢在这个窗口前面跑完，
 		// 类型永久为 null，anarchy / leftRight / general 三项静默退化成 no-op
@@ -202,15 +202,32 @@ namespace ToolModeMemory
 		/// <summary>实体 -> prefab 名（菜单名 / 分类名）。</summary>
 		private static readonly Dictionary<Entity, string> s_NameCache = new Dictionary<Entity, string>();
 
-		/// <summary>兼容模式关闭时冻结的层级位置：[0]=菜单 [1]=分类。</summary>
-		private static readonly Dictionary<PrefabBase, string[]> s_FrozenPos =
-			new Dictionary<PrefabBase, string[]>();
+		/// <summary>
+		/// 资产自己声明的取值限制（目前是高度的 <c>PlaceableNetData.m_ElevationRange</c>），
+		/// 按 prefab 引用记忆。资产数据在一个存档期内不变，失效点与其它缓存一致（ForgetNames）。
+		/// </summary>
+		private static readonly Dictionary<PrefabBase, ValueLimit> s_LimitCache =
+			new Dictionary<PrefabBase, ValueLimit>();
 
 		/// <summary>资产 / 功能判定结果，按 prefab 引用记忆。</summary>
 		private static readonly Dictionary<PrefabBase, bool> s_FnCache = new Dictionary<PrefabBase, bool>();
 
 		/// <summary>工具家族，按具体类型记忆（类型数量有限，天然有界）。</summary>
 		private static readonly Dictionary<Type, string> s_FamilyCache = new Dictionary<Type, string>();
+
+		/// <summary>
+		/// prefab -> 该资产是否有自定义配色（<c>m_HasPlacementColor</c> 由原版在 prefab setter 里派生，
+		/// 选中资产不变它就不变）。配色三个通道每帧各问一次，不缓存就是每帧 4 个装箱。
+		/// </summary>
+		private static readonly Dictionary<PrefabBase, bool> s_HasColorCache =
+			new Dictionary<PrefabBase, bool>();
+
+		/// <summary>
+		/// 装好一次的 <c>default(Bounds1)</c>，用于把 <c>m_LastElevationRange</c> 复位成
+		/// 「下次 CheckElevationRange 一定重夹」。它是只读快照，重复用同一个盒子是安全的
+		/// （SetValue 只从盒子里取值写进字段），省掉每次写回的一次 Activator.CreateInstance。
+		/// </summary>
+		private static object s_DefaultElevationRange;
 
 		/// <summary>
 		/// 「同类资产」判定结果，按 prefab 引用记忆。分类只读资产自己的组件，
@@ -231,28 +248,21 @@ namespace ToolModeMemory
 		private const int kCacheCap = 4096;
 
 		/// <summary>
-		/// 「与其他模组兼容」开关（设置项 CompatOtherMods 映射过来）。
-		/// true（默认）：每次都实时解析菜单/分类名——Asset UI Manager、ExtraLib 这类模组会
-		/// 直接改工具栏层级数据，资产被挪到别的菜单后记忆跟着新位置走。
-		/// false：本档内第一次解析到的 (菜单, 分类) 就被冻结在该 prefab 上并一直复用，
-		/// 别的模组中途重排菜单不会把已有键改掉（键稳定优先于位置正确）。
-		/// 只冻结解析成功（至少拿到分类名）的结果，工具栏还没建好时的空结果不冻结。
+		/// 清掉所有按存档/资产重载失效的缓存（进存档、退出存档时调用）。
+		/// v0.6.0 起这里不再有 s_FrozenPos：工具栏的（菜单, 分类）在运行期内只有
+		/// <c>UIObjectData.m_Group</c> / <c>UIAssetCategoryData.m_Menu</c> 这一份数据，
+		/// 而 Asset UI Manager 这类模组改写的正是这两份活数据（已核实），
+		/// 模组里不存在「原版那份」可供回退 —— 所以「是否兼容其它模组」这个开关连同
+		/// 冻结逻辑一起删掉了，永远按当前（= 其它模组调整完的）UI 层级发键。
 		/// </summary>
-		public static bool LiveHierarchy
-		{
-			get { return s_LiveHierarchy; }
-			set { s_LiveHierarchy = value; }
-		}
-		private static bool s_LiveHierarchy = true;
-
-		/// <summary>清掉所有按存档/资产重载失效的缓存（进存档、退出存档时调用）。</summary>
 		public static void ForgetNames()
 		{
 			s_NameCache.Clear();
-			s_FrozenPos.Clear();
+			s_LimitCache.Clear();
 			s_FnCache.Clear();
 			s_ClassCache.Clear();
 			s_FamilyCache.Clear();
+			s_HasColorCache.Clear();
 			s_ViewSystem = null;
 			s_HaveSystems = false;
 			s_CachedPrefabSystem = null;
@@ -657,7 +667,9 @@ namespace ToolModeMemory
 		}
 
 		/// <summary>
-		/// 解析（菜单, 分类）名。LiveHierarchy=false 时第一次成功解析的结果会冻结在该 prefab 上。
+		/// 解析（菜单, 分类）名 —— 永远读实时数据，也就是其它模组（Asset UI Manager、ExtraLib 等）
+		/// 调整完的那份：这两份组件在运行期只有一份，被就地改写后模组里查不到「原版那份」，
+		/// 所以 v0.6.0 起不再提供「是否兼容其它模组」开关，也不冻结第一次解析到的位置。
 		/// 名称仍走 s_NameCache（实体 -> 名），每帧只有一次 GetEntity + 两次组件查询。
 		/// </summary>
 		private static void ResolveHierarchy(PrefabBase prefab, PrefabSystem prefabSystem, EntityManager em,
@@ -666,17 +678,6 @@ namespace ToolModeMemory
 			menu = null;
 			category = null;
 			if (prefab == null) return;
-
-			if (!s_LiveHierarchy)
-			{
-				string[] frozen;
-				if (s_FrozenPos.TryGetValue(prefab, out frozen))
-				{
-					menu = frozen[0];
-					category = frozen[1];
-					return;
-				}
-			}
 
 			try
 			{
@@ -705,13 +706,6 @@ namespace ToolModeMemory
 			{
 				menu = null;
 				category = null;
-			}
-
-			// 只冻结拿到分类名的结果：工具栏数据还没建好时（两者皆空）冻结下去
-			// 会让这个资产整个存档期都退化成 T:{toolID}，反而不如实时解析。
-			if (!s_LiveHierarchy && category != null && s_FrozenPos.Count < kCacheCap)
-			{
-				s_FrozenPos[prefab] = new string[] { menu, category };
 			}
 		}
 
@@ -846,8 +840,12 @@ namespace ToolModeMemory
 		}
 
 		/// <summary>
-		/// 高度：优先读私有 m_DesiredElevation（UI 上显示的就是它，elevation 只是被
-		/// CheckElevationRange 夹过一次的当前值），读不到才退回公开属性。
+		/// 高度：优先读私有 m_DesiredElevation（原版跨资产带着走的就是它，玩家按上/下箭头时
+		/// 也是写它），读不到才退回公开属性 elevation。
+		/// 注意面板绑定的是 <c>tool.elevation</c>（Game.UI.InGame/ToolUISystem.cs:149），
+		/// 那是每帧被 InitializeRaycast 按当前资产范围夹过的**显示值**；desired 可能还是
+		/// 上一件资产留下的值（例如道路 0m 切到只能接地的管线）。这种值由 v0.6.0 的
+		/// <see cref="AcceptsCapture"/> 规则挡掉，不会记进任何桶。
 		/// </summary>
 		private static bool CaptureElevation(ToolBaseSystem tool, out int value)
 		{
@@ -1132,6 +1130,9 @@ namespace ToolModeMemory
 		{
 			NetToolSystem net = tool as NetToolSystem;
 			if (net == null) return false;
+			// 资产自己不允许这个高度（例：水管 m_ElevationRange 上限 -10m，而共用值是 0m）
+			// 就什么都不写，让原版给这件资产的值留着；共用桶不动，换回够得着的资产照常共用。
+			if (!AcceptsApply(F_ELEVATION, tool, value)) return false;
 			ApplyElevation(net, value / kScale);
 			return true;
 		}
@@ -1351,21 +1352,136 @@ namespace ToolModeMemory
 			if (s_LastElevationRange != null)
 			{
 				// 置为 default(Bounds1)，迫使下次 CheckElevationRange 用新 range 重新 clamp(desired)
-				try { s_LastElevationRange.SetValue(net, Activator.CreateInstance(s_LastElevationRange.FieldType)); }
-				catch { }
+				// 那个默认盒子只装一次（见 s_DefaultElevationRange 的注释：SetValue 只从盒子里读值）。
+				object rangeDefault = s_DefaultElevationRange
+					?? (s_DefaultElevationRange = Activator.CreateInstance(s_LastElevationRange.FieldType));
+				try { s_LastElevationRange.SetValue(net, rangeDefault); } catch { }
 			}
 		}
 
-		/// <summary>当前选中道路是否带自定义配色（私有 m_HasPlacementColor，取不到就当没有）。</summary>
+		/// <summary>当前选中道路是否带自定义配色（私有 m_HasPlacementColor，取不到就当没有）。
+		/// <para>0.6.1 帧率复核：这个字段是原版在 <c>NetToolSystem.prefab</c> 的 setter 里派生的
+		/// （decompiled L5306-5326），选中资产不变它就不会变；而配色一项有 3 个通道、每帧各问一次，
+		/// <c>FieldInfo.GetValue</c> 每次都要把 bool 装成 object —— 于是道路工具下每帧白扔 4 个盒子。
+		/// 现在按 prefab 记忆（与 <see cref="s_LimitCache"/> 同一套失效纪律：换档 <see cref="ForgetNames"/> 清），
+		/// 每帧只剩一次字典查。</para></summary>
 		private static bool HasPlacementColor(NetToolSystem net)
 		{
 			if (s_HasPlacementColor == null) return false;
 			try
 			{
+				PrefabBase target = net.prefab;   // 只是 return m_SelectedPrefab（L5302-5305），零成本
+				bool cached;
+				if (target != null && s_HasColorCache.TryGetValue(target, out cached)) return cached;
 				object raw = s_HasPlacementColor.GetValue(net);
-				return raw is bool && (bool)raw;
+				bool value = raw is bool && (bool)raw;
+				if (target != null && s_HasColorCache.Count < kCacheCap) s_HasColorCache[target] = value;
+				return value;
 			}
 			catch { return false; }
+		}
+
+		// ============================ 资产自己的取值限制（v0.6.0） ============================
+		//
+		// owner 的要求：有些工具项在个别资产上是被限制的（例：水管的高度最高只能到 -10m），
+		// 共用的值超出这件资产的限制时不该共用；值回到范围内时又该照常共用。
+		// 而且必须**自动判断**：自定义资产同样带这类限制，模组不可能逐个适配。
+		//
+		// 自动判断的唯一可靠依据就是资产自己写的数据（反编译 Game.dll）：
+		//   高度  PlaceableNetData.m_ElevationRange (Bounds1: float min/max)
+		//         —— 原版 NetToolSystem.CheckElevationRange 夹的就是它
+		//            （Game.Tools/NetToolSystem.cs L6023-6028：
+		//              elevation = MathUtils.Clamp(m_DesiredElevation, placeableNetData.m_ElevationRange)），
+		//         —— 同一份数据也决定 m_AllowUndergroundReplace（L5325），
+		//         NetToolSystem.prefab 属性返回的就是这份数据所属的 m_SelectedPrefab（L5300-5312）。
+		//   工具模式 / 对齐这类「可选集合」项，原版本来就按资产派生可选项，我们写回时
+		//         已经走它自己的判据：GetUIModes（L5402）/ actualMode（L5120，
+		//         当前资产不支持的 mode 一律按 Straight 执行）与
+		//         GetAvailableSnapMask + GetActualSnap（见 ApplySnap）。
+		// 所以这里只补「范围」这一类：超出范围的值既不写回这件资产（原版会给它夹到边界，
+		// 我们绝不把面板写成资产根本做不到的 0m），也不记进记忆（那是上一件资产留下的值）。
+
+		/// <summary>本模组认识的「资产自带取值范围」项。加新项只需要在这里加一条 + 一个取范围的函数。
+		/// 系统每帧先用它筛掉没限制的项，避免白白做一次组件查询。</summary>
+		public static bool HasValueLimit(string fieldId)
+		{
+			return fieldId == F_ELEVATION;
+		}
+
+		/// <summary>
+		/// 取当前选中资产对该项声明的取值范围。读不到（不是道路类工具 / 没有选中资产 /
+		/// 资产没挂这个组件 / 数据残缺）一律返回 <see cref="ValueLimit.None"/> = 不限制，
+		/// 绝不允许「读不到限制」退化成「什么都不写」。
+		/// </summary>
+		public static ValueLimit GetLimit(string fieldId, ToolBaseSystem tool)
+		{
+			if (!HasValueLimit(fieldId)) return ValueLimit.None;
+			PrefabBase prefab = LimitTarget(tool);
+			if (prefab == null) return ValueLimit.None;
+			ValueLimit cached;
+			if (s_LimitCache.TryGetValue(prefab, out cached)) return cached;
+			ValueLimit computed = ComputeElevationLimit(prefab);
+			if (s_LimitCache.Count < kCacheCap) s_LimitCache[prefab] = computed;
+			return computed;
+		}
+
+		/// <summary>
+		/// 限制该问哪件资产：道路工具当前选中的 net prefab（原版算 m_ElevationRange 用的就是它）。
+		/// <c>GetPrefab()</c> 在只选到车道（编辑器里的 lane prefab）时才有额外意义，
+		/// 那种 prefab 不挂 PlaceableNetData，取不到限制自然退回「不限制」，所以两条都试一次。
+		/// </summary>
+		private static PrefabBase LimitTarget(ToolBaseSystem tool)
+		{
+			NetToolSystem net = tool as NetToolSystem;
+			if (net != null)
+			{
+				try
+				{
+					if (net.prefab != null) return net.prefab;
+				}
+				catch { }
+			}
+			try { return tool != null ? tool.GetPrefab() : null; }
+			catch { return null; }
+		}
+
+		private static ValueLimit ComputeElevationLimit(PrefabBase prefab)
+		{
+			try
+			{
+				PrefabSystem ps = s_CachedPrefabSystem;
+				if (ps == null || !s_HaveSystems) return ValueLimit.None;
+				Entity e = ps.GetEntity(prefab);
+				if (e == Entity.Null || !s_Em.Exists(e)) return ValueLimit.None;
+				PlaceableNetData data;
+				if (!s_Em.TryGetComponent(e, out data)) return ValueLimit.None;
+				return ValueLimit.FromRange(data.m_ElevationRange.min, data.m_ElevationRange.max);
+			}
+			catch
+			{
+				return ValueLimit.None;
+			}
+		}
+
+		/// <summary>记忆值（×100 存的整数）换算成浮点后是否允许写回这件资产。</summary>
+		public static bool AcceptsApply(string fieldId, ToolBaseSystem tool, int storedValue)
+		{
+			ValueLimit limit = GetLimit(fieldId, tool);
+			if (!limit.Known) return true;
+			return limit.Accepts(storedValue / kScale);
+		}
+
+		/// <summary>
+		/// 捕获前的一问：这个值是**当前这件资产自己**允许的吗？
+		/// 不是（例：从道路切到水管，工具里还留着道路的 0m，而水管最高只到 -10m）就干脆别记 ——
+		/// 那是上一件资产留下的值，记进共用桶会把别的资产拽走，记进它自己那份会变成
+		/// 一件资产永远用不了的死值。玩家在这件资产上主动改出来的值照常记。
+		/// </summary>
+		public static bool AcceptsCapture(string fieldId, ToolBaseSystem tool, int storedValue)
+		{
+			ValueLimit limit = GetLimit(fieldId, tool);
+			if (!limit.Known) return true;
+			return !limit.ShouldSkipCapture(storedValue / kScale);
 		}
 
 		/// <summary>取渲染系统（本档缓存一次；UnityEngine.Object 的 == 能识别已销毁）。</summary>

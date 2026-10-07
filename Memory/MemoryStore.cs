@@ -46,6 +46,27 @@ namespace ToolModeMemory.Memory
 		/// <summary>当前是否使用占位文件名（未命名新档，或存档名无法确证）。</summary>
 		public bool IsPlaceholder { get { return m_Placeholder; } }
 
+		/// <summary>
+		/// 现在内存里有多少个「项 × 键」的值。只为日志服务：
+		/// 「读到了 0 个值」和「读到了 30 个值」在玩家屏幕上长得一模一样
+		/// （都是出厂面板），但不是一回事 —— 前者说明文件名或文件内容出了问题。
+		/// </summary>
+		public int EntryCount
+		{
+			get
+			{
+				int n = 0;
+				foreach (Dictionary<string, int> bag in m_Items.Values)
+				{
+					if (bag != null) n += bag.Count;
+				}
+				return n;
+			}
+		}
+
+		/// <summary>记忆里一个值都没有（新档，或者文件没读到东西）。</summary>
+		public bool IsEmpty { get { return EntryCount == 0; } }
+
 		/// <summary>目标记忆文件读失败，本轮不再覆盖写盘。</summary>
 		public bool WriteBlocked { get { return m_WriteBlocked; } }
 
@@ -169,8 +190,14 @@ namespace ToolModeMemory.Memory
 			string target = CurrentFilePath();
 			if (string.IsNullOrEmpty(legacyName) || target == null) return false;
 			if (legacyName == m_SaveName) return false;
-			string from = Path.Combine(DataDirectory, legacyName + ".json");
-			string fromTmp = from + ".tmp";
+			string from;
+			string fromTmp;
+			try
+			{
+				from = Path.Combine(DataDirectory, legacyName + ".json");
+				fromTmp = from + ".tmp";
+			}
+			catch { return false; }
 			try
 			{
 				bool hasMain = File.Exists(from);
@@ -327,10 +354,23 @@ namespace ToolModeMemory.Memory
 			m_Dirty = true;
 		}
 
+		/// <summary>
+		/// 本档记忆文件的路径；没有名字或路径求不出来返回 null（调用方一律早退，不写不读）。
+		/// 这个方法在好几条流程里是**不被 try 包着**的（进档认名、存盘改名、落盘），
+		/// 而它要碰 UnityEngine 与 System.IO 的静态 API，所以自己兜住：
+		/// 路径求不出来最多是「这一局没地方存记忆」，不该把整个进档流程带下水。
+		/// </summary>
 		public string CurrentFilePath()
 		{
 			if (string.IsNullOrEmpty(m_SaveName)) return null;
-			return Path.Combine(DataDirectory, m_SaveName + ".json");
+			try
+			{
+				return Path.Combine(DataDirectory, m_SaveName + ".json");
+			}
+			catch
+			{
+				return null;
+			}
 		}
 
 		/// <summary>
@@ -346,7 +386,10 @@ namespace ToolModeMemory.Memory
 			m_RecoveredFromTemp = false;
 			string path = CurrentFilePath();
 			if (path == null) return true;
-			if (!File.Exists(path))
+			bool mainExists;
+			try { mainExists = File.Exists(path); }
+			catch { mainExists = false; }
+			if (!mainExists)
 			{
 				// 主文件不存在但上一次实时写留下的 tmp 在：照样救回来
 				return LoadFromTemp(path) || true;
@@ -393,7 +436,10 @@ namespace ToolModeMemory.Memory
 		private bool LoadFromTemp(string path)
 		{
 			string tmp = TempPathFor(path);
-			if (!File.Exists(tmp)) return false;
+			bool exists;
+			try { exists = File.Exists(tmp); }
+			catch { exists = false; }
+			if (!exists) return false;
 			Dictionary<string, Dictionary<string, int>> parsed =
 				new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal);
 			int version = 0;

@@ -143,11 +143,10 @@ namespace ToolModeMemory
 			o[setting.GetOptionTabLocaleID(ToolModeMemorySettings.kTabAbout)] = Val(d, "tab.about");
 			AddTabAndGroupTitles(setting, d, o);
 
-			// 总开关 + 兼容开关（共用范围定义已并入每一项的 scope 说明，见 AddItems）
+			// 总开关（共用范围定义已并入每一项的 scope 说明，见 AddItems）
+			// v0.6.0：CompatOtherMods 那一行已经整行取消，所以这里不再为它注册 label/desc。
 			o[setting.GetOptionLabelLocaleID("Enabled")] = Val(d, "enabled.label");
 			o[setting.GetOptionDescLocaleID("Enabled")] = Val(d, "enabled.desc");
-			o[setting.GetOptionLabelLocaleID("CompatOtherMods")] = Val(d, "compat.label");
-			o[setting.GetOptionDescLocaleID("CompatOtherMods")] = Val(d, "compat.desc");
 
 			AddItems(setting, d, o);
 
@@ -273,7 +272,7 @@ namespace ToolModeMemory
 		///   kGroupMaster  总开关（不显示标题，注册一个占位串就行）
 		///   kGroupOfficial 官方工具项设置
 		///   kGroupAnarchy  Anarchy工具项设置（模组名 + 「工具项设置」）
-		///   kGroupMemory / kGroupCompat / kGroupInfo 关于页三块
+		///   kGroupMemory / kGroupInfo 关于页两块（v0.6.0 去掉了「兼容性」那一块）
 		/// 设置类里的 kGroup* 常量会随重构改名，所以这里反射读取常量本身，按语义给标题。
 		/// </summary>
 		private static string GroupTitle(string field, string value, Dictionary<string, string> d)
@@ -288,7 +287,6 @@ namespace ToolModeMemory
 				return Val(d, "group.official");
 			}
 			string s = f + "|" + value.ToLowerInvariant();
-			if (s.IndexOf("compat", StringComparison.Ordinal) >= 0) return Val(d, "group.compat");
 			if (s.IndexOf("about", StringComparison.Ordinal) >= 0 || s.IndexOf("info", StringComparison.Ordinal) >= 0
 				|| s.IndexOf("link", StringComparison.Ordinal) >= 0)
 			{
@@ -374,14 +372,11 @@ namespace ToolModeMemory
 			d["group.official"] = "官方工具项设置";
 			d["group.anarchy"] = "Anarchy工具项设置";
 			d["group.reset"] = "记忆管理";
-			d["group.compat"] = "兼容性";
 			d["group.about"] = "信息与链接";
 
 			d["enabled.label"] = "启用工具模式记忆";
 			d["enabled.desc"] = "默认打开。开着期间，所有工具项的数值都会实时记录，回到存档时就是你上次离开时的样子；单独关掉某一项只是不再恢复那一项，它的数值仍在记录。只有关掉这个总开关才会停止记录，并把所有工具恢复成原版行为。";
 
-			d["compat.label"] = "是否兼容其它模组";
-			d["compat.desc"] = "默认打开。打开后按其它模组调整过的菜单、分组名称来记忆：像 ASSET UI MANAGER 这类模组会把部分资产挪到别的菜单或新的组，被挪过的资产就跟着它的新位置走。关掉后沿用本模组第一次看到这个资产时的归类，不受中途重排影响，更稳定。这个开关只影响「同组」「同菜单」两档，以及地区主题 / 数据包按哪个分组记；「同类资产」是按资产实际服务谁判断的，开不开都一样。注意：自定义资产如果作者没把它的车道或服务设施设对，本模组认不出它的用途，就只能按单个资产单独记忆。两种选择都不会丢掉已经记录的数值。";
 
 			d["scope.label"] = "共用范围";
 			d["scope.desc"] = "这一项的数值在多大范围内共用，下拉框括号里标出原版行为与推荐选择。";
@@ -407,7 +402,7 @@ namespace ToolModeMemory
 			d["reset.warn"] = "此操作无法撤销。";
 			d["reset.confirm"] = "确定要重置已记忆的工具设置吗？";
 			d["resetall.label"] = "重置所有设置项";
-			d["resetall.desc"] = "把本模组的所有选项回到推荐默认值：总开关、兼容开关都重新打开，每一项的启用状态和共用范围也一并恢复。已记录的存档记忆不受影响。";
+			d["resetall.desc"] = "把本模组的所有选项回到推荐默认值：总开关重新打开，每一项的启用状态和共用范围也一并恢复。已记录的存档记忆不受影响。";
 			d["resetall.warn"] = "此操作无法撤销。";
 			d["resetall.confirm"] = "确定要重置所有设置项吗？";
 			d["folder.label"] = "管理所有存档的记忆文件";
@@ -450,7 +445,7 @@ namespace ToolModeMemory
 
 			// ---------- 3 高度（用户原话的例子） ----------
 			d["item.elevation.label"] = "高度";
-			d["item.elevation.desc"] = "记忆工具离开时的高度值，也包括提升高度、降低高度得到的结果；「高度阶段」（一次抬高或降低多少米，Anarchy 面板里那一行叫高度调整幅度）跟高度一起记忆、用同一个共用范围。交叉路口的高度不在记忆范围内。";
+			d["item.elevation.desc"] = "记忆工具离开时的高度值，也包括提升高度、降低高度得到的结果；「高度阶段」（一次抬高或降低多少米，Anarchy 面板里那一行叫高度调整幅度）跟高度一起记忆、用同一个共用范围。交叉路口的高度不在记忆范围内。部分资产自己限定了可用的高度范围：共用数值超出所选资产允许的范围时，那件资产保持它自己允许的高度，已记忆的共用数值不变。";
 			d["item.elevation.ex.group"] = "比如点击两车道道路将高度提高到10m，那么切换其它的小型道路，高度也是10m，但切换到大型道路就不是10m了";
 			d["item.elevation.ex.menu"] = "点击所有道路菜单里面的资产，高度都是10m，但切换到电力菜单就不是10m了";
 			d["item.elevation.ex.category"] = "切换到六车道道路高度也是10m，但切换到桥梁或双线铁路就变成0m（需单独设置），即使它们都在道路菜单下";
@@ -519,13 +514,10 @@ namespace ToolModeMemory
 			d["group.official"] = "官方工具項設定";
 			d["group.anarchy"] = "Anarchy工具項設定";
 			d["group.reset"] = "記憶管理";
-			d["group.compat"] = "相容性";
 			d["group.about"] = "資訊與連結";
 
 			d["enabled.label"] = "啟用工具模式記憶";
 			d["enabled.desc"] = "預設開啟。開啟期間，所有工具項的數值都會即時記錄，回到存檔時就是你上次離開時的樣子；單獨關掉某一項只是不再恢復那一項，它的數值仍在記錄。只有關掉這個總開關才會停止記錄，並把所有工具還原成原版行為。";
-			d["compat.label"] = "是否相容其他模組";
-			d["compat.desc"] = "預設開啟。開啟後按照其他模組調整過的選單、分組名稱來記憶：像 ASSET UI MANAGER 這類模組會把部分資產挪到其他選單或新的分組，被挪過的資產就跟著它的新位置走。關掉後沿用本模組第一次看到這個資產時的歸類，不受中途重排影響，更穩定。這個開關只影響「同組」「同選單」兩檔，以及地區主題 / 資料包按哪個分組記；「同類資產」是按資產實際服務誰判斷的，開不開都一樣。注意：自訂資產如果作者沒把它的車道或服務設施設對，本模組認不出它的用途，就只能按單個資產單獨記憶。兩種選擇都不會丟掉已記錄的數值。";
 			d["scope.label"] = "共用範圍";
 			d["scope.desc"] = "這一項的數值在多大範圍內共用，下拉框括號裡標出原版行為與推薦選擇。";
 			d[kScopeLineGroup] = "同組：{0}";
@@ -550,7 +542,7 @@ namespace ToolModeMemory
 			d["reset.warn"] = "此操作無法復原。";
 			d["reset.confirm"] = "確定要重設已記憶的工具設定嗎？";
 			d["resetall.label"] = "重設所有設定項";
-			d["resetall.desc"] = "把本模組的所有選項回到推薦預設值：總開關、相容開關都重新開啟，每一項的啟用狀態和共用範圍也一併恢復。已記錄的存檔記憶不受影響。";
+			d["resetall.desc"] = "把本模組的所有選項回到推薦預設值：總開關重新開啟，每一項的啟用狀態和共用範圍也一併恢復。已記錄的存檔記憶不受影響。";
 			d["resetall.warn"] = "此操作無法復原。";
 			d["resetall.confirm"] = "確定要重設所有設定項嗎？";
 			d["folder.label"] = "管理所有存檔的記憶檔案";
@@ -593,7 +585,7 @@ namespace ToolModeMemory
 
 			// ---------- 3 高度 ----------
 			d["item.elevation.label"] = "高度";
-			d["item.elevation.desc"] = "記憶工具離開時的高度值，也包括提升高度、降低高度得到的結果；「高度階段」（一次抬高或降低多少公尺，Anarchy 面板裡那一行叫高度間距）跟高度一起記憶、用同一個共用範圍。交叉路口的高度不在記憶範圍內。";
+			d["item.elevation.desc"] = "記憶工具離開時的高度值，也包括提升高度、降低高度得到的結果；「高度階段」（一次抬高或降低多少公尺，Anarchy 面板裡那一行叫高度間距）跟高度一起記憶、用同一個共用範圍。交叉路口的高度不在記憶範圍內。部分資產自己限定了可用的高度範圍：共用數值超出所選資產允許的範圍時，該資產保持它自己允許的高度，已記憶的共用數值不變。";
 			d["item.elevation.ex.group"] = "例如點選兩車道道路把高度提高到10m，那麼切換其他小型道路，高度也是10m，但切換到大型道路就不是10m了";
 			d["item.elevation.ex.menu"] = "點選所有道路選單裡面的資產，高度都是10m，但切換到電力選單就不是10m了";
 			d["item.elevation.ex.category"] = "切換到六車道道路高度也是10m，但切換到橋樑或雙軌鐵路就變成0m（需單獨設定），即使它們都在道路選單下";
@@ -662,13 +654,10 @@ namespace ToolModeMemory
 			d["group.official"] = "Official Tool Settings";
 			d["group.anarchy"] = "Anarchy Tool Settings";
 			d["group.reset"] = "Memory management";
-			d["group.compat"] = "Compatibility";
 			d["group.about"] = "Information and links";
 
 			d["enabled.label"] = "Enable Tool Mode Memory";
 			d["enabled.desc"] = "On by default. While it is on, every item's value is recorded as you work, so returning to a save puts the panels back exactly as you left them. Turning one item off only stops that item from being restored - its values are still recorded. Only switching this master switch off stops all recording and returns every tool to vanilla behaviour.";
-			d["compat.label"] = "Compatible with other mods";
-			d["compat.desc"] = "On by default. On: memory is filed under the menu and group names as adjusted by other mods - Asset UI Manager and the like move assets to another menu or a new group, and a moved asset follows its new location. Off: the classification this mod saw first is kept, which is steadier when the layout changes mid-session. This switch only covers Same group and Same menu, plus which group the Theme and Pack rows follow; Same asset type is decided by what the asset actually serves and is the same either way. Note that a custom asset whose author did not set its lanes or served facility correctly cannot be recognised, so it falls back to being remembered on its own. Neither choice throws away values that are already recorded.";
 			d["scope.label"] = "Sharing scope";
 			d["scope.desc"] = "How widely this item's value is shared. The brackets in the drop-down show what vanilla does and what we recommend.";
 			d[kScopeLineGroup] = "Same group: {0}";
@@ -693,7 +682,7 @@ namespace ToolModeMemory
 			d["reset.warn"] = "This cannot be undone.";
 			d["reset.confirm"] = "Reset all remembered tool settings?";
 			d["resetall.label"] = "Reset all settings";
-			d["resetall.desc"] = "Puts every option of this mod back to its recommended default: the master switch and the compatibility switch go back on, and each item's on/off state and sharing scope are restored. Memory already recorded for saves is left alone.";
+			d["resetall.desc"] = "Puts every option of this mod back to its recommended default: the master switch goes back on, and each item's on/off state and sharing scope are restored. Memory already recorded for saves is left alone.";
 			d["resetall.warn"] = "This cannot be undone.";
 			d["resetall.confirm"] = "Reset every setting of this mod to its recommended default?";
 			d["folder.label"] = "Manage memory files for all saves";
@@ -736,7 +725,7 @@ namespace ToolModeMemory
 
 			// ---------- 3 Elevation ----------
 			d["item.elevation.label"] = "Elevation";
-			d["item.elevation.desc"] = "Remembers the elevation a tool was left at, including where Increase elevation and Decrease elevation took it. The Elevation step (how far one press moves you — the row Anarchy adds for the same value carries that very name) is remembered together with it and shares its scope. The elevation of intersections is not covered.";
+			d["item.elevation.desc"] = "Remembers the elevation a tool was left at, including where Increase elevation and Decrease elevation took it. The Elevation step (how far one press moves you — the row Anarchy adds for the same value carries that very name) is remembered together with it and shares its scope. The elevation of intersections is not covered. Some assets have their own elevation limits: if the shared value is outside what the selected asset allows, that asset keeps an elevation it can actually use, and the shared value itself stays as it was.";
 			d["item.elevation.ex.group"] = "for example, raise a two-lane road to 10 m and the other small roads go to 10 m too, while a large road is not at 10 m";
 			d["item.elevation.ex.menu"] = "every asset you click in the Roads menu is at 10 m, but moving to the Electricity menu it is not at 10 m";
 			d["item.elevation.ex.category"] = "switching to a six-lane road is still 10 m, but a bridge or a double train track goes back to 0 m and needs its own setting, even though they are all in the Roads menu";

@@ -67,6 +67,14 @@ namespace ToolModeMemory.Systems
 		private readonly string[] m_LevelKeys = new string[10];
 		private readonly int[] m_LevelKeyPasses = new int[10];
 
+		/// <summary>
+		/// 「在不在存档里 / 进档稳定期过没过」这两条闸门（规则与理由见 SaveSessionGate）。
+		/// 玩家日志里能直接看到不关闸的后果：2026-10-07 16:41:46 开机进主菜单，
+		/// <c>OnLeavingGame()</c> 照样跑了一遍捕获并写出 <c>_unsaved_9d40cc53.json</c>
+		/// —— 主菜单的面板状态被当成记忆存了下来。
+		/// </summary>
+		private readonly SaveSessionGate m_Gate = new SaveSessionGate();
+
 		private static ILog log = ToolModeMemoryMod.log;
 
 		protected override void OnCreate()
@@ -107,6 +115,7 @@ namespace ToolModeMemory.Systems
 		{
 			base.Enabled = false;
 			m_PendingApplyFrames = 0;
+			m_Gate.Close();
 			UnhookEvents();
 			ForgetKeysAndCache();
 		}
@@ -177,13 +186,22 @@ namespace ToolModeMemory.Systems
 				m_LastPrefabEntity = prefabEntity;
 			}
 
-			if (m_PendingApplyFrames > 0 || prefabChanged)
+			// 进档稳定期：每帧写回、不捕获（为什么必须两头都占，见 SaveSessionGate）。
+			// 原版在载入过程中会把自己的工具偏好重置成出厂值，而工具成型比 onGameLoadingComplete
+			// 还晚几帧；这段时间里捕获一次就会把「原版默认值」记成玩家的选择，
+			// 下一次进档读到的就是这份被污染的记忆。
+			if (m_Gate.Settling(UnityEngine.Time.unscaledTime))
+			{
+				m_PendingApplyFrames = 0;
+				ApplyNow();
+			}
+			else if (m_PendingApplyFrames > 0 || prefabChanged)
 			{
 				if (m_PendingApplyFrames > 0) m_PendingApplyFrames--;
 				ApplyNow();
 			}
 
-			// 每帧捕获：切资产前最后一帧的状态已入库
+			// 每帧捕获：切资产前最后一帧的状态已入库（不在存档里 / 稳定期内会被闸门挡掉）
 			CaptureNow();
 
 			FlushDebounced();
@@ -197,6 +215,9 @@ namespace ToolModeMemory.Systems
 		{
 			MemoryStore store = ToolModeMemoryMod.Store;
 			if (store == null) return;
+			// 不在存档里就不落盘：脏标记可能是上一个存档留下的，而主菜单里那个文件名
+			// 已经不属于任何本局身份（BeginMainMenu 会清掉，但顺序上不保证总是先到）。
+			if (!m_Gate.InSave) return;
 			float now = UnityEngine.Time.unscaledTime;
 			long serial = store.ChangeSerial;
 			if (serial != m_SeenSerial)
@@ -252,6 +273,9 @@ namespace ToolModeMemory.Systems
 			}
 			m_LastPrefabEntity = Entity.Null;
 			m_PendingApplyFrames = 1;
+			// 刚打开时同样要先写回、后捕获：关着的这段时间面板归玩家（和原版）做主，
+			// 立刻捕获会把「没开记忆时」的状态当成这一局的选择记下来。
+			if (m_Gate.InSave) m_Gate.Open(UnityEngine.Time.unscaledTime);
 		}
 
 		public bool MasterEnabled { get { return base.Enabled; } }
@@ -452,9 +476,21 @@ namespace ToolModeMemory.Systems
 
 		public void CaptureNow()
 		{
+			CaptureNow(false);
+		}
+
+		/// <param name="final">退出存档前那一次强制捕获：稳定期也要记，但不在存档里时照样不记。</param>
+		private void CaptureNow(bool final)
+		{
 			ToolModeMemorySettings setting = ToolModeMemorySettings.Instance;
 			MemoryStore store = ToolModeMemoryMod.Store;
 			if (setting == null || !setting.Enabled || store == null) return;
+			// 闸门：主菜单 / 编辑器 / 进档稳定期里一律不捕获（理由见 SaveSessionGate）。
+			float now = UnityEngine.Time.unscaledTime;
+			if (final ? !m_Gate.AllowFinalCapture() : !m_Gate.AllowCapture(now)) return;
+			// 记忆文件读不懂的时候已经禁止写盘了，继续捕获只会白改内存、涨改动序号，
+			// 让防抖去试一次注定写不进去的盘。
+			if (store.WriteBlocked) return;
 			ToolBaseSystem tool = m_ToolSystem != null ? m_ToolSystem.activeTool : null;
 			if (tool == null) return;
 			PrefabBase prefab = m_ToolSystem.activePrefab;
@@ -477,6 +513,11 @@ namespace ToolModeMemory.Systems
 					int value;
 					if (!ToolMemoryBridge.TryCapture(fieldId, tool, out value)) continue;
 					if (key == null) key = KeyFor(def, prefab, tool, setting.GetItemScope(def.Id));
+					// 资产自带取值限制的项（现在只有高度）要先问一句：这个值是本资产够得着的吗？
+					// 从道路切到水管时工具里还留着道路的 0m，而水管上限 -10m —— 那是上一件资产的值，
+					// 记下去要么污染共用桶（把道路一起拽走），要么变成水管永远用不了的死值。
+					if (ToolMemoryBridge.HasValueLimit(fieldId)
+						&& !ToolMemoryBridge.AcceptsCapture(fieldId, tool, value)) continue;
 					store.Set(fieldId, key, value);
 				}
 			}
@@ -491,6 +532,9 @@ namespace ToolModeMemory.Systems
 			ToolModeMemorySettings setting = ToolModeMemorySettings.Instance;
 			MemoryStore store = ToolModeMemoryMod.Store;
 			if (setting == null || !setting.Enabled || store == null) return;
+			// 闸门：这一局的记忆没读进来（进档回调半路失败）时什么都不许写回 ——
+			// 此刻 store 里可能是上一个存档的值，写回工具面板就是把别人的设置搬进这一局。
+			if (!m_Gate.InSave) return;
 			ToolBaseSystem tool = m_ToolSystem != null ? m_ToolSystem.activeTool : null;
 			if (tool == null) return;
 			PrefabBase prefab = m_ToolSystem.activePrefab;
@@ -556,12 +600,25 @@ namespace ToolModeMemory.Systems
 
 		/// <summary>
 		/// 进入存档/编辑器。返回 false = 记忆文件读不懂，本轮不再覆盖写盘。
+		/// 这个方法**自己不许抛**：调用方（ToolModeMemoryMod 的进档流程）靠它把
+		/// 「读记忆」这一步做完，读不成也要让系统照常启用、面板照常写回。
 		/// </summary>
 		public bool OnEnteredGame()
 		{
 			MemoryStore store = ToolModeMemoryMod.Store;
 			if (store == null) return true;
-			bool ok = store.LoadForCurrentSave();
+			bool ok;
+			// 读文件这一步单独兜住：它失败了后面三件事（清跨档缓存、开闸、排写回）
+			// 照样必须做完 —— 空记忆比「整局不工作」好得多，也绝不能拿上一个档的缓存继续跑。
+			try
+			{
+				ok = store.LoadForCurrentSave();
+			}
+			catch (Exception ex)
+			{
+				log.Warn("Could not read the memory file: " + ex.GetType().Name + " " + ex.Message);
+				ok = false;
+			}
 			ToolMemoryBridge.ForgetNames();
 			ForgetKeysAndCache();
 			m_LastPrefabEntity = Entity.Null;
@@ -572,6 +629,8 @@ namespace ToolModeMemory.Systems
 			// 否则会拿上一档的基线去比这一档的工具栏状态。
 			ResetFilterBaseline();
 			m_PendingApplyFrames = 2;
+			// 开闸：从这一刻起才算「在存档里」，并进入进档稳定期。
+			m_Gate.Open(UnityEngine.Time.unscaledTime);
 			if (!ok)
 			{
 				if (!m_WarnedBlocked)
@@ -589,20 +648,29 @@ namespace ToolModeMemory.Systems
 			{
 				log.Warn("Memory file was damaged, restored from the last live write: " + store.CurrentFilePath());
 			}
-			log.Info("Memory loaded for '" + store.SaveName + "'" + (store.IsPlaceholder ? " (placeholder)" : ""));
+			log.Info("Memory loaded for '" + store.SaveName + "' from " + store.CurrentFilePath()
+				+ (store.IsPlaceholder ? " (placeholder)" : "")
+				+ (store.IsEmpty ? " (no memory yet)" : " (" + store.EntryCount + " values)"));
 			return true;
 		}
 
+		/// <summary>
+		/// 离开存档（回主菜单 / 退出游戏 / 卸载模组）：先把最后一帧的状态记下来并落盘，再关闸。
+		/// 关闸之后主菜单里的任何回调都不许再碰记忆。
+		/// </summary>
 		public void OnLeavingGame()
 		{
-			CaptureNow();
+			if (!m_Gate.InSave) return;
+			CaptureNow(true);
 			MemoryStore store = ToolModeMemoryMod.Store;
 			if (store != null && store.Dirty && store.SaveToDisk())
 			{
 				log.Info("Memory saved: " + store.CurrentFilePath());
 			}
+			m_Gate.Close();
 		}
 
+		/// <summary>存档内主动落盘（玩家存盘时调用）。稳定期没过就只落已读到的记忆。</summary>
 		public void FlushIfDirty()
 		{
 			CaptureNow();
