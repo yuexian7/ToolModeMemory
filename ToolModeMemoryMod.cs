@@ -717,19 +717,27 @@ namespace ToolModeMemory
 
 		private void OnApplicationQuitting()
 		{
-			SafeFlush("quitting");
+			SafeFlush("quitting", capture: true);
 		}
 
+		/// <summary>
+		/// ProcessExit 跑在哪条线程上我们控制不了：Unity 正常退出时它在主线程，进程被
+		/// abort / 宿主机主动关闭时不是。而 <see cref="ToolMemorySystem.OnLeavingGame"/>
+		/// 要读工具面板状态（ToolSystem / PrefabSystem / ECS），那些都不是线程安全的。
+		/// <see cref="OnApplicationQuitting"/> 已经在主线程上做过完整捕获 + 落盘，
+		/// 所以这里只做「把已经捕获到的记忆写下去」这一件线程安全的事：
+		/// 不读游戏状态、不碰 UI、只做一次文件替换。
+		/// </summary>
 		private void OnProcessExit(object sender, EventArgs e)
 		{
-			SafeFlush("processExit");
+			SafeFlush("processExit", capture: false);
 		}
 
-		private void SafeFlush(string reason)
+		private void SafeFlush(string reason, bool capture)
 		{
 			try
 			{
-				if (m_System != null)
+				if (m_System != null && capture)
 				{
 					m_System.OnLeavingGame();
 				}
@@ -798,7 +806,7 @@ namespace ToolModeMemory
 			}
 			catch { }
 
-			SafeFlush("dispose");
+			SafeFlush("dispose", capture: true);
 
 			// 卸载模组 = 本程序集随时可能消失，凡是「挂在游戏对象上的东西」都必须当场摘干净，
 			// 否则玩家下次进存档就会看到因本模组卸载而引起的报错（需求 8）。

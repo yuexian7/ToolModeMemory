@@ -22,9 +22,15 @@ namespace ToolModeMemory.Systems
 		private PrefabSystem m_PrefabSystem;
 		private int m_PendingApplyFrames;
 		private bool m_EventsHooked;
-		private Entity m_LastPrefabEntity;
+		private PrefabBase m_LastPrefab;
 		private bool m_WarnedBlocked;
 		private bool m_WarnedWriteFail;
+
+		// 筛选项上一次真的恢复过时的 (tool, prefab)。进档稳定期里 ApplyNow 是每帧调的，
+		// 恢复筛选项要扫一遍当前分类的资产列表才知道哪些主题/数据包可选 —— 那是个几十到
+		// 几百次缓冲读取的活。同一对 (tool, prefab) 上没有必要每帧重做，见 RestoreFilters。
+		private ToolBaseSystem m_FilterRestoredTool;
+		private PrefabBase m_FilterRestoredPrefab;
 
 		// 实时落盘防抖：玩家**停止改动** kFlushDelay 秒后才写盘。频繁切换工具的玩家
 		// 一次游戏能产生上百次改动，逐次写盘既伤硬盘又没必要（记忆只在下次进档时才用）。
@@ -153,7 +159,9 @@ namespace ToolModeMemory.Systems
 		{
 			// ToolSystem.activeTool 的 setter 是「先赋值后广播」，这里已经看不到旧工具了，
 			// 所以不需要（也无法）在这里补捕旧工具的状态——上一帧的每帧捕获已经记下了它。
-			m_LastPrefabEntity = Entity.Null;
+			m_LastPrefab = null;
+			m_FilterRestoredTool = null;
+			m_FilterRestoredPrefab = null;
 			ApplyNow();
 			m_PendingApplyFrames = 1;
 		}
@@ -164,6 +172,8 @@ namespace ToolModeMemory.Systems
 			// 但此刻 NetToolSystem.GetAvailableSnapMask 读到的还是上一个 prefab 的数据
 			// （m_Prefab 要到 InitializeRaycast 才更新），所以下一帧 ToolUpdate 再用新掩码
 			// 校正一次——两趟缺一不可。
+			m_FilterRestoredTool = null;
+			m_FilterRestoredPrefab = null;
 			ApplyNow();
 			m_PendingApplyFrames = 1;
 		}
@@ -173,17 +183,15 @@ namespace ToolModeMemory.Systems
 			ToolModeMemorySettings setting = ToolModeMemorySettings.Instance;
 			if (setting == null || !setting.Enabled) return;
 
-			Entity prefabEntity = Entity.Null;
+			// 换没换资产直接比 prefab 引用：ReferenceEquals 不过 PrefabSystem，每帧省一次
+			// 实体反查；而且比实体**更准** —— 两件都解析不出实体的资产（GetEntity 一律返回
+			// Entity.Null，例如只选了车道、或资产库还没就绪）用实体比较会永远判成「没换」，
+			// 切过去时一次写回都不做。
 			PrefabBase prefab = m_ToolSystem != null ? m_ToolSystem.activePrefab : null;
-			if (prefab != null && m_PrefabSystem != null)
-			{
-				prefabEntity = m_PrefabSystem.GetEntity(prefab);
-			}
-
-			bool prefabChanged = prefabEntity != m_LastPrefabEntity;
+			bool prefabChanged = !ReferenceEquals(prefab, m_LastPrefab);
 			if (prefabChanged)
 			{
-				m_LastPrefabEntity = prefabEntity;
+				m_LastPrefab = prefab;
 			}
 
 			// 进档稳定期：每帧写回、不捕获（为什么必须两头都占，见 SaveSessionGate）。
@@ -266,12 +274,14 @@ namespace ToolModeMemory.Systems
 			// 重开时键缓存与筛选项基线一律作废，不能拿关着时的旧状态当基线。
 			ForgetKeysAndCache();
 			ResetFilterBaseline();
+			m_FilterRestoredTool = null;
+			m_FilterRestoredPrefab = null;
 			if (!on)
 			{
 				m_PendingApplyFrames = 0;
 				return;
 			}
-			m_LastPrefabEntity = Entity.Null;
+			m_LastPrefab = null;
 			m_PendingApplyFrames = 1;
 			// 刚打开时同样要先写回、后捕获：关着的这段时间面板归玩家（和原版）做主，
 			// 立刻捕获会把「没开记忆时」的状态当成这一局的选择记下来。
@@ -325,9 +335,11 @@ namespace ToolModeMemory.Systems
 				{
 					// 本档第一次看到：只做基线，然后补一次恢复。读档后原版把主题重置成
 					// 默认主题、数据包本来就是空的，不补这一下就要等玩家下次切菜单才生效。
+					// 恢复没做完（当前分类的可选项还拿不到）就先别认基线：认了就等于把
+					// 「还没恢复」登记成「已经恢复过」，那一次失败就再也不会被补上。
+					if (!RestoreFilter(setting, store, def, slot, key)) continue;
 					m_FilterSigs[slot] = sig;
 					m_FilterKeys[slot] = key;
-					RestoreFilter(setting, store, def, slot, key);
 					continue;
 				}
 				if (m_FilterKeys[slot] != key)
@@ -357,10 +369,26 @@ namespace ToolModeMemory.Systems
 			}
 		}
 
-		/// <summary>换资产 / 换工具时，筛选项也按当前层级键补一次恢复。</summary>
+		/// <summary>
+		/// 换资产 / 换工具时，筛选项也按当前层级键补一次恢复。
+		///
+		/// 只在 (tool, prefab) 这一对真的换过时才动手。原因：进档稳定期里 <see cref="ApplyNow"/>
+		/// 是**每帧**调的，而恢复筛选项要扫一遍当前分类的资产列表（ToolMemoryBridge 的
+		/// CollectOptions：逐个资产读 UIGroupElement / ObjectRequirementElement / ThemeData）
+		/// 才知道有哪些主题、数据包可选 —— 那是几十到几百次缓冲读取的活。同一对
+		/// (tool, prefab) 上每帧重做一遍纯属白给，还会连着读 prefab 名。
+		/// 玩家在工具栏里换分类不需要靠这里兜：<see cref="CaptureFilters"/> 本来就盯着
+		/// 层级键的变化，变了会自己再恢复一次。
+		/// </summary>
 		private void RestoreFilters(ToolModeMemorySettings setting, MemoryStore store,
 			PrefabBase prefab, ToolBaseSystem tool)
 		{
+			if (ReferenceEquals(tool, m_FilterRestoredTool)
+				&& ReferenceEquals(prefab, m_FilterRestoredPrefab))
+			{
+				return;
+			}
+			bool done = true;
 			ToolItemDef[] items = ToolItemCatalog.Items;
 			for (int i = 0; i < items.Length; i++)
 			{
@@ -368,7 +396,14 @@ namespace ToolModeMemory.Systems
 				if (def.Source != ItemSource.Toolbar) continue;
 				string key = LevelKeyFor(setting, def, prefab, tool);
 				if (string.IsNullOrEmpty(key)) continue;
-				RestoreFilter(setting, store, def, FilterSlot(def.Id), key);
+				if (!RestoreFilter(setting, store, def, FilterSlot(def.Id), key)) done = false;
+			}
+			// 只有每一项都有了结论才记账；还有没就绪的就把这一对留着，下一帧 ApplyNow
+			// 会再跑一遍（稳定期里它本来就是每帧调的）。
+			if (done)
+			{
+				m_FilterRestoredTool = tool;
+				m_FilterRestoredPrefab = prefab;
 			}
 		}
 
@@ -376,19 +411,27 @@ namespace ToolModeMemory.Systems
 		/// 恢复一个筛选项。只在「这一层键下记过」时动手；当前分类里不存在的可选项一律忽略，
 		/// 免得把工具栏筛成空列表（记忆里就是一个都没勾，那照做——那是玩家自己的选择）。
 		/// </summary>
-		private void RestoreFilter(ToolModeMemorySettings setting, MemoryStore store,
+		/// <returns>
+		/// true = 这一项已经有了结论（真的恢复了，或者本来就没有可恢复的）；
+		/// false = 工具栏还没就绪，调用方下一帧还得再试（见 <see cref="RestoreFilters"/>）。
+		/// </returns>
+		private bool RestoreFilter(ToolModeMemorySettings setting, MemoryStore store,
 			ToolItemDef def, int slot, string key)
 		{
-			if (!setting.IsItemEnabled(def.Id)) return;
+			if (!setting.IsItemEnabled(def.Id)) return true;
+			// 工具栏 UI 系统还没建好（读档头几帧就是如此）：这一帧什么都做不了。
+			// 必须让调用方知道，否则它会把「试过一次」当成「做完了」，稳定期后面几帧
+			// 一直跳过，玩家就永远看不到记忆里的主题 / 数据包。
+			if (!ToolMemoryBridge.ToolbarFilterReady()) return false;
 			bool found;
 			int remembered = store.Get(def.Id, key, out found);
-			if (!found) return;
+			if (!found) return true;
 			m_FilterNames.Clear();
 			if (remembered > 0)
 			{
 				// 记过至少一个：必须拿得到当前分类的可选项列表才能挑出该勾哪些。
 				// 拿不到就什么都不做 —— 带着空列表往下走等于把玩家的筛选清掉。
-				if (!ToolMemoryBridge.ToolbarOptionNames(def.Id, m_FilterNames)) return;
+				if (!ToolMemoryBridge.ToolbarOptionNames(def.Id, m_FilterNames)) return false;
 				for (int j = m_FilterNames.Count - 1; j >= 0; j--)
 				{
 					bool hit;
@@ -402,6 +445,7 @@ namespace ToolModeMemory.Systems
 				int sig;
 				if (ToolMemoryBridge.ToolbarSelectionSignature(def.Id, out sig)) m_FilterSigs[slot] = sig;
 			}
+			return true;
 		}
 
 		/// <summary>两项固定占两个槽：0 = 地区主题，1 = 数据包。</summary>
@@ -410,13 +454,15 @@ namespace ToolModeMemory.Systems
 			return id == ToolItemCatalog.kThemes ? 0 : 1;
 		}
 
-		/// <summary>作废筛选项的基线（换档、总开关重开）：下一帧重新认一次。</summary>
+		/// <summary>作废筛选项的基线与恢复记录（换档、总开关重开）：下一帧重新认一次。</summary>
 		private void ResetFilterBaseline()
 		{
 			m_FilterSigs[0] = kFilterUnknown;
 			m_FilterSigs[1] = kFilterUnknown;
 			m_FilterKeys[0] = null;
 			m_FilterKeys[1] = null;
+			m_FilterRestoredTool = null;
+			m_FilterRestoredPrefab = null;
 		}
 
 		/// <summary>
@@ -621,7 +667,7 @@ namespace ToolModeMemory.Systems
 			}
 			ToolMemoryBridge.ForgetNames();
 			ForgetKeysAndCache();
-			m_LastPrefabEntity = Entity.Null;
+			m_LastPrefab = null;
 			// 写盘退避是按「这台机器此刻写不写得进去」累积出来的，换档（甚至换台机器）不该带着走
 			m_WriteRetry = kFlushDelay;
 			m_WarnedWriteFail = false;

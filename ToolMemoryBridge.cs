@@ -1133,7 +1133,11 @@ namespace ToolModeMemory
 			// 资产自己不允许这个高度（例：水管 m_ElevationRange 上限 -10m，而共用值是 0m）
 			// 就什么都不写，让原版给这件资产的值留着；共用桶不动，换回够得着的资产照常共用。
 			if (!AcceptsApply(F_ELEVATION, tool, value)) return false;
-			ApplyElevation(net, value / kScale);
+			float meters = value / kScale;
+			// 限制读不到（资产没挂 PlaceableNetData / 反射失败）时上面那道闸门是敞开的，
+			// 这里补一道防 NaN 与荒谬值的兜底。原版自己每帧还会再夹一次。
+			if (!InRange(meters, kMaxMeters)) return false;
+			ApplyElevation(net, meters);
 			return true;
 		}
 
@@ -1143,7 +1147,7 @@ namespace ToolModeMemory
 			NetToolSystem net = tool as NetToolSystem;
 			if (net == null) return false;
 			float step = value / kScale;
-			if (step <= 0f) return false;
+			if (!InRange(step, kMaxMeters) || step <= 0f) return false;
 			net.elevationStep = step;
 			return true;
 		}
@@ -1153,6 +1157,9 @@ namespace ToolModeMemory
 			NetToolSystem net = tool as NetToolSystem;
 			if (net == null) return false;
 			if (value < 0) return false;
+			// 原版自己只会写 0 或 1。这里放到 64 是给自定义预制件留的余量，
+			// 但绝不接受一个能把工具拖死的大数（理由见上面的「写回时的硬边界」）。
+			if (value > kMaxParallelCount) return false;
 			// 资产不支持并列时原版自己会把 actualParallelCount 归 0，这里照样写下去：
 			// 换到支持的资产时状态就回来了，而 allowParallel 本身是派生值，绝不写。
 			net.parallelCount = value;
@@ -1163,7 +1170,9 @@ namespace ToolModeMemory
 		{
 			NetToolSystem net = tool as NetToolSystem;
 			if (net == null) return false;
-			net.parallelOffset = value / kScale;
+			float meters = value / kScale;
+			if (!InRange(meters, kMaxMeters)) return false;
+			net.parallelOffset = meters;
 			return true;
 		}
 
@@ -1236,24 +1245,24 @@ namespace ToolModeMemory
 		/// <summary>
 		/// 笔刷尺寸/强度。0 当「无默认」哨兵处理：笔刷出厂值按地形类型各存一份，
 		/// 全局没有可比初值，写 0 会把笔刷废掉，所以宁可不写。
-		/// 上限按原版自己的最大值夹：TerrainToolSystem.kMaxBrushSizeInGame = 1000f
-		/// （编辑器里是 5000f），面板滑块也超不出这个范围。
+		/// 上界按原版自己的最大值夹（编辑器里是 5000f，游戏内 1000f，取更宽的那个）——
+		/// 见到越界值就整个不写，而不是静默夹小：宁可让面板停在原版给的值上，也不要把
+		/// 一个玩家**没有选过**的数写进去。理由见「写回时的硬边界」。
 		/// </summary>
 		private static bool ApplyBrush(ToolBaseSystem tool, bool size, int value)
 		{
 			if (value == 0) return false;
 			if (!tool.brushing) return false;
 			float f = value / kScale;
+			// 尺寸必须为正；强度可正可负（InvertBrushesJob 会把 m_Strength 取反）
+			if (!InRange(f, size ? kMaxBrushSize : kMaxBrushStrength)) return false;
 			if (size)
 			{
 				if (f <= 0f) return false;
-				if (f > TerrainToolSystem.kMaxBrushSizeInGame && tool is TerrainToolSystem) f = TerrainToolSystem.kMaxBrushSizeInGame;
 				tool.brushSize = f;
 			}
 			else
 			{
-				// 强度可正可负（InvertBrushesJob 会把 m_Strength 取反），只挡 NaN
-				if (float.IsNaN(f) || float.IsInfinity(f)) return false;
 				tool.brushStrength = f;
 			}
 			return true;
@@ -1333,6 +1342,37 @@ namespace ToolModeMemory
 			if (level == 0) return value;
 			int lowest = level & (-level);
 			return (value & ~kCompositionLevelMask) | lowest;
+		}
+
+		// ================= 写回时的硬边界 =================
+		//
+		// 记忆文件是**可手工编辑**的 JSON（README 里明确写了这一点），所以从里面读出来的
+		// 数字不保证是本模组自己捕获的那个：一个多打的 0 就足以酿成大祸 ——
+		//   · parallelCount 写成 10000000 → NetToolSystem 里
+		//     `for (i = 1; i <= m_ParallelCount.x; i++) CreateParallelCourse(...)`
+		//     每转一圈真建一条路，一帧里建一千万条 = 卡死 / OOM；
+		//   · brushSize 写成 1e9 → 地形笔刷的作业按半径铺满整张地图 = 严重卡帧；
+		//   · brushStrength 写成 1e9 → 每帧地形位移爆掉，高度图变 NaN。
+		// 下面的上界一律取得**远比任何真实取值宽**，只为把「明显是垃圾」的数挡在门外，
+		// 不会把任何正常记忆的取值改小。判据全部来自反编译出来的原版自己的上限：
+		//   parallelCount : 原版只会写 0 或 1（ToolUISystem.cs:547 ToggleParallelMode）
+		//   brushSize     : 面板滑块上界 1000（游戏内）/ 5000（编辑器）
+		//                   （ToolUISystem.cs:188 brushSizeMax），取更宽的那个
+		//   brushStrength : 原版默认 0.5，Remove 时取负（TerrainToolSystem.cs:703）
+		//   elevation 等   : 原版每帧都按资产自己的 m_ElevationRange 夹
+		//                   （CheckElevationRange），这里再补一道防 NaN 的
+		private const int kMaxParallelCount = 64;
+		private const float kMaxBrushSize = 5000f;
+		private const float kMaxBrushStrength = 100f;
+
+		/// <summary>任意「米」制的连续量上界（横向偏移之类）。地图只有约 10 km 宽。</summary>
+		private const float kMaxMeters = 100000f;
+
+		/// <summary>有限、且落在 [-limit, limit] 内。NaN / 无穷一律算越界（调用方不写）。</summary>
+		private static bool InRange(float v, float limit)
+		{
+			if (float.IsNaN(v) || float.IsInfinity(v)) return false;
+			return v >= -limit && v <= limit;
 		}
 
 		// ============================ 小工具 ============================
@@ -1966,7 +2006,9 @@ namespace ToolModeMemory
 			ToolbarUISystem ui = ToolbarUi();
 			EntityManager em = s_Em;
 			PrefabSystem ps = s_CachedPrefabSystem;
-			if (ui == null || em == null || ps == null) return -1;
+			// s_HaveSystems 是「本局到底解到过 PrefabSystem / EntityManager 没有」的唯一凭据：
+			// s_Em 是结构体，没解到时是个默认值，直接拿它去 Exists 会抛。
+			if (ui == null || ps == null || em == null || !s_HaveSystems) return -1;
 			try
 			{
 				Entity category = BindingEntity(s_CategoryBindingField, ui);

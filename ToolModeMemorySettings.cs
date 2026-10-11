@@ -362,14 +362,37 @@ namespace ToolModeMemory
 
 		private DropdownItem<int>[] BuildScopeItems(string itemId)
 		{
-			LocaleTable.SetActiveLocale(GameManager.instance.localizationManager.activeLocaleId);
+			// 这一段跑在选项页框架里，而 GameManager.instance 不保证已经有值：设置页可能在
+			// 主菜单之前被打开，也可能正在卸载。原来的写法直接解引用，一崩就把整页选项拖坏。
+			// 取不到就沿用上一次的语言（初始 = 英文），下拉照样画得出来。
+			SetActiveLocaleSafe();
 			ToolItemDef def = ToolItemCatalog.Find(itemId);
 			return LocaleTable.BuildScopeDropdown(def);
 		}
 
 		public int GetScopeItemsVersion()
 		{
-			return GameManager.instance.localizationManager.activeLocaleId.GetHashCode();
+			// 这个版本号只用来让框架知道「语言换了，下拉要重画」。取不到语言 id 时返回 0，
+			// 框架最多多重画一次，不会出错。
+			try
+			{
+				GameManager gm = GameManager.instance;
+				if (gm == null || gm.localizationManager == null) return 0;
+				return gm.localizationManager.activeLocaleId.GetHashCode();
+			}
+			catch { return 0; }
+		}
+
+		/// <summary>把当前语言告诉 LocaleTable；拿不到就安静地留着上一次的（初始英文）。</summary>
+		private static void SetActiveLocaleSafe()
+		{
+			try
+			{
+				GameManager gm = GameManager.instance;
+				if (gm == null || gm.localizationManager == null) return;
+				LocaleTable.SetActiveLocale(gm.localizationManager.activeLocaleId);
+			}
+			catch { }
 		}
 
 		// ---------- 读写小工具 ----------

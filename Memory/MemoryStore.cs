@@ -391,8 +391,13 @@ namespace ToolModeMemory.Memory
 			catch { mainExists = false; }
 			if (!mainExists)
 			{
-				// 主文件不存在但上一次实时写留下的 tmp 在：照样救回来
-				return LoadFromTemp(path) || true;
+				// 主文件不存在：上一次实时写留下的 .tmp 若读得懂就救回来（LoadFromTemp 内部
+				// 会置脏，进档后马上重写一次正式文件）；tmp 也没有就是一份空记忆。
+				// 两种情况都属于「没有读不懂的目标文件」，一律返回 true —— 调用方不该
+				// 因此把写盘禁掉。以前这里写的是 `LoadFromTemp(path) || true`，恒为 true，
+				// 读代码的人完全看不出上面这个意图。
+				LoadFromTemp(path);
+				return true;
 			}
 			Dictionary<string, Dictionary<string, int>> parsed =
 				new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal);
@@ -530,10 +535,14 @@ namespace ToolModeMemory.Memory
 			m_WriteBlocked = false;
 			m_RecoveredFromTemp = false;
 			string path = CurrentFilePath();
+			// 没有名字就没有 tmp 路径可言。这里绝不能拿空串往下传：TempPathFor("") 会拼出
+			// 一个**相对**路径 ".tmp"，File.Exists / File.Delete 就落到进程工作目录上，
+			// 有可能删掉一个跟本模组毫无关系的文件。
+			if (path == null) return;
 			try
 			{
-				if (path != null && File.Exists(path)) File.Delete(path);
-				TryDeleteTemp(path ?? "");
+				if (File.Exists(path)) File.Delete(path);
+				TryDeleteTemp(path);
 			}
 			catch { }
 		}
@@ -644,7 +653,7 @@ namespace ToolModeMemory.Memory
 				}
 				else if (key == "items" && i < text.Length && text[i] == '{')
 				{
-					if (!ParseItems(text, ref i, into)) return itemsSeen ? false : false;
+					if (!ParseItems(text, ref i, into)) return false;
 					itemsSeen = true;
 				}
 				else

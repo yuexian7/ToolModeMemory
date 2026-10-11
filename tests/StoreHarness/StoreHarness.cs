@@ -178,6 +178,7 @@ namespace ToolModeMemory.Tests
 			EntryGate();
 			RealFieldFiles();
 			AssetValueLimits();
+			ResetCurrentSaveWithoutAName();
 
 			Console.WriteLine();
 			Console.WriteLine(s_Fails == 0
@@ -1637,5 +1638,59 @@ namespace ToolModeMemory.Tests
 			Check(found && sharedBack == -3000 && !pipe.Blocks(sharedBack / scale),
 				"共用桶读回来还是 -30m，对水管依旧可用");
 		}
+		/// <summary>
+		/// [25] 「没有名字」时的重置与载入语义（v0.6.2 修的两处）：
+		///
+		/// 1) <c>ResetCurrentSave</c> 以前无条件调用 <c>TryDeleteTemp(path ?? "")</c>。
+		///    没有名字时 <see cref="MemoryStore.CurrentFilePath"/> 返回 null，于是
+		///    <c>TempPathFor("")</c> 拼出**相对**路径 ".tmp" —— File.Exists / File.Delete
+		///    会落到进程工作目录上，可能删掉一个跟本模组毫无关系的文件。
+		///    现在：没有名字就直接返回，一个字节都不碰。
+		///
+		/// 2) <c>LoadForCurrentSave</c> 以前在主文件不存在时写
+		///    <c>return LoadFromTemp(path) || true;</c> —— 恒为 true，读代码的人看不出意图。
+		///    语义必须保持：没有主文件 = 「没有读不懂的目标文件」，tmp 读得懂就救回来
+		///    （置脏等重写），读不懂就是空记忆，两种情况都不该把写盘禁掉。
+		/// </summary>
+		private static void ResetCurrentSaveWithoutAName()
+		{
+			Console.WriteLine("[25] 无名字时的重置 / 载入语义");
+			FreshDir("resetnoname");
+
+			// 切到进程工作目录，在那里放一个同名 ".tmp"：旧代码会把它删掉
+			string originalCwd = Directory.GetCurrentDirectory();
+			string cwd = Path.Combine(s_Root, "resetnoname_cwd");
+			Directory.CreateDirectory(cwd);
+			string bystander = Path.Combine(cwd, ".tmp");
+			File.WriteAllText(bystander, "not ours", Encoding.UTF8);
+			Directory.SetCurrentDirectory(cwd);
+			try
+			{
+				MemoryStore anon = new MemoryStore();   // 从来没命过名
+				anon.Set(ToolItemCatalog.kToolMode, K(kSmallRoads, false, "net"), 3);
+				anon.ResetCurrentSave();
+				Check(anon.SaveName == null, "重置对无名字的 store 不产生名字");
+				Check(File.Exists(bystander) && File.ReadAllText(bystander, Encoding.UTF8) == "not ours",
+					"工作目录里的 .tmp 没有被误删（相对路径 bug 回归）");
+				Check(anon.EntryCount == 0, "无名字时重置照样清空内存");
+			}
+			finally
+			{
+				Directory.SetCurrentDirectory(originalCwd);
+			}
+
+			// 回到测试目录：没有主文件、也没有 tmp -> 空记忆，不算失败、不禁写盘
+			MemoryStore empty = new MemoryStore();
+			empty.UseSaveName("NoFilesYet");
+			Check(empty.LoadForCurrentSave(), "主文件与 tmp 都不存在 -> 判为成功（空记忆）");
+			Check(!empty.RecoveredFromTemp && !empty.WriteBlocked, "没有从 tmp 恢复、也没有进入写禁");
+			Check(empty.IsEmpty && empty.EntryCount == 0, "读出来是一份空记忆");
+
+			// 同样场景再确认一次：写盘没被禁（这是 || true 那个 bug 真正想表达的语义）
+			empty.Set(ToolItemCatalog.kToolMode, K(kSmallRoads, false, "net"), 4);
+			Check(empty.SaveToDisk(true), "空记忆允许写盘（不该因为「没有文件」被禁）");
+			Check(File.Exists(empty.CurrentFilePath()), "文件真的落下来了");
+		}
+
 	}
 }
