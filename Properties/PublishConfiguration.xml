@@ -1,117 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--Tool Mode Memory 发布元数据。
-    2026-09-27：本文件已与线上 ModId 160529 逐字段对齐（线上编辑页读出的实际值），
-    因为 NewVersion 会把这里的全套元数据覆盖到平台。对齐内容：
-      - ShortDescription 含线上后加的中文尾巴
-      - LongDescription 已删掉线上的两句 "Zero Harmony..." / 「零 Harmony...」
-      - 新增线上已配置的 ForumLink 与 Type="x" 外链
-    本次唯一改动：ModVersion 0.1.1 -> 0.1.2 与 ChangeLog。
-    2026-09-27 14:21：NewVersion 发布成功（ModId 160529，Private，见 state/publish-newversion-0.1.2.log）。
-    注意：服务端要求 userModVersion 必须与线上现有值不同，所以本文件已发布后不要再原地重跑
-    NewVersion——重跑只会收到 "Invalid UserModVersion..." 而不会改动线上。下次发版先改 <ModVersion>。
-    ExternalLink 的 Type 只认 ModPublisher.ExternalType 里的值（discord/github/youtube/twitch/x/
-    paypal/patreon/buymeacoffee/kofi/crowdin/gofundme），不认的值会被静默丢弃而不是报错。
-    2026-09-27 晚：v0.1.3 只改模组内「论坛页面」按钮指向（原为模板 AccessAnarchy 的帖子）。
-    发版前已用登录态浏览器回读线上：name / short / long description / changelog / 论坛与外链 /
-    Private 状态均与本文件一致，故 NewVersion 覆盖元数据不会冲掉用户线上手改。
-    2026-09-28（v0.2.0 发版前）：再次用登录态浏览器逐字段回读线上（编辑页 ?version=3；
-    注意 ?version=4 不存在，SPA 会退回显示上一个编辑过的模组，别拿它当数据源）。
-    结果：DisplayName / ShortDescription / GameVersion / Tag / ForumLink / 三条外链 /
-    AccessLevel=private / 无必填 DLC 与前置模组 / 缩略图（同一张图，CDN 重编码）全部一致；
-    唯一差异是 LongDescription 的列表符号被平台规范化成 "*   "，本文件已跟随线上。
-    本次改动仅 ModVersion 0.1.3 -> 0.2.0 与 ChangeLog。
-    2026-09-29（v0.2.1）：只改 ModVersion 与 ChangeLog（范围说明改为按工具项写、12 语言校对、
-    Anarchy 归属改正、出厂默认两个开关都开）。LongDescription 里 "draw mode / parallel roads"、
-    「绘制模式 / 平行道路」是过时叫法，改前必须先读线上编辑页确认这一整段没有用户线上手改，
-    再把术语换成官方行名（工具模式 / 对齐 / 并列模式 / 高度 / 地下模式）。
-    2026-09-29（v0.2.3）：只修关于页第三个按钮名——0.2.2 把 owner 写的「RAINBOW官网」当成品牌串
-    原样抄进了 10 种非中文语言，正确英文是 "RAINBOW Site"；zh-HANS 保留「RAINBOW官网」、
-    zh-HANT 保留「RAINBOW官網」。tests/l10n_check.py 加了两条钉死检查（非中文语言的三个按钮名
-    必须逐字等于 owner 定的英文；拉丁/西里尔语言的值里不许出现中日韩字），并已用人为改坏的
-    de-DE 验证过这两条确实会 FAIL。本次同样只改 ModVersion 与 ChangeLog。
-    2026-09-29（v0.2.2 发版前）：用登录态浏览器读线上编辑页
-    /mods/160529/Windows/edit?version=5（横幅 "Editing latest version · v0.2.1"），逐字段与本文件比对：
-    displayName / shortDescription / longDescription / changelog / version / userModVersion **全部一致**
-    （列表页 LAST UPDATED 仍停在 0.2.1 发布时间 00:41，线上没有被手改过），因此本次 NewVersion
-    覆盖元数据不会冲掉用户线上改动；本次只改 ModVersion 0.2.1 -> 0.2.2 与 ChangeLog。
-    注意：编辑页地址必须带平台段 /Windows，写成 /mods/160529/edit 会被 SPA 退回首页。
-    2026-10-01（v0.3.0 发版前后，核对已做完）：发版前内嵌浏览器会话曾掉登录（顶部显示 "Log in"，
-    /mods/160529/Windows 跳回首页），用户重新登录后我逐字段核对了线上：`edit?version=7`（当时
-    banner 为 latest v0.2.3）的 displayName(16, 54c6c202e0946405) / short(124, f7d57e0a6ec954e4) /
-    long(1389, c7bdae4bb8a532b9)（sha256 前 16 位）与 userModVersion 0.2.3 全部与本文件计算值一致，
-    线上没有被手改过，NewVersion 覆盖元数据是安全的；本次只改 ModVersion 0.2.3 -> 0.3.0 与 ChangeLog。
-    发版后回读 `edit?version=8`：banner "Editing latest version · v0.3.0"，VERSION=0.3.0，
-    GAME VERSION=1.6.*，上述三字段哈希与本地逐项相同，CHANGELOG ENTRY 712 字符
-    sha 7ac509a4b9990860 == 本文件 ChangeLog 去掉首尾空白的值，并显示"本版本文件已上传"；
-    列表页 SIZE 107.72 -> 110.91 KB、LAST UPDATED 2026-10-01 22:24、仍 Private。
-    回读时 MOD INFO 的 MOD VER. 那一行整行消失（版本记录正在切换），公开 CHANGELOG 时间线顶端还是
-    v0.2.3——与 0.2.2/0.2.3 那两次同样的传播滞后，判断发版成功以 edit 页 + LAST UPDATED + SIZE 为准。
-    22:33（发布后 9 分钟）再读列表页：MOD VER. 0.3.0 / SIZE 110.91 KB / CHANGELOG 顶端 v0.3.0 /
-    无 pending 横幅 / Private 徽章在，线上与本文件逐字段一致，没有被手改的痕迹。
-    2026-10-01（v0.3.1）：owner 要求「改好本地测试，不用上传线上」，所以本文件已写成
-    ModVersion 0.3.1 + v0.3.1 中英 ChangeLog（displayName / short / long 一字未动），
-    但**没有执行 NewVersion，线上此刻仍是 v0.3.0**——本文件与线上故意不一致。
-    下次要发布时先按纪律重新读编辑页逐字段核对（确认这期间没人在线上改过元数据），
-    再决定直接 NewVersion 还是先把线上改动同步进来。
-    注意：编辑页地址必须带平台段 /Windows，写成 /mods/160529/edit 会被 SPA 退回首页。
-    2026-10-02（v0.4.0）：v0.3.1 按 owner 要求从未上传，其内容（同类资产按服务对象归类）
-    已随 v0.4.0 一起发布，所以线上会一次性从 v0.3.0 跳到 v0.4.0；本文件此刻与线上故意不一致。
-    发版前必须再读一次 `edit?version=8`（或当时的_version=最新_）逐字段核对
-    displayName / short / long 的 sha256[:16] 与长度，确认这期间没人在线上改过元数据，
-    有差异就先把差异同步进本文件再发，绝不用本地值覆盖 owner 在线上改过的地方。
-    2026-10-02 实际执行：owner 选择「你确认线上没改过，直接发」，所以这次**跳过了逐字段核对**，
-    NewVersion 成功（User Mod Version 0.4.0 / Private / "New mod version published"）。
-    踩到的坑：`<ChangeLog>` 里写了裸 `&`（"Left & Right"）→ ModPublisher 在
-    BaseOptions.Binder.ParseConfig 抛 SharedCode.ReturnCodeException，MSBuild 那边只剩一行
-    `error MSB3073 ... 已退出，代码为 1`，完全看不出是 XML 的问题。
-    以后 ChangeLog 里的 `&` 一律写成 "and" 或 `&amp;`。
-    2026-10-07（v0.5.0）：owner 要求「开发好本地测试，不需要上传」，所以本文件已写成
-    ModVersion 0.5.0 + v0.5.0 中英 ChangeLog（displayName / short / long 一字未动），
-    **没有执行 NewVersion，线上此刻仍是 v0.4.0**——本文件与线上故意不一致。
-    要发布时先按纪律读编辑页逐字段核对，再决定直接 NewVersion 还是先把线上改动同步进来。
-    2026-10-07（v0.6.0）：v0.5.0 同样没上传，所以本条 ChangeLog 一次覆盖两轮内容（进档修复 + 本版两项）。
-    本版**故意改了 <LongDescription>**：删掉「the compatibility switch」与「兼容性开关」那两处（设置项已取消），
-    并在两种语言里各加一句「资产自带取值限制」的说明。除此之外 name / short 一字未动。
-    发布前本应逐字段核对线上（尤其 LongDescription 这一整段——如果 owner 在线上动过其它部分，
-    要把他的改动并回来再发，不能拿本地值覆盖）。
-    2026-10-07 实际执行：owner 说「直接上传到线上，还是 private，描述你看着改就行，反正我都要检查修改的」。
-    试过读线上：内嵌浏览器会话已掉登录（`/mods/160529/Windows` 连 `?nocache=1` 两次都跳回首页、
-    顶部显示 "Log in"；Private 模组的页面对未登录会话不渲染），所以**这一次同样跳过了逐字段核对**，
-    只有发布器自证：`Mod Id: 160529` / `User Mod Version: 0.6.0` / `Access Control Level State: Private` /
-    `New mod version published` / `Publishing new version updating process finished successfully`，退出码 0，
-    全量日志 `state/publish-newversion-0.6.0.log`。上传的是部署目录里的 dll
-    （md5 3e52633bfbca8bfc912509a26d5ebb04 == 当时验证过的产物；字节复核 0.6.0、12 语言新文案在，
-    CompatOtherMods 已不存在）。若 owner 在 v0.4.0 之后在线上改过描述，本次覆盖会冲掉那部分——
-    改动前的元数据在 git 里（`git show HEAD:Properties/PublishConfiguration.xml`），随时可以并回来。
-    线上回读（`edit?version=10` + 列表页 MOD VER./SIZE/LAST UPDATED）等重新登录后补做。
-    2026-10-08（v0.6.1，**只写好，没有上传**）：owner 要求复核每帧开销 / 模拟速度 / 挂载点。
-    结论：CPU 侧可忽略，问题是每帧的堆分配（Mono/Boehm 不分代，垃圾攒够就全堆扫）。
-    代码只改两处（配色探针按 prefab 记忆、写回时 default(Bounds1) 只装一次），
-    LongDescription / ChangeLog 之外的元数据一字未动；ChangeLog 只有「内部效率」一条，
-    行为与 0.6.0 完全一致。
-    **发布前置条件**：`NewVersion` 上传的是游戏 Mods 部署目录，而 `dotnet build` 的 DeployWIP 在
-    游戏运行时删不掉被占用的 `ToolModeMemory_win_x86_64.dll`（MSB3231），此刻部署目录只剩那个 2 KB 壳、
-    主 dll 已被删。必须先关游戏 → 重新 `dotnet build -c Release` 部署 → 比对 md5 → 才能 NewVersion。
-    2026-10-08 实际执行（v0.6.1，已上传）：owner 要求「发布前先把线上数据同步到本地，他在改过描述与图片，
-    之后只传模组文件 + 版本号 + 更新日志，其它数据一律不动，保持 Private」。
-    登录态编辑页 edit?version=10 读出的线上值与本文件比对：NAME 仍是 "Tool Mode Memory"（16 字符，
-    FNV1a 093b5991）；SHORT 已被他删掉中文尾巴（111 字符，e7ed646a，本地原本是 124 字符带「　工具面板设置模式自动记忆」）；
-    LONG 已被他整段重写（3426 字符 / UTF-8 4668 B，70d1326a，英中两段 + Features/How to Use/Compatibility
-    + RAINBOW系列链接），本地旧的 1689 字符版本作废；缩略图换成了 cover_10.jpg（1254x1254，422 KB），
-    画廊里另有 4 张截图（3 PNG + 1 rainbow.jpg）。
-    处理：SHORT/LONG 逐字同步进本文件（写回后从 XML 反解出来算同一 FNV 校验，全部一致），
-    `Properties/Thumbnail.jpg` 用线上 cover_10.jpg 的原字节替换（NewVersion 总会重传本地缩略图，
-    不替换就会把他换的图盖回旧图）；**XML 里不加任何 Screenshot 条目**——发布器只有在本地列了截图时才
-    调 WithScreenshots（Program.decompiled.cs L301-303），空列表就不动他线上那 4 张；这 4 张与封面
-    都另存了一份在 research/live_backup_20261008/（gitignore 内）作退路。
-    执行时游戏又开着（PID 21100），第一次 `dotnet publish` 在 DeployWIP 处 MSB3231 失败且**没有上传任何东西**；
-    那次失败还把部署目录里的主 dll 删了、只剩旧的 win burst 壳（与 0.6.1 产物不同字节），
-    所以没有用「游戏目录里那套混着的文件」上传，而是把 bin\Release\net48 整套 6 个文件
-    （dll md5 e9890b1afe28d68f184a1df9c42781cd，内含 0.6.1）拷到临时目录，按 Mod.targets L148 的同一条
-    命令直接跑发布器，只把 -c 指到该目录：结果 Mod Id 160529 / User Mod Version 0.6.1 /
-    Access Control Level State: Private / New mod version published / finished successfully，退出码 0，
-    日志 state/publish-newversion-0.6.1.log。回读要等版本切换（MOD VER. 与 edit?version=11 常滞后 3~12 分钟）。
-    另外：本地游戏目录那份部署要等游戏关掉后重跑一次 `dotnet build -c Release` 才会重新自洽。-->
+<!--Tool Mode Memory 发布元数据（ModId 160529，线上 Private）。
+    历次发版记录（v0.1.2 ~ v0.6.0）已精简：完整过程见仓库「开发笔记.md」，本文件改动前的
+    历史版本在 git 里（git show <commit>:Properties/PublishConfiguration.xml）。
+    硬规则（每次发版过一遍）：
+      - 服务端要求 userModVersion 必须与线上现有值不同（单调递增）：本文件已发布后不要再原地
+        重跑 NewVersion——重跑只会收到 "Invalid UserModVersion..." 而不会改动线上。下次发版先改 <ModVersion>。
+      - <ChangeLog> 里不许出现裸 &（写 &amp; 或 "and"），否则发布器在 ParseConfig 抛异常，
+        MSBuild 只显示 error MSB3073 退出码 1，不指明字段。
+      - ExternalLink 的 Type 只认 ModPublisher.ExternalType 里的值（discord/github/youtube/twitch/x/
+        paypal/patreon/buymeacoffee/kofi/crowdin/gofundme），不认的值会被静默丢弃而不是报错。
+      - NewVersion 上传的是游戏 Mods 部署目录：先关游戏 → build → md5 比对产物 → 再发
+        （游戏开着 DeployWIP 会 MSB3231 失败且把主 dll 删掉）。
+      - 上传前先把线上封面与每张截图抓回本地并写进 XML——本地不列 Screenshot 会清空线上画廊
+        （v0.6.1 事故）；发布前先同步线上数据到本地（作者新规：不直接动线上数据）。
+    2026-10-08（v0.6.1，已上传，Private）：owner 要求先把线上数据同步到本地（他改了描述与图片），
+    SHORT/LONG 逐字同步进本文件、Thumbnail.jpg 用线上 cover_10.jpg 原字节替换、XML 不加
+    Screenshot 条目；首次 publish 因游戏占用在 DeployWIP 失败（未上传任何东西），改用
+    bin\Release\net48 整套直调发布器成功（Mod Id 160529 / User Mod Version 0.6.1 /
+    Access Control Level State: Private / New mod version published，退出码 0）。
+    回读确认三个文本字段与线上逐字一致、封面保住；但线上画廊 4 张截图被这次上传清空
+    （原始字节备份在 research/live_backup_20261008/，还原方式待 owner 定）。
+    下一版（v0.6.2）未经实机验证前不发布。-->
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
 	<ModId Value="160529" />
