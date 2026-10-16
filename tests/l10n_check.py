@@ -10,7 +10,8 @@
      13 个工具项 × 3 个例子（group/menu/category）必须齐全；
   3. 旧键不得复活：scope.defs（单列说明板块）与 RETIRED 里已取消独立项的 item.<x>.* 键
      （v0.2.2 起 elevationStep 并入 elevation 的 Subs，它自己的文案键就是漏删）；
-  4. 文案不得为空，也不得再出现已被证伪的归属（Extra Networks）。
+  4. 文案不得为空，也不得再出现已被证伪的归属（Extra Networks）；
+  5. ITEM_IDS 与 ToolItemCatalog 的成员和顺序完全一致（「其它」永远官方板块最后，v0.6.2 需求）。
 
 运行： python tests\\l10n_check.py
 """
@@ -181,16 +182,22 @@ def main():
 
     # 目录与文案必须一一对应：ITEM_IDS 是手抄的，加一项忘了抄就会出现
     # 「设置页有这行、说明是空的」——0.6.2 加「笔刷」时正是这个风险，所以直接对着源码核对。
+    # 而且 ITEM_IDS 是「成员 + 顺序」双重钉子，不只是集合：目录顺序 = 设置页顺序，
+    # 「其它」永远官方板块最后（需求，v0.6.2）；新项插到「其它」后面同样要被拦住。
     cat = io.open(os.path.join(ROOT, "ToolItemCatalog.cs"), encoding="utf-8-sig").read()
     id_consts = dict(CONST.findall(cat))
     catalog_ids = [id_consts.get(m, m) for m in re.findall(r"new ToolItemDef\((\w+),", cat)]
     missing_in_check = sorted(set(catalog_ids) - set(ITEM_IDS))
     stale_in_check = sorted(set(ITEM_IDS) - set(catalog_ids))
-    if missing_in_check or stale_in_check:
-        print("FAIL 目录与 ITEM_IDS 不一致：文案未覆盖 %s / 已不存在的项 %s"
-              % (missing_in_check or "无", stale_in_check or "无"))
+    order_wrong = ITEM_IDS != catalog_ids
+    if missing_in_check or stale_in_check or order_wrong:
+        print("FAIL 目录与 ITEM_IDS 不一致：文案未覆盖 %s / 已不存在的项 %s / 顺序%s"
+              % (missing_in_check or "无", stale_in_check or "无",
+                 "一致" if not order_wrong else
+                 "不一致（目录 %s ≠ 检查表 %s；「其它」必须永远在官方板块最后）"
+                 % ("/".join(catalog_ids), "/".join(ITEM_IDS))))
         return 1
-    print("OK   目录 %d 项与 ITEM_IDS 完全对应" % len(catalog_ids))
+    print("OK   目录 %d 项与 ITEM_IDS 完全对应（含顺序：「其它」永远官方板块最后）" % len(catalog_ids))
 
     fails = 0
     print("解析到语言：%s" % ", ".join(sorted(tables)))

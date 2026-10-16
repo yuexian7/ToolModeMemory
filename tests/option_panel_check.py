@@ -12,6 +12,8 @@
      DisableByCondition 只在建页那一刻求值一次（Widget.UpdateBase），会把装了的人冻灰；
      hidden 由 OptionsUISystem.OnUpdate 每帧重算，只有它能跟随安装状态。
   5. v0.6.2：笔刷（brush）独立成行，官方板块因此多两行、目录多一项。
+  6. v0.6.2 需求：「其它」永远官方板块最后 —— 目录里的结构断言在 StoreHarness；
+     这里把「属性声明顺序 == 目录顺序」钉死（设置页行序 = 属性声明顺序）。
 
 运行： python tests\\option_panel_check.py
 """
@@ -96,11 +98,12 @@ def main():
     # 这类硬编码会跟着漂，而漂了的数字比没有数字更坏（它看着像通过）。
     n_items = len(items)
     # 关闭总开关后，下面每一项都要变灰：每个 *Enabled 行都必须挂 IsMasterOff。
-    # 按行扫（属性三行一组：Section / DisableByCondition / 属性声明）。
+    # 按行扫（属性三行一组：Section / DisableByCondition / 属性声明）。只认「Enabled {」的
+    # 属性形态，不会把 IsItemEnabled(string) 这类方法名误认成属性行；每条记录板块归属，供 2c 用。
     slines = s.split("\n")
     enabled_rows = []
     for i, ln in enumerate(slines):
-        m = re.search(r"public bool (\w+)Enabled", ln)
+        m = re.search(r"public bool (\w+)Enabled\s*\{", ln)
         if not m:
             continue
         window = "\n".join(slines[max(0, i - 6):i])
@@ -114,10 +117,11 @@ def main():
                 if dm:
                     cond = dm.group(1)
                     break
-            enabled_rows.append((m.group(1), cond))
+            grp = "kGroupAnarchy" if "kGroupAnarchy" in window else "kGroupOfficial"
+            enabled_rows.append((m.group(1), cond, grp))
     check(len(enabled_rows) == n_items and all(g[1] == "IsMasterOff" for g in enabled_rows),
           "全部 %d 项的是否恢复开关都挂 IsMasterOff（总开关关闭即整块变灰）：%s"
-          % (n_items, [(n, c) for n, c in enabled_rows if c != "IsMasterOff"] or "无遗漏"))
+          % (n_items, [(n, c) for n, c, g in enabled_rows if c != "IsMasterOff"] or "无遗漏"))
     scope_rows = re.findall(r"nameof\((Is\w+ScopeDisabled)\)\)\]", s)
     check(len(scope_rows) == n_items, "%d 个共用范围行都有各自的变灰条件" % n_items)
     helpers = re.findall(r"public bool (Is\w+ScopeDisabled)\(\) \{ return IsMasterOff\(\) \|\| !GetEnabled", s)
@@ -143,6 +147,28 @@ def main():
     off_block = re.findall(r"\[SettingsUISection\(kTabMod, kGroupOfficial\)\](?:(?!\[SettingsUISection)[\s\S])*", s)
     check(not any("SettingsUIHideByCondition" in b for b in off_block),
           "官方板块没有任何行被隐藏（只有 Anarchy 三项会消失）")
+
+    # ---- 2c. 需求（v0.6.2）：属性声明顺序与目录顺序锁死；「其它」永远官方板块最后 ----
+    # 设置页行序 = 属性声明顺序（反编译 AutomaticSettings.BuildTab：按声明顺序逐个建 widget），
+    # 「哪些项 / 什么编号 / 进哪个板块」由 ToolItemCatalog 定义。两边一旦不同步，玩家看到的是
+    # 「第 9 项印着别的行」这类错位，编译和其余检查都发现不了。
+    id_consts = dict(re.findall(r'const string (\w+)\s*=\s*"([^"]*)"', cat))
+    cat_items = [(id_consts.get(m, m), int(num), src) for m, num, src in
+                 re.findall(r"new ToolItemDef\((\w+),\s*(\d+),\s*ItemSource\.(\w+)", cat)]
+    official_ids = [i for i, num, src in cat_items if src in ("Vanilla", "Toolbar")]
+    anarchy_ids = [i for i, num, src in cat_items if src == "AnarchyMod"]
+
+    def pascal_to_id(name):
+        return name[0].lower() + name[1:]
+
+    page_official = [pascal_to_id(n) for n, c, g in enabled_rows if g == "kGroupOfficial"]
+    page_anarchy = [pascal_to_id(n) for n, c, g in enabled_rows if g == "kGroupAnarchy"]
+    check(page_official == official_ids,
+          "官方板块属性声明顺序 == 目录顺序（%s）" % "->".join(official_ids))
+    check(page_anarchy == anarchy_ids,
+          "Anarchy 板块属性声明顺序 == 目录顺序（%s）" % "->".join(anarchy_ids))
+    check(len(official_ids) > 0 and official_ids[-1] == "other",
+          "「其它」永远是官方板块最后一项（需求）：目录里「其它」之后不许再出现官方项")
 
     # ---- 3. 出厂默认：总开关打开，兼容开关（v0.6.0 已取消）不允许再出现 ----
     defaults = body_of(s, "public override void SetDefaults()")

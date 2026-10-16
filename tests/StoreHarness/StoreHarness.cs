@@ -702,6 +702,23 @@ namespace ToolModeMemory.Tests
 			}
 			Check(idsInOrder, "项 id 与设置页序号 1..13 逐一对应（跨板块连续编号）");
 
+			// 需求（v0.6.2，owner 定）：「其它」永远是官方板块的最后一项。
+			// 上面那条 expectIds 是「清单钉子」—— 改目录的人必须来看一次；这条是**结构断言**：
+			// 以后不管插多少官方项（一律插在「笔刷」之后、「其它」之前），「其它」之后
+			// 都不许再出现 Vanilla / Toolbar 项，否则就是摆错了位置。
+			int otherIndex = -1;
+			int lastOfficialIndex = -1;
+			for (int i = 0; i < items.Length; i++)
+			{
+				if (items[i].Id == ToolItemCatalog.kOther) otherIndex = i;
+				if (items[i].Source == ItemSource.Vanilla || items[i].Source == ItemSource.Toolbar)
+				{
+					lastOfficialIndex = i;
+				}
+			}
+			Check(otherIndex >= 0 && otherIndex == lastOfficialIndex,
+				"「其它」永远是官方板块最后一项：新官方项插在笔刷之后、「其它」之前（其它之后只许是非官方项）");
+
 			// 板块归属由 Source 决定：Vanilla + Toolbar -> 「官方工具项设置」，AnarchyMod -> Anarchy 板块。
 			int official = 0;
 			int anarchyItems = 0;

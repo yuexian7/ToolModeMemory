@@ -192,6 +192,9 @@ namespace ToolModeMemory
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsBrushScopeDisabled))]
 		public int BrushScope { get { return GetScope(ToolItemCatalog.kBrush); } set { SetScope(ToolItemCatalog.kBrush, value); } }
 
+		// 「其它」永远是官方板块最后一行（需求，v0.6.2）：新增官方项一律插到「笔刷」之后、
+		// 「其它」之前，编号顺延。属性声明顺序 = 设置页行序，与目录顺序的对应关系由
+		// tests/option_panel_check.py 钉死；目录里的结构断言在 StoreHarness 的 CatalogShape。
 		[SettingsUISection(kTabMod, kGroupOfficial)]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
 		public bool OtherEnabled { get { return GetEnabled(ToolItemCatalog.kOther); } set { SetEnabled(ToolItemCatalog.kOther, value); } }

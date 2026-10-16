@@ -16,7 +16,7 @@ namespace ToolModeMemory
 	///    「共用范围」那一行的说明文本里（用户要求）；例子按该项自己的数值来写，
 	///    不再是统一的「道路 10m」。
 	///  * 简体中文文案以用户给的原话为准，不经过英文回译。
-	///  * 第 1、8、9 项（Anarchy 开关 / 左侧和右侧 / 常规）都属于 Anarchy（74604），
+	///  * Anarchy 开关 / 左侧和右侧 / 常规 这 3 项都属于 Anarchy（74604），
 	///    行名沿用 Anarchy 自带语言包的 Anarchy.SECTION_TITLE[Left]/[Right]/[General]；
 	///    旧文案把它们写成 Extra Networks and Areas，是错误归属，已改正。
 	///
@@ -399,7 +399,7 @@ namespace ToolModeMemory
 			d[kTagRecVanilla] = "（推荐原版）";
 
 			d["reset.label"] = "重置记忆";
-			d["reset.desc"] = "游戏中：清除当前存档的记忆，工具恢复刚进档时的原版状态。主菜单：清除所有存档的记忆。";
+			d["reset.desc"] = "游戏中：清除当前存档的记忆，工具恢复刚进档时的原版状态。主菜单或编辑器：清除所有存档的记忆。";
 			d["reset.warn"] = "此操作无法撤销。";
 			d["reset.confirm"] = "确定要重置已记忆的工具设置吗？";
 			d["resetall.label"] = "重置所有设置项";
@@ -418,8 +418,8 @@ namespace ToolModeMemory
 			d["about.rainbow"] = "RAINBOW官网";
 			d["about.rainbow.desc"] = "打开 RAINBOW 系列官网。";
 
-			// ---------- 1 Anarchy ----------
-			d["item.anarchy.desc"] = "记忆 Anarchy 模组的开关，Anarchy 模组是全局共用，开启后可以修改共用范围。没安装 Anarchy 模组时这一项不起作用。";
+			// ---------- Anarchy ----------
+			d["item.anarchy.desc"] = "记忆 Anarchy 模组的开关，Anarchy 模组是全局共用，开启后可以修改共用范围。没安装 Anarchy 模组时这一项不会出现。";
 			d["item.anarchy.ex.group"] = "比如给两车道小型道路打开 Anarchy，切换到其它的小型道路，也是打开的，但切换到大型道路就不是了";
 			d["item.anarchy.ex.menu"] = "点击道路菜单里面的所有资产，Anarchy 都是打开的，但切换到电力菜单就不是了";
 			d["item.anarchy.ex.category"] = "切换到六车道道路也是打开的，但切换到桥梁或双向地铁轨道就变成关闭（需单独设置），即使它们都在道路菜单下";
@@ -437,35 +437,35 @@ namespace ToolModeMemory
 			d["item.packs.ex.menu"] = "在道路菜单勾的数据包，和电力菜单勾的各记各的";
 			d["item.packs.ex.category"] = "这一行的勾选属于工具栏面板本身，按当前所在的菜单+分类记忆；原版每次换分类都会把它清空";
 
-			// ---------- 2 工具模式 ----------
+			// ---------- 工具模式 ----------
 			d["item.toolMode.label"] = "工具模式";
 			d["item.toolMode.desc"] = "记忆每个工具所选的模式，可选项按工具不同：道路、轨道、管道为直线、简单曲线、复杂曲线、连续曲线、网格、替换、节点；建筑、装饰物、树木为放置单个、放置多个、直线、曲线、目标印戳工具；功能区为填充、滚动、刷涂；区域为编辑、生成地图网格。资产的工具模式与功能的工具模式分开记忆，因为它们的选项并不相同。";
 			d["item.toolMode.ex.group"] = "比如给两车道小型道路选了简单曲线，切换到其它的小型道路，也是简单曲线，但切换到大型道路就不是了";
 			d["item.toolMode.ex.menu"] = "点击道路菜单里面的所有资产，都是简单曲线，但切换到电力菜单就不是了";
 			d["item.toolMode.ex.category"] = "切换到六车道道路也是简单曲线，但切换到桥梁或双向地铁轨道就回到默认模式（需单独设置），即使它们都在道路菜单下";
 
-			// ---------- 3 高度（用户原话的例子） ----------
+			// ---------- 高度（用户原话的例子） ----------
 			d["item.elevation.label"] = "高度";
 			d["item.elevation.desc"] = "记忆工具离开时的高度值，也包括提升高度、降低高度得到的结果；「高度阶段」（一次抬高或降低多少米，Anarchy 面板里那一行叫高度调整幅度）跟高度一起记忆、用同一个共用范围。交叉路口的高度不在记忆范围内。部分资产自己限定了可用的高度范围：共用数值超出所选资产允许的范围时，那件资产保持它自己允许的高度，已记忆的共用数值不变。";
 			d["item.elevation.ex.group"] = "比如点击两车道道路将高度提高到10m，那么切换其它的小型道路，高度也是10m，但切换到大型道路就不是10m了";
 			d["item.elevation.ex.menu"] = "点击所有道路菜单里面的资产，高度都是10m，但切换到电力菜单就不是10m了";
 			d["item.elevation.ex.category"] = "切换到六车道道路高度也是10m，但切换到桥梁或双线铁路就变成0m（需单独设置），即使它们都在道路菜单下";
 
-			// ---------- 4 并列模式 ----------
+			// ---------- 并列模式 ----------
 			d["item.parallel.label"] = "并列模式";
 			d["item.parallel.desc"] = "记忆「并列道路」面板里的两样东西：并列模式开关（切换并列模式）与「并列偏移」的间距。原版一次并列就是两条线：打开后沿主线旁边同时画出第二条，能调的是这两条之间隔多远，比如 1 米、2 米；关掉就只画一条。";
 			d["item.parallel.ex.group"] = "比如给两车道小型道路打开并列模式并把并列偏移调到5米，切换到其它的小型道路，同样是打开、偏移也是5米，但切换到大型道路就不是了";
 			d["item.parallel.ex.menu"] = "点击道路菜单里面的所有资产，并列都是打开、偏移都是5米，但切换到电力菜单就不是了";
 			d["item.parallel.ex.category"] = "切换到六车道道路同样是打开、偏移也是5米，但切换到桥梁或地铁轨道就变成关闭（需单独设置），即使它们都在道路菜单下";
 
-			// ---------- 5 对齐 ----------
+			// ---------- 对齐 ----------
 			d["item.snap.label"] = "对齐";
 			d["item.snap.desc"] = "记忆「对齐」里的每一个开关：快速对齐当前形状、快速对齐功能区单元格长度、快速对齐直角、快速对齐路边、快速对齐道路、快速对齐拥有者一侧、快速对齐建筑两侧、快速对齐道路中央、快速对齐海岸线、快速对齐附近形状、快速对齐导线、快速对齐功能区网格、快速对齐节点、快速对齐物体表面、快速直立对齐、快速对齐空地网格、将重叠物体绑定至建筑、仅移除相符类型、显示轮廓线条、快速对齐距离。游戏自带的「开启／关闭所有对齐功能」是批量开关，本身不会被记忆。";
 			d["item.snap.ex.group"] = "比如给两车道小型道路关掉快速对齐路边，切换到其它的小型道路，也是关着的，但切换到大型道路就是全开的默认状态";
 			d["item.snap.ex.menu"] = "点击道路菜单里面的所有资产，对齐开关都是这一套，但切换到电力菜单就不是了";
 			d["item.snap.ex.category"] = "切换到六车道道路也保持这一套开关，但切换到桥梁或步行道就恢复默认（需单独设置），即使它们都在道路菜单下";
 
-			// ---------- 6 地形 ----------
+			// ---------- 地形 ----------
 			d["item.topography.label"] = "地形";
 			d["item.topography.desc"] = "记忆「地形」这一行，也就是显示轮廓线条的开与关。";
 			d["item.topography.ex.group"] = "比如给两车道小型道路勾上地形，切换到其它的小型道路，同样是勾着的，但切换到大型道路就不是了";
@@ -473,38 +473,38 @@ namespace ToolModeMemory
 			d["item.topography.ex.category"] = "切换到六车道道路也是勾着的，但切换到桥梁或电缆就变成不勾（需单独设置）";
 
 
-			// ---------- 8 左侧和右侧（Anarchy） ----------
+			// ---------- 左侧和右侧（Anarchy） ----------
 			d["item.leftRight.label"] = "左侧和右侧";
-			d["item.leftRight.desc"] = "记忆 Anarchy 网络面板里「左侧」「右侧」两行所选的网络升级，例如自行车车道、树木、停车位、堤岸、挡土墙、隔音屏障。需要安装 Anarchy（Paradox 模组 74604），没装时这一项不起作用。";
+			d["item.leftRight.desc"] = "记忆 Anarchy 网络面板里「左侧」「右侧」两行所选的网络升级，例如自行车车道、树木、草坪、堤岸、挡土墙、隔音屏障。需要安装 Anarchy（Paradox 模组 74604），没装时这一项不会出现。";
 			d["item.leftRight.ex.group"] = "比如给两车道小型道路的右侧选上自行车车道，切换到其它的小型道路，右侧同样是自行车车道，但切换到大型道路就不是了";
 			d["item.leftRight.ex.menu"] = "点击道路菜单里面的所有资产，左右两侧都是这一套升级，但切换到电力菜单就不是了";
 			d["item.leftRight.ex.category"] = "切换到六车道道路右侧也是自行车车道，但切换到桥梁或双线铁路就变成未选择（需单独设置），即使它们都在道路菜单下";
 
-			// ---------- 9 常规（Anarchy） ----------
+			// ---------- 常规（Anarchy） ----------
 			d["item.general.label"] = "常规";
-			d["item.general.desc"] = "记忆 Anarchy 网络面板里「常规」一行的开关：强制地面、强制高架、强制隧道、平直斜坡、宽分隔带、扩展高度范围（取消高度上限）等。需要安装 Anarchy（Paradox 模组 74604），没装时这一项不起作用。";
+			d["item.general.desc"] = "记忆 Anarchy 网络面板里「常规」一行的开关：强制地面、强制高架、强制隧道、平直斜坡、宽分隔带、扩展高度范围（取消高度上限）等。需要安装 Anarchy（Paradox 模组 74604），没装时这一项不会出现。";
 			d["item.general.ex.group"] = "比如给两车道小型道路勾上强制隧道，切换到其它的小型道路，同样是强制隧道，但切换到大型道路就不是了";
 			d["item.general.ex.menu"] = "点击道路菜单里面的所有资产，常规选项都是这一套，但切换到电力菜单就不是了";
 			d["item.general.ex.category"] = "切换到六车道道路也是强制隧道，但切换到桥梁或双向地铁轨道就全部回到未勾选（需单独设置），即使它们都在道路菜单下";
 
-			// ---------- 10 地下模式 ----------
+			// ---------- 地下模式 ----------
 			d["item.underground.label"] = "地下模式";
 			d["item.underground.desc"] = "记忆「地下模式」开关（切换地下模式），也就是你放的东西在地面以下还是地面之上。";
 			d["item.underground.ex.group"] = "比如给两车道小型道路打开地下模式，切换到其它的小型道路，同样在地下，但切换到大型道路就不是了";
 			d["item.underground.ex.menu"] = "点击道路菜单里面的所有资产，都在地下模式，但切换到电力菜单就不是了";
 			d["item.underground.ex.category"] = "切换到六车道道路也在地下，但切换到桥梁或双线铁路就回到地面（需单独设置），即使它们都在道路菜单下";
 
-			// ---------- 11 其它 ----------
+			// ---------- 其它 ----------
 			d["item.other.label"] = "其它";
 			d["item.other.desc"] = "记忆工具面板上其余可以记录的行：「颜色」一行的道路配色。";
 			d["item.other.ex.group"] = "比如把两车道小型道路的颜色改成蓝色，切换到其它的小型道路，同样是蓝色，但切换到大型道路就不是了";
 			d["item.other.ex.menu"] = "点击道路菜单里面的所有资产，颜色都是这一套，但切换到电力菜单就不是了";
 			d["item.other.ex.category"] = "切换到六车道道路也是蓝色，但切换到桥梁或双线铁路就按它自己那一类另记一份（需单独设置），即使它们都在道路菜单下";
 
-			// ---------- 12 笔刷（v0.6.2 从「其它」里独立出来：地形工具玩家的痛点） ----------
+			// ---------- 笔刷（v0.6.2 从「其它」里独立出来：地形工具玩家的痛点） ----------
 			// 行名取官方语言包：Toolbar.BRUSH_SIZE = 笔刷粗细，Toolbar.BRUSH_STRENGTH = 笔刷强度。
 			d["item.brush.label"] = "笔刷";
-			d["item.brush.desc"] = "记忆「笔刷粗细」和「笔刷强度」两行：笔刷粗细决定一次刷过多大范围，笔刷强度决定每一下改变多少。面板上有这两行的工具才起作用，也就是城市美化里的地形工具（抬升、降低、软化、绘制纹理等），以及摆放物体时的刷涂；没有这两行的工具既不记录也不会被改动。";
+			d["item.brush.desc"] = "记忆「笔刷粗细」和「笔刷强度」两行：笔刷粗细决定一次刷过多大范围，笔刷强度决定每一下改变多少。面板上有这两行的工具才起作用，也就是城市美化里的地形工具（海拔调整工具、地形平滑工具、地面平整工具、斜坡生成工具、纹理绘制工具等），以及摆放物体时的刷涂；没有这两行的工具既不记录也不会被改动。";
 			d["item.brush.ex.group"] = "比如把抬升的笔刷粗细调到30米，同一组里的其它地形工具也是30米，但换到另一组就不是了";
 			d["item.brush.ex.menu"] = "点击城市美化菜单里面的所有地形工具，笔刷粗细和强度都是这一套，但切换到其它菜单就不是了";
 			d["item.brush.ex.category"] = "这一档按资产服务的对象归群，地形工具没有服务对象可判，所以每种地形工具各记一份：从抬升换到绘制纹理就是它自己那份笔刷（需单独设置）";
@@ -547,7 +547,7 @@ namespace ToolModeMemory
 			d[kTagRecVanilla] = "（推薦原版）";
 
 			d["reset.label"] = "重設記憶";
-			d["reset.desc"] = "遊戲中：清除目前存檔的記憶，工具恢復剛進檔時的原版狀態。主選單：清除所有存檔的記憶。";
+			d["reset.desc"] = "遊戲中：清除目前存檔的記憶，工具恢復剛進檔時的原版狀態。主選單或編輯器：清除所有存檔的記憶。";
 			d["reset.warn"] = "此操作無法復原。";
 			d["reset.confirm"] = "確定要重設已記憶的工具設定嗎？";
 			d["resetall.label"] = "重設所有設定項";
@@ -566,8 +566,8 @@ namespace ToolModeMemory
 			d["about.rainbow"] = "RAINBOW官網";
 			d["about.rainbow.desc"] = "開啟 RAINBOW 系列官網。";
 
-			// ---------- 1 Anarchy ----------
-			d["item.anarchy.desc"] = "記憶 Anarchy 模組的開關，Anarchy 模組是全域共用，開啟後可以修改共用範圍。沒安裝 Anarchy 模組時這一項不起作用。";
+			// ---------- Anarchy ----------
+			d["item.anarchy.desc"] = "記憶 Anarchy 模組的開關，Anarchy 模組是全域共用，開啟後可以修改共用範圍。沒安裝 Anarchy 模組時這一項不會出現。";
 			d["item.anarchy.ex.group"] = "例如給兩車道小型道路開啟 Anarchy，切換到其他小型道路也是開啟的，但切換到大型道路就不是了";
 			d["item.anarchy.ex.menu"] = "點選道路選單裡面的所有資產，Anarchy 都是開啟的，但切換到電力選單就不是了";
 			d["item.anarchy.ex.category"] = "切換到六車道道路同樣是開啟的，但切換到橋樑或雙線地鐵軌道就變成關閉（需單獨設定），即使它們都在道路選單下";
@@ -585,35 +585,35 @@ namespace ToolModeMemory
 			d["item.packs.ex.menu"] = "在道路選單勾的安裝包，和電力選單勾的各記各的";
 			d["item.packs.ex.category"] = "這一行的勾選屬於工具欄面板本身，按當前所在的選單+分類記憶；原版每次換分類都會把它清空";
 
-			// ---------- 2 工具模式 ----------
+			// ---------- 工具模式 ----------
 			d["item.toolMode.label"] = "工具模式";
 			d["item.toolMode.desc"] = "記憶每個工具所選的模式，可選項按工具不同：道路、軌道、管道為直線、簡單曲線、複數曲線、連續曲線、網格、替換、連接點；建築、裝飾物、樹木為設置一個、設置多個、直線、曲線、物件印章工具；功能區為填充、選取方格、塗上；區域為編輯、生成地圖方格。資產的工具模式與功能的工具模式分開記憶，因為它們的選項並不相同。";
 			d["item.toolMode.ex.group"] = "例如給兩車道小型道路選了簡單曲線，切換到其他小型道路也是簡單曲線，但切換到大型道路就不是了";
 			d["item.toolMode.ex.menu"] = "點選道路選單裡面的所有資產，都是簡單曲線，但切換到電力選單就不是了";
 			d["item.toolMode.ex.category"] = "切換到六車道道路也是簡單曲線，但切換到橋樑或雙線地鐵軌道就回到預設模式（需單獨設定），即使它們都在道路選單下";
 
-			// ---------- 3 高度 ----------
+			// ---------- 高度 ----------
 			d["item.elevation.label"] = "高度";
 			d["item.elevation.desc"] = "記憶工具離開時的高度值，也包括提升高度、降低高度得到的結果；「高度階段」（一次抬高或降低多少公尺，Anarchy 面板裡那一行叫高度間距）跟高度一起記憶、用同一個共用範圍。交叉路口的高度不在記憶範圍內。部分資產自己限定了可用的高度範圍：共用數值超出所選資產允許的範圍時，該資產保持它自己允許的高度，已記憶的共用數值不變。";
 			d["item.elevation.ex.group"] = "例如點選兩車道道路把高度提高到10m，那麼切換其他小型道路，高度也是10m，但切換到大型道路就不是10m了";
 			d["item.elevation.ex.menu"] = "點選所有道路選單裡面的資產，高度都是10m，但切換到電力選單就不是10m了";
 			d["item.elevation.ex.category"] = "切換到六車道道路高度也是10m，但切換到橋樑或雙軌鐵路就變成0m（需單獨設定），即使它們都在道路選單下";
 
-			// ---------- 4 並行模式 ----------
+			// ---------- 並行模式 ----------
 			d["item.parallel.label"] = "並行模式";
 			d["item.parallel.desc"] = "記憶「並行道路」面板裡的兩樣東西：並行模式開關（切換並行模式）與「並行偏移」的間距。原版一次並行就是兩條線：開啟後沿主線旁邊同時畫出第二條，能調的是這兩條之間隔多遠，例如 1 米、2 米；關掉就只畫一條。";
 			d["item.parallel.ex.group"] = "例如給兩車道小型道路開啟並行模式並把並行偏移調到5米，切換到其他小型道路同樣是開啟、偏移也是5米，但切換到大型道路就不是了";
 			d["item.parallel.ex.menu"] = "點選道路選單裡面的所有資產，並行都是開啟、偏移都是5米，但切換到電力選單就不是了";
 			d["item.parallel.ex.category"] = "切換到六車道道路同樣是開啟、偏移也是5米，但切換到橋樑或地鐵軌道就變成關閉（需單獨設定），即使它們都在道路選單下";
 
-			// ---------- 5 吸附 ----------
+			// ---------- 吸附 ----------
 			d["item.snap.label"] = "吸附";
 			d["item.snap.desc"] = "記憶「吸附」裡的每一個開關：快速對齊已有幾何線、快速對齊功能區單位格長度、快速對齊90度角、快速對齊路邊、快速對齊道路、快速對齊擁有者一側、快速對齊建築兩側、快速對齊道路中央、快速對齊水陸交界線、快速對齊附近幾何線、快速對齊導線、快速對齊功能區網格、快速對齊節點、快速對齊物件表面、快速直立對齊、快速對齊空地網格、將重疊對象綁定至建築、只移除符合的類型、顯示輪廓、對齊距離。遊戲自帶的「開啟／關閉所有對齊功能」是批次開關，本身不會被記憶。";
 			d["item.snap.ex.group"] = "例如給兩車道小型道路關掉快速對齊路邊，切換到其他小型道路同樣是關著的，但切換到大型道路就是全開的預設狀態";
 			d["item.snap.ex.menu"] = "點選道路選單裡面的所有資產，吸附開關都是這一組，但切換到電力選單就不是了";
 			d["item.snap.ex.category"] = "切換到六車道道路仍保持這一組開關，但切換到橋樑或步行道就恢復預設（需單獨設定），即使它們都在道路選單下";
 
-			// ---------- 6 地形圖 ----------
+			// ---------- 地形圖 ----------
 			d["item.topography.label"] = "地形圖";
 			d["item.topography.desc"] = "記憶「地形圖」這一行的開與關，也就是是否顯示輪廓。";
 			d["item.topography.ex.group"] = "例如給兩車道小型道路勾選地形圖，切換到其他小型道路同樣是勾選的，但切換到大型道路就不是了";
@@ -621,28 +621,28 @@ namespace ToolModeMemory
 			d["item.topography.ex.category"] = "切換到六車道道路也是勾選的，但切換到橋樑或電纜就變成不勾（需單獨設定）";
 
 
-			// ---------- 8 左側和右側（Anarchy） ----------
+			// ---------- 左側和右側（Anarchy） ----------
 			d["item.leftRight.label"] = "左側和右側";
-			d["item.leftRight.desc"] = "記憶 Anarchy 網路面板「左」「右」兩行所選的網路升級，例如自行車道、樹木、停車、堤岸、擋土牆、音障。需要安裝 Anarchy（Paradox 模組 74604），沒裝時這一項不起作用。";
+			d["item.leftRight.desc"] = "記憶 Anarchy 網路面板「左」「右」兩行所選的網路升級，例如自行車道、樹木、草坪、堤岸、擋土牆、音障。需要安裝 Anarchy（Paradox 模組 74604），沒裝時這一項不會出現。";
 			d["item.leftRight.ex.group"] = "例如給兩車道小型道路的右側選上自行車道，切換到其他小型道路右側同樣是自行車道，但切換到大型道路就不是了";
 			d["item.leftRight.ex.menu"] = "點選道路選單裡面的所有資產，左右兩側都是這一組升級，但切換到電力選單就不是了";
 			d["item.leftRight.ex.category"] = "切換到六車道道路右側也是自行車道，但切換到橋樑或雙軌鐵路就變成未選擇（需單獨設定），即使它們都在道路選單下";
 
-			// ---------- 9 一般（Anarchy） ----------
+			// ---------- 一般（Anarchy） ----------
 			d["item.general.label"] = "一般";
-			d["item.general.desc"] = "記憶 Anarchy 網路面板「一般」一行的開關：地面、高架、隧道、固定坡度、寬分隔島、擴展高度範圍（取消高度上限）等。需要安裝 Anarchy（Paradox 模組 74604），沒裝時這一項不起作用。";
+			d["item.general.desc"] = "記憶 Anarchy 網路面板「一般」一行的開關：地面、高架、隧道、固定坡度、寬分隔島、擴展高度範圍（取消高度上限）等。需要安裝 Anarchy（Paradox 模組 74604），沒裝時這一項不會出現。";
 			d["item.general.ex.group"] = "例如給兩車道小型道路勾選隧道，切換到其他小型道路同樣是隧道，但切換到大型道路就不是了";
 			d["item.general.ex.menu"] = "點選道路選單裡面的所有資產，一般選項都是這一組，但切換到電力選單就不是了";
 			d["item.general.ex.category"] = "切換到六車道道路也是隧道，但切換到橋樑或雙線地鐵軌道就全部回到未勾選（需單獨設定），即使它們都在道路選單下";
 
-			// ---------- 10 地下模式 ----------
+			// ---------- 地下模式 ----------
 			d["item.underground.label"] = "地下模式";
 			d["item.underground.desc"] = "記憶「地下模式」開關（切換地下模式），也就是你放的東西在地面以下還是地面之上。";
 			d["item.underground.ex.group"] = "例如給兩車道小型道路開啟地下模式，切換到其他小型道路同樣在地下，但切換到大型道路就不是了";
 			d["item.underground.ex.menu"] = "點選道路選單裡面的所有資產，都在地下模式，但切換到電力選單就不是了";
 			d["item.underground.ex.category"] = "切換到六車道道路也在地下，但切換到橋樑或雙軌鐵路就回到地面（需單獨設定），即使它們都在道路選單下";
 
-			// ---------- 11 其他 ----------
+			// ---------- 其他 ----------
 			d["item.other.label"] = "其他";
 			d["item.other.desc"] = "記憶工具面板上其餘可以記錄的行：「顏色」一行的道路配色。";
 			d["item.other.ex.group"] = "例如把兩車道小型道路的顏色改成藍色，切換到其他小型道路同樣是藍色，但切換到大型道路就不是了";
@@ -651,7 +651,7 @@ namespace ToolModeMemory
 
 			// 行名取官方語言包：Toolbar.BRUSH_SIZE = 筆刷大小，Toolbar.BRUSH_STRENGTH = 筆刷硬度
 			d["item.brush.label"] = "筆刷";
-			d["item.brush.desc"] = "記憶「筆刷大小」和「筆刷硬度」兩行：筆刷大小決定一次刷過多大範圍，筆刷硬度決定每一下改變多少。面板上有這兩行的工具才會起作用，也就是景觀美化裡的地形工具（升高、降低、軟化、繪製紋理等），以及擺放物件時的塗刷；沒有這兩行的工具既不記錄也不會被改動。";
+			d["item.brush.desc"] = "記憶「筆刷大小」和「筆刷硬度」兩行：筆刷大小決定一次刷過多大範圍，筆刷硬度決定每一下改變多少。面板上有這兩行的工具才會起作用，也就是景觀美化裡的地形工具（地形變更工具、軟化地形工具、水平地形工具、斜坡地形工具、紋理繪製工具等），以及擺放物件時的塗刷；沒有這兩行的工具既不記錄也不會被改動。";
 			d["item.brush.ex.group"] = "例如把升高的筆刷大小調成30公尺，同一組裡面的其他地形工具也是30公尺，但換到另一組就不是了";
 			d["item.brush.ex.menu"] = "點選景觀美化選單裡面的所有地形工具，筆刷大小和硬度都是這一組設定，但切換到其他選單就不是了";
 			d["item.brush.ex.category"] = "這一檔按資產服務的對象歸群，地形工具沒有服務對象可判，所以每種地形工具各記一份：從升高換到繪製紋理就是它自己那一份筆刷（需單獨設定）";
@@ -694,7 +694,7 @@ namespace ToolModeMemory
 			d[kTagRecVanilla] = " (recommended, vanilla)";
 
 			d["reset.label"] = "Reset memory";
-			d["reset.desc"] = "In a save: wipe this save's memory and put the tools back to the vanilla state they had on load. In the main menu: wipe the memory of every save.";
+			d["reset.desc"] = "In a save: wipe this save's memory and put the tools back to the vanilla state they had on load. In the main menu or the editor: wipe the memory of every save.";
 			d["reset.warn"] = "This cannot be undone.";
 			d["reset.confirm"] = "Reset all remembered tool settings?";
 			d["resetall.label"] = "Reset all settings";
@@ -713,8 +713,8 @@ namespace ToolModeMemory
 			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Open the Rainbow Series site.";
 
-			// ---------- 1 Anarchy ----------
-			d["item.anarchy.desc"] = "Remembers the Anarchy mod's switch. Anarchy is shared across the whole game, so this one is global; once it is on you can change the sharing scope. Without the Anarchy mod installed this item does nothing.";
+			// ---------- Anarchy ----------
+			d["item.anarchy.desc"] = "Remembers the Anarchy mod's switch. Anarchy is shared across the whole game, so this one is global; once it is on you can change the sharing scope. Without the Anarchy mod installed this item does not appear.";
 			d["item.anarchy.ex.group"] = "for example, turn Anarchy on for a two-lane small road and the other small roads keep it on, while a large road does not";
 			d["item.anarchy.ex.menu"] = "every asset you click in the Roads menu has Anarchy on, but moving to the Electricity menu it is not";
 			d["item.anarchy.ex.category"] = "switching to a six-lane road keeps it on, but a bridge or a double subway track turns it off and needs its own setting, even though they are all in the Roads menu";
@@ -727,40 +727,40 @@ namespace ToolModeMemory
 			d["item.themes.ex.menu"] = "a theme ticked in the Roads menu stops applying in the Electricity menu and is back when you return";
 			d["item.themes.ex.category"] = "this row is the filter panel's own state, so it is filed under the menu and group you are in rather than by asset type";
 			d["item.packs.label"] = "Pack";
-			d["item.packs.desc"] = "Remembers which entries are ticked in the toolbar's Pack filter; ticking one limits the toolbar list to assets belonging to those packs. Vanilla clears it every time you change menu or category, so remembering it per menu + category matches what you see, so we recommend leaving this item off too.";
+			d["item.packs.desc"] = "Remembers which entries are ticked in the toolbar's Pack filter; ticking one limits the toolbar list to assets belonging to those packs. Vanilla clears it every time you change menu or category, so remembering it per menu + category matches what you see; we recommend leaving this item off too.";
 			d["item.packs.ex.group"] = "for example you tick a pack under Roads/Small Roads, vanilla clears it on large roads, and it comes back when you return";
 			d["item.packs.ex.menu"] = "packs ticked in the Roads menu and in the Electricity menu are remembered separately";
 			d["item.packs.ex.category"] = "this row is the filter panel's own state, filed under the menu and group you are in; vanilla clears it every time the group changes";
 
-			// ---------- 2 Tool Mode ----------
+			// ---------- Tool Mode ----------
 			d["item.toolMode.label"] = "Tool Mode";
 			d["item.toolMode.desc"] = "Remembers the mode picked for each tool, and the options differ by tool: roads, tracks and pipes offer Straight, Simple Curve, Complex Curve, Continuous, Grid, Replace and Point; buildings, props and trees offer Place one, Place multiple, Line, Curve and Object stamp tool; zones offer Fill, Marquee and Paint; areas offer Edit and Generate Map Grid. Asset tool modes and function tool modes are remembered separately because their option sets differ.";
 			d["item.toolMode.ex.group"] = "for example, pick Simple Curve for a two-lane small road and the other small roads use Simple Curve too, while a large road does not";
 			d["item.toolMode.ex.menu"] = "every asset you click in the Roads menu is on Simple Curve, but moving to the Electricity menu it is not";
 			d["item.toolMode.ex.category"] = "switching to a six-lane road still gives Simple Curve, but a bridge or a double subway track falls back to its default mode and needs its own setting, even though they are all in the Roads menu";
 
-			// ---------- 3 Elevation ----------
+			// ---------- Elevation ----------
 			d["item.elevation.label"] = "Elevation";
 			d["item.elevation.desc"] = "Remembers the elevation a tool was left at, including where Increase elevation and Decrease elevation took it. The Elevation step (how far one press moves you — the row Anarchy adds for the same value carries that very name) is remembered together with it and shares its scope. The elevation of intersections is not covered. Some assets have their own elevation limits: if the shared value is outside what the selected asset allows, that asset keeps an elevation it can actually use, and the shared value itself stays as it was.";
 			d["item.elevation.ex.group"] = "for example, raise a two-lane road to 10 m and the other small roads go to 10 m too, while a large road is not at 10 m";
 			d["item.elevation.ex.menu"] = "every asset you click in the Roads menu is at 10 m, but moving to the Electricity menu it is not at 10 m";
 			d["item.elevation.ex.category"] = "switching to a six-lane road is still 10 m, but a bridge or a double train track goes back to 0 m and needs its own setting, even though they are all in the Roads menu";
 
-			// ---------- 4 Parallel Mode ----------
+			// ---------- Parallel Mode ----------
 			d["item.parallel.label"] = "Parallel Mode";
 			d["item.parallel.desc"] = "Remembers the two things in the Parallel Road panel: the Parallel Mode switch (Toggle parallel mode) and the Parallel Offset spacing. Parallel mode is always two lines: switch it on and a second line is built alongside the one you draw, and what you can tune is how far apart those two sit, say 1 m or 2 m. Switched off you just get the single line.";
 			d["item.parallel.ex.group"] = "for example, turn on Parallel Mode for a two-lane small road and set the offset to 5 m, the other small roads come back switched on with the same 5 m, while a large road does not";
 			d["item.parallel.ex.menu"] = "every asset you click in the Roads menu is parallel with a 5 m offset, but moving to the Electricity menu it is not";
 			d["item.parallel.ex.category"] = "switching to a six-lane road is still on with the same 5 m offset, but a bridge or a subway track switches it off and needs its own setting, even though they are all in the Roads menu";
 
-			// ---------- 5 Snapping ----------
+			// ---------- Snapping ----------
 			d["item.snap.label"] = "Snapping";
 			d["item.snap.desc"] = "Remembers every switch on the Snapping row: Snap to existing geometry, Snap to zoning cell length, Snap to 90 degree angles, Snap to the sides of a road, Snap to roads, Snap to the side of the owner, Snap to the sides of a building, Snap to the middle of a road, Snap to shoreline, Snap to nearby geometry, Snap to guide lines, Snap to zone grid, Snap to nodes, Snap to the surface of an object, Snap upright, Snap to lot grid, Binds overlapping items to a building, Remove only matching type, Show contour lines and Snap to distance. The game's own Toggle all snapping on/off row is a batch switch and is not remembered.";
 			d["item.snap.ex.group"] = "for example, switch off Snap to the sides of a road for a two-lane small road and the other small roads have it off too, while a large road still has everything on";
 			d["item.snap.ex.menu"] = "every asset you click in the Roads menu uses this same set of snapping switches, but moving to the Electricity menu it does not";
 			d["item.snap.ex.category"] = "switching to a six-lane road keeps the same set, but a bridge or a pathway returns to the defaults and needs its own setting, even though they are all in the Roads menu";
 
-			// ---------- 6 Topography ----------
+			// ---------- Topography ----------
 			d["item.topography.label"] = "Topography";
 			d["item.topography.desc"] = "Remembers the Topography row, that is whether Show contour lines is on.";
 			d["item.topography.ex.group"] = "for example, turn Topography on for a two-lane small road and the other small roads have it on too, while a large road does not";
@@ -768,28 +768,28 @@ namespace ToolModeMemory
 			d["item.topography.ex.category"] = "switching to a six-lane road still shows them, but a bridge or an electric cable has the row off and needs its own setting";
 
 
-			// ---------- 8 Left / Right (Anarchy) ----------
+			// ---------- Left / Right (Anarchy) ----------
 			d["item.leftRight.label"] = "Left and Right";
-			d["item.leftRight.desc"] = "Remembers which network upgrades are picked on the Left and Right rows of the Anarchy network panel, for example Bike Lane, Trees, Parking, Quay, Retaining Wall and Sound Barrier. Needs Anarchy (Paradox mod 74604); without it this item does nothing.";
+			d["item.leftRight.desc"] = "Remembers which network upgrades are picked on the Left and Right rows of the Anarchy network panel, for example Bike Lane, Trees, Grass, Quay, Retaining Wall and Sound Barrier. Needs Anarchy (Paradox mod 74604); without it this item does not appear.";
 			d["item.leftRight.ex.group"] = "for example, pick Bike Lane on the right side of a two-lane small road and the other small roads get Bike Lane there too, while a large road does not";
 			d["item.leftRight.ex.menu"] = "every asset you click in the Roads menu uses this same pair of side selections, but moving to the Electricity menu it does not";
 			d["item.leftRight.ex.category"] = "switching to a six-lane road still has Bike Lane on the right, but a bridge or a double train track goes back to nothing picked and needs its own setting, even though they are all in the Roads menu";
 
-			// ---------- 9 General (Anarchy) ----------
+			// ---------- General (Anarchy) ----------
 			d["item.general.label"] = "General";
-			d["item.general.desc"] = "Remembers the switches on the General row of the Anarchy network panel: Ground, Elevated, Tunnel, Constant Slope, Wide Median and Expanded Elevation Range (which lifts the height limit). Needs Anarchy (Paradox mod 74604); without it this item does nothing.";
+			d["item.general.desc"] = "Remembers the switches on the General row of the Anarchy network panel: Ground, Elevated, Tunnel, Constant Slope, Wide Median and Expanded Elevation Range (which lifts the height limit). Needs Anarchy (Paradox mod 74604); without it this item does not appear.";
 			d["item.general.ex.group"] = "for example, pick Tunnel for a two-lane small road and the other small roads are forced into tunnels too, while a large road is not";
 			d["item.general.ex.menu"] = "every asset you click in the Roads menu uses this same set of General switches, but moving to the Electricity menu it does not";
 			d["item.general.ex.category"] = "switching to a six-lane road still gives Tunnel, but a bridge or a double subway track goes back to nothing ticked and needs its own setting, even though they are all in the Roads menu";
 
-			// ---------- 10 Underground Mode ----------
+			// ---------- Underground Mode ----------
 			d["item.underground.label"] = "Underground Mode";
 			d["item.underground.desc"] = "Remembers the Underground Mode switch (Toggle underground mode), which decides whether what you place goes below the ground or on top of it.";
 			d["item.underground.ex.group"] = "for example, turn on Underground Mode for a two-lane small road and the other small roads go underground too, while a large road does not";
 			d["item.underground.ex.menu"] = "every asset you click in the Roads menu is built underground, but moving to the Electricity menu it is not";
 			d["item.underground.ex.category"] = "switching to a six-lane road still goes underground, but a bridge or a double train track stays on the surface and needs its own setting, even though they are all in the Roads menu";
 
-			// ---------- 11 Other ----------
+			// ---------- Other ----------
 			d["item.other.label"] = "Other";
 			d["item.other.desc"] = "Remembers the remaining rows a tool panel can record: the road colours on the Color row.";
 			d["item.other.ex.group"] = "for example, set the colour of a two-lane small road to blue and the other small roads turn blue too, while a large road does not";

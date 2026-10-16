@@ -47,7 +47,7 @@ namespace ToolModeMemory
 			d[kTagRecVanilla] = " (empfohlen, Original)";
 
 			d["reset.label"] = "Speicher zurücksetzen";
-			d["reset.desc"] = "Im Spiel: das Gedächtnis dieses Spielstands löschen und die Werkzeuge in den Originalzustand beim Laden versetzen. Im Hauptmenü: das Gedächtnis aller Spielstände löschen.";
+			d["reset.desc"] = "Im Spiel: das Gedächtnis dieses Spielstands löschen und die Werkzeuge in den Originalzustand beim Laden versetzen. Im Hauptmenü oder Editor: das Gedächtnis aller Spielstände löschen.";
 			d["reset.warn"] = "Das kann nicht rückgängig gemacht werden.";
 			d["reset.confirm"] = "Alle gemerkten Werkzeugeinstellungen zurücksetzen?";
 			d["resetall.label"] = "Alle Einstellungen zurücksetzen";
@@ -66,8 +66,8 @@ namespace ToolModeMemory
 			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Die Website der Rainbow-Reihe öffnen.";
 
-			// ---------- 1 Anarchy ----------
-			d["item.anarchy.desc"] = "Merkt sich den Status des Schalters Anarchy, den der Anarchy-Mod hinzufügt. Anarchy wird im ganzen Spiel geteilt, dieser Punkt ist also global; ist er an, kannst du den gemeinsamen Bereich ändern. Ohne den Anarchy-Mod tut dieser Punkt nichts.";
+			// ---------- Anarchy ----------
+			d["item.anarchy.desc"] = "Merkt sich den Status des Schalters Anarchy, den der Anarchy-Mod hinzufügt. Anarchy wird im ganzen Spiel geteilt, dieser Punkt ist also global; ist er an, kannst du den gemeinsamen Bereich ändern. Ohne den Anarchy-Mod wird dieser Punkt nicht angezeigt.";
 			d["item.anarchy.ex.group"] = "zum Beispiel schaltest du Anarchy für eine zweispurige kleine Straße ein, andere kleine Straßen haben Anarchy ebenfalls an, eine große Straße dagegen nicht";
 			d["item.anarchy.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, hat Anarchy an, im Menü Strom dagegen nicht";
 			d["item.anarchy.ex.category"] = "wechselt man zu einer sechsspurigen Straße, bleibt Anarchy an, aber eine Brücke oder doppelte U-Bahn-Gleise gehen wieder aus und brauchen eine eigene Einstellung, obwohl alle im Menü Straßen liegen";
@@ -83,35 +83,35 @@ namespace ToolModeMemory
 			d["item.packs.ex.menu"] = "die im Menü Straßen angehakten Pakete und die im Menü Strom angehakten werden getrennt gemerkt";
 			d["item.packs.ex.category"] = "der Haken in dieser Zeile gehört zum Filter der Werkzeugleiste selbst, er wird über das Menü und die Kategorie gemerkt, in denen du gerade bist; das Original leert ihn jedes Mal, wenn du die Kategorie wechselst";
 
-			// ---------- 2 Werkzeugmodus ----------
+			// ---------- Werkzeugmodus ----------
 			d["item.toolMode.label"] = "Werkzeugmodus";
 			d["item.toolMode.desc"] = "Merkt den Modus jedes Werkzeugs, und die Optionen unterscheiden sich: Straßen, Gleise und Leitungen bieten Gerade, Einfache Kurve, Komplexe Kurve, Durchgehend, Raster, Ersetzen, Punkt; Gebäude, Objekte und Bäume bieten Einzeln platzieren, Mehrfach platzieren, Linie, Kurve, Objektstempel-Werkzeug; Zonen bieten Füllen, Auswahlrechteck, Farbe; Flächen bieten Bearbeiten, Kartenraster erstellen. Modi von Assets und Modi von Funktionen werden getrennt gemerkt, weil ihre Optionen nicht dieselben sind.";
 			d["item.toolMode.ex.group"] = "zum Beispiel wählst du Einfache Kurve für eine zweispurige kleine Straße, andere kleine Straßen nutzen ebenfalls Einfache Kurve, eine große Straße dagegen nicht";
 			d["item.toolMode.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, steht auf Einfache Kurve, im Menü Strom dagegen nicht";
 			d["item.toolMode.ex.category"] = "wechselt man zu einer sechsspurigen Straße, bleibt es Einfache Kurve, aber eine Brücke oder doppelte U-Bahn-Gleise fallen auf ihren Standardmodus zurück und brauchen eine eigene Einstellung, obwohl alle im Menü Straßen liegen";
 
-			// ---------- 3 Höhe ----------
+			// ---------- Höhe ----------
 			d["item.elevation.label"] = "Höhe";
 			d["item.elevation.desc"] = "Merkt die Höhe, mit der ein Werkzeug verlassen wurde, einschließlich des Ergebnisses von Erhöhen und Absenken. Der Höhenunterschied (wie weit dich ein einzelner Druck versetzt; Anarchy nennt diese Zeile Höhenschritt) wird zusammen mit der Höhe gemerkt und nutzt denselben gemeinsamen Bereich. Die Höhe von Kreuzungen ist nicht enthalten. Einige Assets haben eine eigene zulässige Höhe: Liegt der geteilte Wert außerhalb dessen, was das gewählte Asset darf, behält dieses Asset eine für es zulässige Höhe, und der gespeicherte geteilte Wert bleibt unverändert.";
 			d["item.elevation.ex.group"] = "zum Beispiel hebst du eine zweispurige kleine Straße auf 10 m, andere kleine Straßen gehen ebenfalls auf 10 m, eine große Straße aber nicht auf 10 m";
 			d["item.elevation.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, liegt auf 10 m, im Menü Strom dagegen nicht auf 10 m";
 			d["item.elevation.ex.category"] = "wechselt man zu einer sechsspurigen Straße, bleibt es bei 10 m, aber eine Brücke oder doppelte Bahngleise gehen zurück auf 0 m und brauchen eine eigene Einstellung, obwohl alle im Menü Straßen liegen";
 
-			// ---------- 4 Parallelmodus ----------
+			// ---------- Parallelmodus ----------
 			d["item.parallel.label"] = "Parallelmodus";
 			d["item.parallel.desc"] = "Merkt die beiden Einträge im Panel Parallelstraße: den Schalter Parallelmodus (Parallelmodus an-/abschalten) und den Parallelabstand. Beim Parallelmodus sind es immer zwei Linien: schaltest du ihn ein, wird neben die von dir gezogene Linie eine zweite gebaut, und einstellen kannst du nur, wie weit die beiden auseinander liegen, etwa 1 m oder 2 m. Ist er ausgeschaltet, bleibt es bei einer einzigen Linie.";
 			d["item.parallel.ex.group"] = "zum Beispiel schaltest du den Parallelmodus für eine zweispurige kleine Straße ein und stellst den Parallelabstand auf 5 m, andere kleine Straßen kommen ebenfalls eingeschaltet mit denselben 5 m zurück, eine große Straße dagegen nicht";
 			d["item.parallel.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, baut parallel mit 5 m Abstand, im Menü Strom dagegen nicht";
 			d["item.parallel.ex.category"] = "wechselt man zu einer sechsspurigen Straße, bleibt er an und der Abstand bleibt bei 5 m, aber eine Brücke oder ein U-Bahn-Gleis geht aus und braucht eine eigene Einstellung, obwohl alle im Menü Straßen liegen";
 
-			// ---------- 5 Einrasten ----------
+			// ---------- Einrasten ----------
 			d["item.snap.label"] = "Einrasten";
 			d["item.snap.desc"] = "Merkt jeden Schalter der Zeile Einrasten: An existierender Geometrie einrasten, An Rasterzellenlänge einrasten, Bei 90-Grad-Winkeln einrasten, An Straßenkanten einrasten, An Straßen einrasten, An der Seite des Besitzers einrasten, An den Gebäudekanten einrasten, In der Mitte einer Straße einrasten, An der Küste einrasten, An nahegelegener Geometrie einrasten, An Hilfslinien einrasten, An Zellenraster einrasten, An Knoten einrasten, An der Oberfläche eines Objekts einrasten, Aufrecht einrasten, An Flächenraster einrasten, Bindet überlappende Objekte an ein Gebäude, Nur entsprechenden Typ entfernen, Nur Höhenlinien anzeigen, An Distanz einrasten. Die Zeile Einrasten für alle ein-/ausschalten ist ein Sammlerschalter und wird selbst nicht gemerkt.";
 			d["item.snap.ex.group"] = "zum Beispiel schaltest du „An Straßenkanten einrasten“ für eine zweispurige kleine Straße aus, andere kleine Straßen haben es ebenfalls aus, eine große Straße hat dagegen alles an";
 			d["item.snap.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, nutzt dieselbe Reihe von Einrast-Schaltern, im Menü Strom dagegen nicht";
 			d["item.snap.ex.category"] = "wechselt man zu einer sechsspurigen Straße, bleibt dieselbe Reihe erhalten, aber eine Brücke oder ein Spazierweg geht auf die Standardwerte zurück und braucht eine eigene Einstellung, obwohl alle im Menü Straßen liegen";
 
-			// ---------- 6 Topographie ----------
+			// ---------- Topographie ----------
 			d["item.topography.label"] = "Topographie";
 			d["item.topography.desc"] = "Merkt die Zeile Topographie, also ob Nur Höhenlinien anzeigen aktiv ist.";
 			d["item.topography.ex.group"] = "zum Beispiel schaltest du die Topographie für eine zweispurige kleine Straße ein, andere kleine Straßen haben sie ebenfalls an, eine große Straße dagegen nicht";
@@ -119,28 +119,28 @@ namespace ToolModeMemory
 			d["item.topography.ex.category"] = "wechselt man zu einer sechsspurigen Straße, bleiben die Höhenlinien sichtbar, aber bei einer Brücke oder einer Stromleitung ist die Zeile aus und sie braucht eine eigene Einstellung";
 
 
-			// ---------- 8 Links und Rechts (Anarchy) ----------
+			// ---------- Links und Rechts (Anarchy) ----------
 			d["item.leftRight.label"] = "Links und Rechts";
-			d["item.leftRight.desc"] = "Merkt sich, welche Netzwerkerweiterungen auf den Zeilen „Links“ und „Rechts“ im Netzwerkpanel von Anarchy gewählt sind, zum Beispiel Fahrradweg, Bäume, Parken, Kai, Stützwand und Schallschutzmauer. Benötigt Anarchy (Paradox-Mod 74604); ohne diesen Mod tut dieser Punkt nichts.";
+			d["item.leftRight.desc"] = "Merkt sich, welche Netzwerkerweiterungen auf den Zeilen „Links“ und „Rechts“ im Netzwerkpanel von Anarchy gewählt sind, zum Beispiel Fahrradweg, Bäume, Rasen, Kai, Stützwand und Schallschutzmauer. Benötigt Anarchy (Paradox-Mod 74604); ohne diesen Mod wird dieser Punkt nicht angezeigt.";
 			d["item.leftRight.ex.group"] = "zum Beispiel wählst du auf der rechten Seite einer zweispurigen kleinen Straße den Fahrradweg, andere kleine Straßen haben rechts ebenfalls den Fahrradweg, eine große Straße dagegen nicht";
 			d["item.leftRight.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, nutzt dasselbe Paar Seitenauswahlen, im Menü Strom dagegen nicht";
 			d["item.leftRight.ex.category"] = "wechselt man zu einer sechsspurigen Straße, bleibt rechts der Fahrradweg, aber bei einer Brücke oder doppelten Bahngleisen ist wieder nichts ausgewählt und sie brauchen eine eigene Einstellung, obwohl alle im Menü Straßen liegen";
 
-			// ---------- 9 Allgemein (Anarchy) ----------
+			// ---------- Allgemein (Anarchy) ----------
 			d["item.general.label"] = "Allgemein";
-			d["item.general.desc"] = "Merkt sich die Schalter auf der Zeile „Allgemein“ im Netzwerkpanel von Anarchy: Boden, Erhöht, Tunnel, Konstante Neigung, Breiter Trennstreifen und Erweiterter Höhenbereich (setzt die Höhenbegrenzung außer Kraft). Benötigt Anarchy (Paradox-Mod 74604); ohne diesen Mod tut dieser Punkt nichts.";
+			d["item.general.desc"] = "Merkt sich die Schalter auf der Zeile „Allgemein“ im Netzwerkpanel von Anarchy: Boden, Erhöht, Tunnel, Konstante Neigung, Breiter Trennstreifen und Erweiterter Höhenbereich (setzt die Höhenbegrenzung außer Kraft). Benötigt Anarchy (Paradox-Mod 74604); ohne diesen Mod wird dieser Punkt nicht angezeigt.";
 			d["item.general.ex.group"] = "zum Beispiel wählst du Tunnel für eine zweispurige kleine Straße, andere kleine Straßen werden ebenfalls in Tunnel gezwungen, eine große Straße dagegen nicht";
 			d["item.general.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, nutzt dieselbe Reihe von Allgemein-Schaltern, im Menü Strom dagegen nicht";
 			d["item.general.ex.category"] = "wechselt man zu einer sechsspurigen Straße, bleibt es Tunnel, aber bei einer Brücke oder doppelten U-Bahn-Gleisen ist wieder nichts angehakt und sie brauchen eine eigene Einstellung, obwohl alle im Menü Straßen liegen";
 
-			// ---------- 10 Untergrundmodus ----------
+			// ---------- Untergrundmodus ----------
 			d["item.underground.label"] = "Untergrundmodus";
 			d["item.underground.desc"] = "Merkt den Schalter Untergrundmodus (Untergrundmodus an-/abschalten): ob du etwas unter der Erde oder darüber platzierst.";
 			d["item.underground.ex.group"] = "zum Beispiel schaltest du den Untergrundmodus für eine zweispurige kleine Straße ein, andere kleine Straßen gehen ebenfalls unter die Erde, eine große Straße dagegen nicht";
 			d["item.underground.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, wird unter der Erde gebaut, im Menü Strom dagegen nicht";
 			d["item.underground.ex.category"] = "wechselt man zu einer sechsspurigen Straße, bleibt es unter der Erde, aber eine Brücke oder doppelte Bahngleise bleiben an der Oberfläche und brauchen eine eigene Einstellung, obwohl alle im Menü Straßen liegen";
 
-			// ---------- 11 Sonstiges ----------
+			// ---------- Sonstiges ----------
 			d["item.other.label"] = "Sonstiges";
 			d["item.other.desc"] = "Merkt die übrigen Zeilen, die ein Werkzeugpanel aufzeichnen kann: die Straßenfarben der Zeile Farbe.";
 			d["item.other.ex.group"] = "zum Beispiel färbst du eine zweispurige kleine Straße blau, andere kleine Straßen werden ebenfalls blau, eine große Straße dagegen nicht";
@@ -149,7 +149,7 @@ namespace ToolModeMemory
 
 			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
 			d["item.brush.label"] = "Pinsel";
-			d["item.brush.desc"] = "Merkt sich die Zeilen Pinselgröße und Pinselstärke: Pinselgröße bestimmt, wie viel Fläche eine Bewegung erfasst, Pinselstärke, wie viel sie verändert. Wirkt nur bei Werkzeugen, die diese beiden Zeilen haben, also den Landschaftsbau-Werkzeugen (Erhöhen, Absenken, Glätten, Textur malen und die übrigen) sowie dem Pinselmodus beim Platzieren von Objekten; Werkzeuge ohne diese Zeilen werden weder aufgezeichnet noch geändert.";
+			d["item.brush.desc"] = "Merkt sich die Zeilen Pinselgröße und Pinselstärke: Pinselgröße bestimmt, wie viel Fläche eine Bewegung erfasst, Pinselstärke, wie viel sie verändert. Wirkt nur bei Werkzeugen, die diese beiden Zeilen haben, also den Landschaftsbau-Werkzeugen (Terrainhöhe anpassen, Terrain ebnen, Terrain angleichen, Terrainsteigung, Textur-Pinselwerkzeug und die übrigen) sowie dem Pinselmodus beim Platzieren von Objekten; Werkzeuge ohne diese Zeilen werden weder aufgezeichnet noch geändert.";
 			d["item.brush.ex.group"] = "zum Beispiel setzt du Erhöhen auf eine Pinselgröße von 30 m, die anderen Landschaftsbau-Werkzeuge derselben Gruppe sind dann auch 30 m, ein Werkzeug einer anderen Gruppe nicht";
 			d["item.brush.ex.menu"] = "jedes Landschaftsbau-Werkzeug, das du im Menü Landschaftsbau anklickst, nutzt dieselbe Pinselgröße und -stärke, im Menü Strom dagegen nicht";
 			d["item.brush.ex.category"] = "diese Stufe gruppiert Assets nach dem, was sie bedienen; Landschaftsbau-Werkzeuge bedienen nichts, deshalb hält jedes eine eigene Aufzeichnung: von Erhöhen zu Textur malen wechselt auf den Pinsel dieses Werkzeugs (braucht eine eigene Einstellung)";
@@ -192,7 +192,7 @@ namespace ToolModeMemory
 			d[kTagRecVanilla] = " (recomendado, original)";
 
 			d["reset.label"] = "Restablecer memoria";
-			d["reset.desc"] = "En partida: borra la memoria de esta partida y devuelve las herramientas al estado original de al cargar. En el menú principal: borra la memoria de todas las partidas.";
+			d["reset.desc"] = "En partida: borra la memoria de esta partida y devuelve las herramientas al estado original de al cargar. En el menú principal o el Editor: borra la memoria de todas las partidas.";
 			d["reset.warn"] = "No se puede deshacer.";
 			d["reset.confirm"] = "¿Restablecer los ajustes de herramienta recordados?";
 			d["resetall.label"] = "Restablecer todos los ajustes";
@@ -211,8 +211,8 @@ namespace ToolModeMemory
 			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Abrir el sitio de la serie Rainbow.";
 
-			// ---------- 1 Anarchy ----------
-			d["item.anarchy.desc"] = "Recuerda el estado del interruptor Anarchy que añade el mod Anarchy. Anarchy se comparte en todo el juego, así que este elemento es global; una vez activado puedes cambiar el ámbito compartido. Sin el mod Anarchy este elemento no hace nada.";
+			// ---------- Anarchy ----------
+			d["item.anarchy.desc"] = "Recuerda el estado del interruptor Anarchy que añade el mod Anarchy. Anarchy se comparte en todo el juego, así que este elemento es global; una vez activado puedes cambiar el ámbito compartido. Sin el mod Anarchy este elemento no aparece.";
 			d["item.anarchy.ex.group"] = "por ejemplo, activas Anarchy en una carretera pequeña de dos carriles y las otras carreteras pequeñas también lo tienen activado, mientras que una carretera grande no";
 			d["item.anarchy.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras tienen Anarchy activado, pero al pasar al menú de Electricidad ya no";
 			d["item.anarchy.ex.category"] = "cambiar a una carretera de seis carriles sigue teniéndolo activado, pero un puente o unas vías de metro dobles lo dejan desactivado y necesitan su propio ajuste, aunque todos estén en el menú de Carreteras";
@@ -228,35 +228,35 @@ namespace ToolModeMemory
 			d["item.packs.ex.menu"] = "los paquetes marcados en el menú de Carreteras y en el menú de Electricidad se recuerdan por separado";
 			d["item.packs.ex.category"] = "lo marcado en esta fila es estado del propio filtro de la barra de herramientas, que se recuerda por el menú y la categoría en los que estés; el juego original la vacía cada vez que cambias de categoría";
 
-			// ---------- 2 Herramientas ----------
+			// ---------- Herramientas ----------
 			d["item.toolMode.label"] = "Herramientas";
 			d["item.toolMode.desc"] = "Recuerda el modo elegido para cada herramienta, y las opciones cambian según la herramienta: carreteras, vías y tuberías ofrecen Recta, Curva sencilla, Curva compleja, Continua, Cuadrícula, Reemplazar y Punto; edificios, accesorios y árboles ofrecen Colocar uno, Colocar varios, Línea, Curva y Herramienta de sello de objetos; las zonas ofrecen Rellenar, Seleccionar y Pintar; las áreas ofrecen Editar y Generar cuadrícula de mapa. Los modos de activos y los de funciones se guardan por separado porque sus opciones no son las mismas.";
 			d["item.toolMode.ex.group"] = "por ejemplo, eliges Curva sencilla en una carretera pequeña de dos carriles y las otras carreteras pequeñas también usan Curva sencilla, mientras que una carretera grande no";
 			d["item.toolMode.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras están en Curva sencilla, pero al pasar al menú de Electricidad ya no";
 			d["item.toolMode.ex.category"] = "cambiar a una carretera de seis carriles sigue dando Curva sencilla, pero un puente o unas vías de metro dobles vuelven a su modo predeterminado y necesitan su propio ajuste, aunque todos estén en el menú de Carreteras";
 
-			// ---------- 3 Elevación ----------
+			// ---------- Elevación ----------
 			d["item.elevation.label"] = "Elevación";
-			d["item.elevation.desc"] = "Recuerda la elevación con la que dejaste la herramienta, incluido el resultado de Aumentar la elevación y Disminuir la elevación. El Escalón de elevación (lo que avanza con una sola pulsación; Anarchy llama a esa fila Paso de Elevación) se recuerda junto con ella y usa el mismo ámbito compartido. No cubre la elevación de los intercambiadores. Algunos activos tienen su propia franja de elevación permitida: si el valor compartido queda fuera de lo que permite el activo seleccionado, este conserva una elevación que le sea válida y el valor compartido guardado no cambia.";
+			d["item.elevation.desc"] = "Recuerda la elevación con la que dejaste la herramienta, incluido el resultado de Aumentar la elevación y Disminuir la elevación. El Escalón de elevación (lo que avanza con una sola pulsación; Anarchy llama a esa fila Paso de Elevación) se recuerda junto con ella y usa el mismo ámbito compartido. No cubre la elevación de las intersecciones. Algunos activos tienen su propia franja de elevación permitida: si el valor compartido queda fuera de lo que permite el activo seleccionado, este conserva una elevación que le sea válida y el valor compartido guardado no cambia.";
 			d["item.elevation.ex.group"] = "por ejemplo, subes una carretera de dos carriles a 10 m y las otras carreteras pequeñas también quedan a 10 m, mientras que una carretera grande no está a 10 m";
 			d["item.elevation.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras están a 10 m, pero al pasar al menú de Electricidad no están a 10 m";
 			d["item.elevation.ex.category"] = "cambiar a una carretera de seis carriles sigue dando 10 m, pero un puente o unas vías de tren dobles vuelven a 0 m y necesitan su propio ajuste, aunque todos estén en el menú de Carreteras";
 
-			// ---------- 4 Modo paralelo ----------
+			// ---------- Modo paralelo ----------
 			d["item.parallel.label"] = "Modo paralelo";
 			d["item.parallel.desc"] = "Recuerda las dos cosas del panel Calle paralela: el interruptor Modo paralelo (Alternar modo paralelo) y la separación de la Compensación paralela. Con el modo paralelo siempre son dos líneas: al activarlo se construye una segunda línea junto a la que trazas, y lo que puedes ajustar es lo separadas que están esas dos, por ejemplo 1 m o 2 m. Al desactivarlo te quedas solo con la línea única.";
 			d["item.parallel.ex.group"] = "por ejemplo, activas el Modo paralelo en una carretera pequeña de dos carriles y pones la Compensación paralela en 5 m, las otras carreteras pequeñas vuelven activadas con los mismos 5 m, mientras que una carretera grande no";
 			d["item.parallel.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras están en paralelo con 5 m de compensación, pero al pasar al menú de Electricidad ya no";
 			d["item.parallel.ex.category"] = "cambiar a una carretera de seis carriles sigue activado con los mismos 5 m de compensación, pero un puente o una vía de metro se desactiva y necesita su propio ajuste, aunque todos estén en el menú de Carreteras";
 
-			// ---------- 5 Ajustar ----------
+			// ---------- Ajustar ----------
 			d["item.snap.label"] = "Ajustar";
 			d["item.snap.desc"] = "Recuerda cada interruptor de la fila Ajustar: Ajustar a una geometría establecida, Ajustar al largo de la celda de zonificación, Ajustar a ángulos de 90 grados, Ajustar a los lados de una carretera, Ajustar a las carreteras, Ajustar al lado del propietario, Ajustar a los lados del edificio, Ajustar a la mitad de la carretera, Ajustar a la orilla, Ajustar a una geometría cercana, Ajustar a las líneas de guía, Ajustar a la cuadrícula de la zona, Ajustar a los nodos, Ajustar a la superficie de un objeto, Ajustar en vertical, Ajustar a la cuadrícula del solar, Une los objetos superpuestos a un edificio, Elimina solo el tipo coincidente, Muestra las líneas de contorno y Ajustar a la distancia. La fila Activar/desactivar todos los ajustes del juego es un interruptor múltiple y no se recuerda.";
 			d["item.snap.ex.group"] = "por ejemplo, desactivas «Ajustar a los lados de una carretera» en una carretera pequeña de dos carriles y las otras carreteras pequeñas también lo tienen desactivado, mientras que una carretera grande lo tiene todo activado";
 			d["item.snap.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras usan este mismo conjunto de interruptores de ajuste, pero al pasar al menú de Electricidad no";
 			d["item.snap.ex.category"] = "cambiar a una carretera de seis carriles mantiene el mismo conjunto, pero un puente o un camino vuelve a los valores predeterminados y necesita su propio ajuste, aunque todos estén en el menú de Carreteras";
 
-			// ---------- 6 Topografía ----------
+			// ---------- Topografía ----------
 			d["item.topography.label"] = "Topografía";
 			d["item.topography.desc"] = "Recuerda la fila Topografía, es decir, si Muestra las líneas de contorno está activo.";
 			d["item.topography.ex.group"] = "por ejemplo, activas Topografía en una carretera pequeña de dos carriles y las otras carreteras pequeñas también la tienen activada, mientras que una carretera grande no";
@@ -264,28 +264,28 @@ namespace ToolModeMemory
 			d["item.topography.ex.category"] = "cambiar a una carretera de seis carriles sigue mostrándolas, pero un puente o un cable de baja tensión tienen la fila desactivada y necesitan su propio ajuste";
 
 
-			// ---------- 8 Izquierda y derecha (Anarchy) ----------
+			// ---------- Izquierda y derecha (Anarchy) ----------
 			d["item.leftRight.label"] = "Izquierda y derecha";
-			d["item.leftRight.desc"] = "Recuerda las mejoras de red elegidas en las filas Izquierda y Derecha del panel de red de Anarchy, por ejemplo Vía ciclista, Árboles, Aparcamiento, Muelle, Muro de Retención y Barrera acústica. Necesita Anarchy (mod 74604 de Paradox); sin él este elemento no hace nada.";
+			d["item.leftRight.desc"] = "Recuerda las mejoras de red elegidas en las filas Izquierda y Derecha del panel de red de Anarchy, por ejemplo Vía ciclista, Árboles, Césped, Muelle, Muro de Retención y Barrera acústica. Necesita Anarchy (mod 74604 de Paradox); sin él este elemento no aparece.";
 			d["item.leftRight.ex.group"] = "por ejemplo, eliges Vía ciclista en el lado derecho de una carretera pequeña de dos carriles y las otras carreteras pequeñas también la reciben a la derecha, mientras que una carretera grande no";
 			d["item.leftRight.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras usan este mismo par de selecciones laterales, pero al pasar al menú de Electricidad no";
 			d["item.leftRight.ex.category"] = "cambiar a una carretera de seis carriles sigue teniendo Vía ciclista a la derecha, pero un puente o unas vías de tren dobles vuelven a no tener nada elegido y necesitan su propio ajuste, aunque todos estén en el menú de Carreteras";
 
-			// ---------- 9 General (Anarchy) ----------
+			// ---------- General (Anarchy) ----------
 			d["item.general.label"] = "General";
-			d["item.general.desc"] = "Recuerda los interruptores de la fila General del panel de red de Anarchy: Terreno, Elevado, Túnel, Pendiente Constante, Mediana Amplia y Rango de Elevación Expandido (que quita el límite de altura). Necesita Anarchy (mod 74604 de Paradox); sin él este elemento no hace nada.";
+			d["item.general.desc"] = "Recuerda los interruptores de la fila General del panel de red de Anarchy: Terreno, Elevado, Túnel, Pendiente Constante, Mediana Amplia y Rango de Elevación Expandido (que quita el límite de altura). Necesita Anarchy (mod 74604 de Paradox); sin él este elemento no aparece.";
 			d["item.general.ex.group"] = "por ejemplo, eliges Túnel en una carretera pequeña de dos carriles y las otras carreteras pequeñas también se obligan a ser túneles, mientras que una carretera grande no";
 			d["item.general.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras usan este mismo conjunto de interruptores de General, pero al pasar al menú de Electricidad no";
 			d["item.general.ex.category"] = "cambiar a una carretera de seis carriles sigue dando Túnel, pero un puente o unas vías de metro dobles vuelven a no tener nada marcado y necesitan su propio ajuste, aunque todos estén en el menú de Carreteras";
 
-			// ---------- 10 Modo subterráneo ----------
+			// ---------- Modo subterráneo ----------
 			d["item.underground.label"] = "Modo subterráneo";
 			d["item.underground.desc"] = "Recuerda el interruptor Modo subterráneo (Alternar modo subterráneo), que decide si lo que colocas va bajo tierra o encima.";
 			d["item.underground.ex.group"] = "por ejemplo, activas el Modo subterráneo en una carretera pequeña de dos carriles y las otras carreteras pequeñas también van bajo tierra, mientras que una carretera grande no";
 			d["item.underground.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras se construyen bajo tierra, pero al pasar al menú de Electricidad no";
 			d["item.underground.ex.category"] = "cambiar a una carretera de seis carriles sigue yendo bajo tierra, pero un puente o unas vías de tren dobles se quedan en la superficie y necesitan su propio ajuste, aunque todos estén en el menú de Carreteras";
 
-			// ---------- 11 Otros ----------
+			// ---------- Otros ----------
 			d["item.other.label"] = "Otros";
 			d["item.other.desc"] = "Recuerda las demás filas que un panel de herramienta puede registrar: los colores de carretera de la fila Color.";
 			d["item.other.ex.group"] = "por ejemplo, pones el color de una carretera pequeña de dos carriles en azul y las otras carreteras pequeñas también se vuelven azules, mientras que una carretera grande no";
@@ -294,7 +294,7 @@ namespace ToolModeMemory
 
 			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
 			d["item.brush.label"] = "Pincel";
-			d["item.brush.desc"] = "Recuerda las filas Tamaño de pincel y Fuerza de pincel: el tamaño define hasta dónde llega una pasada y la fuerza cuánto cambia cada pasada. Solo afecta a las herramientas que tienen esas dos filas: las herramientas de Paisajismo (Elevar, Hundir, Suavizar, Pintar textura y las demás) y el modo Pincel al colocar objetos; las herramientas sin esas filas no se registran ni se modifican.";
+			d["item.brush.desc"] = "Recuerda las filas Tamaño de pincel y Fuerza de pincel: el tamaño define hasta dónde llega una pasada y la fuerza cuánto cambia cada pasada. Solo afecta a las herramientas que tienen esas dos filas: las herramientas de Paisajismo (Herramienta de altura de terreno, Herramienta de suavización de terreno, Herramienta de nivelación de terreno, Herramienta de pendientes, Herramienta de pintura de textura y las demás) y el modo Pincel al colocar objetos; las herramientas sin esas filas no se registran ni se modifican.";
 			d["item.brush.ex.group"] = "por ejemplo, pones Elevar a 30 m de tamaño de pincel y las otras herramientas de paisajismo del mismo grupo también usan 30 m, pero una de otro grupo no";
 			d["item.brush.ex.menu"] = "todas las herramientas de paisajismo que pulsas en el menú de Paisajismo usan este mismo tamaño y fuerza de pincel, pero al pasar al menú de Electricidad no";
 			d["item.brush.ex.category"] = "este nivel agrupa los activos según lo que atienden; las herramientas de paisajismo no atienden nada, así que cada una guarda su propia copia: pasar de Elevar a Pintar textura usa el pincel de esa herramienta (necesita su propio ajuste)";
@@ -337,7 +337,7 @@ namespace ToolModeMemory
 			d[kTagRecVanilla] = " (recommandé, d'origine)";
 
 			d["reset.label"] = "Réinitialiser la mémoire";
-			d["reset.desc"] = "En partie : efface la mémoire de cette partie et rend les outils à l'état d'origine de la charge. Au menu principal : efface la mémoire de toutes les parties.";
+			d["reset.desc"] = "En partie : efface la mémoire de cette partie et rend les outils à l'état d'origine de la charge. Au menu principal ou dans l'Éditeur : efface la mémoire de toutes les parties.";
 			d["reset.warn"] = "Irréversible.";
 			d["reset.confirm"] = "Réinitialiser les réglages d'outil mémorisés ?";
 			d["resetall.label"] = "Réinitialiser tous les réglages";
@@ -356,8 +356,8 @@ namespace ToolModeMemory
 			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Ouvrir le site de la série Rainbow.";
 
-			// ---------- 1 Anarchy ----------
-			d["item.anarchy.desc"] = "Mémorise l'état du bouton Anarchy ajouté par le mod Anarchy. Anarchy est partagé dans tout le jeu, cet élément est donc global ; une fois activé, vous pouvez modifier la portée de partage. Sans le mod Anarchy, cet élément ne fait rien.";
+			// ---------- Anarchy ----------
+			d["item.anarchy.desc"] = "Mémorise l'état du bouton Anarchy ajouté par le mod Anarchy. Anarchy est partagé dans tout le jeu, cet élément est donc global ; une fois activé, vous pouvez modifier la portée de partage. Sans le mod Anarchy, cet élément n'apparaît pas.";
 			d["item.anarchy.ex.group"] = "par exemple, activez Anarchy sur une petite route à deux voies, les autres petites routes l'ont activé aussi, mais une grande route non";
 			d["item.anarchy.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes ont Anarchy activé, mais dans le menu Électricité ce n'est plus le cas";
 			d["item.anarchy.ex.category"] = "passer à une route à six voies laisse Anarchy activé, mais un pont ou une double voie de métro repasse à désactivé et réclame son propre réglage, bien que tous soient dans le menu Routes";
@@ -373,35 +373,35 @@ namespace ToolModeMemory
 			d["item.packs.ex.menu"] = "les packs cochés dans le menu Routes et dans le menu Électricité sont mémorisés séparément";
 			d["item.packs.ex.category"] = "cette ligne est l'état du filtre de la barre d'outils lui-même, mémorisée d'après le menu et la catégorie où vous vous trouvez ; le jeu d'origine l'efface à chaque changement de catégorie";
 
-			// ---------- 2 Mode Outil ----------
+			// ---------- Mode Outil ----------
 			d["item.toolMode.label"] = "Mode Outil";
 			d["item.toolMode.desc"] = "Mémorise le mode choisi pour chaque outil, et les options varient : routes, rails et canalisations proposent Droit, Courbe simple, Courbe complexe, Continu, Grille, Remplacer et Point ; bâtiments, accessoires et arbres proposent En placer un, En placer plusieurs, Ligne, Courbe et Outil de marquage d'objet ; les zones proposent Remplissage, Sélection et Peinture ; les périmètres proposent Modifier et Générer une grille de carte. Les modes des assets et ceux des fonctions sont mémorisés séparément, car leurs options diffèrent.";
 			d["item.toolMode.ex.group"] = "par exemple, choisissez Courbe simple sur une petite route à deux voies, les autres petites routes utilisent aussi Courbe simple, mais une grande route non";
 			d["item.toolMode.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes sont en Courbe simple, mais dans le menu Électricité ce n'est plus le cas";
 			d["item.toolMode.ex.category"] = "passer à une route à six voies donne toujours Courbe simple, mais un pont ou une double voie de métro retombe sur son mode par défaut et réclame son propre réglage, bien que tous soient dans le menu Routes";
 
-			// ---------- 3 Élévation ----------
+			// ---------- Élévation ----------
 			d["item.elevation.label"] = "Élévation";
 			d["item.elevation.desc"] = "Mémorise l'élévation laissée sur l'outil, y compris le résultat de Augmenter l'élévation et Diminuer l'élévation. L'Étape d'élévation (le déplacement d'une seule pression ; l'interface Anarchy nomme cette ligne Incrément d'élévation) est mémorisée avec elle et utilise la même portée de partage. L'élévation des croisements n'est pas concernée. Certains assets ont leur propre plage d'élévation : si la valeur partagée sort de ce que permet l'asset sélectionné, celui-ci conserve une élévation qui lui est possible et la valeur partagée mémorisée reste inchangée.";
 			d["item.elevation.ex.group"] = "par exemple, montez une route à deux voies à 10 m, les autres petites routes passent aussi à 10 m, mais une grande route n'est pas à 10 m";
 			d["item.elevation.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes sont à 10 m, mais dans le menu Électricité ils ne sont pas à 10 m";
 			d["item.elevation.ex.category"] = "passer à une route à six voies donne toujours 10 m, mais un pont ou une double voie ferrée repart à 0 m et réclame son propre réglage, bien que tous soient dans le menu Routes";
 
-			// ---------- 4 Mode parallèle ----------
+			// ---------- Mode parallèle ----------
 			d["item.parallel.label"] = "Mode parallèle";
 			d["item.parallel.desc"] = "Mémorise les deux éléments du panneau Route parallèle : l'interrupteur Mode parallèle (Changer le mode parallèle) et l'espacement de la Compensation parallèle. En mode parallèle, ce sont toujours deux lignes : une fois activé, une seconde ligne se construit le long de celle que vous tracez, et ce que vous pouvez régler est la distance qui sépare ces deux lignes, par exemple 1 m ou 2 m. Désactivé, vous n'avez que la ligne simple.";
 			d["item.parallel.ex.group"] = "par exemple, activez le Mode parallèle sur une petite route à deux voies et réglez la Compensation parallèle sur 5 m, les autres petites routes reviennent activées avec les mêmes 5 m, mais une grande route non";
 			d["item.parallel.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes sont en parallèle avec 5 m de compensation, mais dans le menu Électricité ce n'est plus le cas";
 			d["item.parallel.ex.category"] = "passer à une route à six voies reste activé avec les mêmes 5 m de compensation, mais un pont ou une voie de métro se désactive et réclame son propre réglage, bien que tous soient dans le menu Routes";
 
-			// ---------- 5 Accrocher ----------
+			// ---------- Accrocher ----------
 			d["item.snap.label"] = "Accrocher";
 			d["item.snap.desc"] = "Mémorise chaque interrupteur de la ligne Accrocher : Accrochez à la géométrie existante, Accrochez à la longueur de la cellule de zonage, Accrochez aux angles à 90 degrés, Accrochez aux côtés d'une route, Accrochez aux routes, Accrochez au côté du propriétaire, Accrochez aux côtés d'un bâtiment, Accrochez au milieu d'une route, Accrochez au rivage, Accrochez à la géométrie à proximité, Accrochez aux lignes directrices, Accrochez à la grille de zone, Accrochez aux nœuds, Accrochez à la surface d'un objet, Accrochez verticalement, Accrochez à la grille des emplacements, Lie les éléments qui se chevauchent à un bâtiment, Supprimer uniquement le type correspondant, Afficher les lignes de contour et Accrochez à distance. La ligne Activer/désactiver tous les accrochages du jeu est un interrupteur groupé et n'est pas mémorisée.";
 			d["item.snap.ex.group"] = "par exemple, désactivez « Accrochez aux côtés d'une route » sur une petite route à deux voies, les autres petites routes l'ont désactivé aussi, mais une grande route a tout activé";
 			d["item.snap.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes utilisent ce même jeu d'interrupteurs d'accrochage, mais dans le menu Électricité ce n'est plus le cas";
 			d["item.snap.ex.category"] = "passer à une route à six voies garde le même jeu d'interrupteurs, mais un pont ou un sentier revient aux valeurs par défaut et réclame son propre réglage, bien que tous soient dans le menu Routes";
 
-			// ---------- 6 Topographie ----------
+			// ---------- Topographie ----------
 			d["item.topography.label"] = "Topographie";
 			d["item.topography.desc"] = "Mémorise la ligne Topographie, c'est-à-dire si Afficher les lignes de contour est actif.";
 			d["item.topography.ex.group"] = "par exemple, activez la Topographie sur une petite route à deux voies, les autres petites routes l'ont activée aussi, mais une grande route non";
@@ -409,28 +409,28 @@ namespace ToolModeMemory
 			d["item.topography.ex.category"] = "passer à une route à six voies affiche toujours les lignes de contour, mais un pont ou un câble électrique ont la ligne désactivée et réclament leur propre réglage";
 
 
-			// ---------- 8 Gauche et droite (Anarchy) ----------
+			// ---------- Gauche et droite (Anarchy) ----------
 			d["item.leftRight.label"] = "Gauche et droite";
-			d["item.leftRight.desc"] = "Mémorise les améliorations de réseau choisies sur les lignes Gauche et Droite du panneau réseau d'Anarchy, par exemple Piste cyclable, Arbres, Stationnement, Quai, Mur de soutènement et Barrière acoustique. Nécessite Anarchy (mod Paradox 74604) ; sans lui cet élément ne fait rien.";
+			d["item.leftRight.desc"] = "Mémorise les améliorations de réseau choisies sur les lignes Gauche et Droite du panneau réseau d'Anarchy, par exemple Piste cyclable, Arbres, Herbe, Quai, Mur de soutènement et Barrière acoustique. Nécessite Anarchy (mod Paradox 74604) ; sans lui cet élément n'apparaît pas.";
 			d["item.leftRight.ex.group"] = "par exemple, choisissez Piste cyclable à droite d'une petite route à deux voies, les autres petites routes l'ont aussi à droite, mais une grande route non";
 			d["item.leftRight.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes utilisent ce même choix des deux côtés, mais dans le menu Électricité ce n'est plus le cas";
 			d["item.leftRight.ex.category"] = "passer à une route à six voies garde Piste cyclable à droite, mais un pont ou une double voie ferrée reviennent à rien de choisi et réclament leur propre réglage, bien que tous soient dans le menu Routes";
 
-			// ---------- 9 Général (Anarchy) ----------
+			// ---------- Général (Anarchy) ----------
 			d["item.general.label"] = "Général";
-			d["item.general.desc"] = "Mémorise les interrupteurs de la ligne Général du panneau réseau d'Anarchy : Au sol, Élévation, Tunnel, Pente constante, Grande médiane et Gamme d'élévation élargie (qui supprime la limite de hauteur). Nécessite Anarchy (mod Paradox 74604) ; sans lui cet élément ne fait rien.";
+			d["item.general.desc"] = "Mémorise les interrupteurs de la ligne Général du panneau réseau d'Anarchy : Au sol, Élévation, Tunnel, Pente constante, Grande médiane et Gamme d'élévation élargie (qui supprime la limite de hauteur). Nécessite Anarchy (mod Paradox 74604) ; sans lui cet élément n'apparaît pas.";
 			d["item.general.ex.group"] = "par exemple, choisissez Tunnel sur une petite route à deux voies, les autres petites routes sont forcées en tunnel aussi, mais une grande route non";
 			d["item.general.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes utilisent ce même jeu d'interrupteurs de Général, mais dans le menu Électricité ce n'est plus le cas";
 			d["item.general.ex.category"] = "passer à une route à six voies donne toujours Tunnel, mais un pont ou une double voie de métro reviennent à rien de coché et réclament leur propre réglage, bien que tous soient dans le menu Routes";
 
-			// ---------- 10 Mode souterrain ----------
+			// ---------- Mode souterrain ----------
 			d["item.underground.label"] = "Mode souterrain";
 			d["item.underground.desc"] = "Mémorise l'interrupteur Mode souterrain (Changer le mode souterrain), qui décide si ce que vous placez passe sous le sol ou dessus.";
 			d["item.underground.ex.group"] = "par exemple, activez le Mode souterrain sur une petite route à deux voies, les autres petites routes passent aussi sous terre, mais une grande route non";
 			d["item.underground.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes sont construits sous terre, mais dans le menu Électricité ce n'est plus le cas";
 			d["item.underground.ex.category"] = "passer à une route à six voies reste sous terre, mais un pont ou une double voie ferrée restent en surface et réclament leur propre réglage, bien que tous soient dans le menu Routes";
 
-			// ---------- 11 Autres ----------
+			// ---------- Autres ----------
 			d["item.other.label"] = "Autres";
 			d["item.other.desc"] = "Mémorise les autres lignes qu'un panneau d'outil peut enregistrer : les couleurs de route de la ligne Couleur.";
 			d["item.other.ex.group"] = "par exemple, mettez la couleur d'une petite route à deux voies en bleu, les autres petites routes deviennent bleues aussi, mais une grande route non";
@@ -439,7 +439,7 @@ namespace ToolModeMemory
 
 			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
 			d["item.brush.label"] = "Pinceau";
-			d["item.brush.desc"] = "Mémorise les lignes Taille du pinceau et Force du pinceau : la taille définit l'étendue d'une passe et la force définit ce que chaque passe modifie. Seuls les outils qui affichent ces deux lignes sont concernés, c'est-à-dire les outils d'Aménagement paysager (Augmenter, Diminuer, Adoucir, Peindre la texture et les autres) et le mode Pinceau lors du placement d'objets ; les outils sans ces lignes ne sont ni enregistrés ni modifiés.";
+			d["item.brush.desc"] = "Mémorise les lignes Taille du pinceau et Force du pinceau : la taille définit l'étendue d'une passe et la force définit ce que chaque passe modifie. Seuls les outils qui affichent ces deux lignes sont concernés, c'est-à-dire les outils d'Aménagement paysager (Outil de déplacement de terrain, Outil d'atténuation du terrain, Outil de nivellement de terrain, Outil pour les terrains en pente, Outil de peinture de texture et les autres) et le mode Pinceau lors du placement d'objets ; les outils sans ces lignes ne sont ni enregistrés ni modifiés.";
 			d["item.brush.ex.group"] = "par exemple, vous mettez Augmenter à 30 m de taille de pinceau, les autres outils d'aménagement du même groupe sont aussi à 30 m, mais un outil d'un autre groupe non";
 			d["item.brush.ex.menu"] = "tous les outils d'aménagement que vous cliquez dans le menu Aménagement paysager utilisent cette même taille et force de pinceau, mais dans le menu Électricité ce n'est plus le cas";
 			d["item.brush.ex.category"] = "ce niveau groupe les assets selon ce qu'ils desservent ; les outils d'aménagement ne desservent rien, donc chacun garde sa propre copie : passer d'Augmenter à Peindre la texture utilise le pinceau de cet outil (réglage séparé nécessaire)";
@@ -482,7 +482,7 @@ namespace ToolModeMemory
 			d[kTagRecVanilla] = " (consigliato, originale)";
 
 			d["reset.label"] = "Reimposta memoria";
-			d["reset.desc"] = "In partita: cancella la memoria di questa partita e riporta gli strumenti allo stato originale del caricamento. Nel menu principale: cancella la memoria di tutte le partite.";
+			d["reset.desc"] = "In partita: cancella la memoria di questa partita e riporta gli strumenti allo stato originale del caricamento. Nel menu principale o nell'editor: cancella la memoria di tutte le partite.";
 			d["reset.warn"] = "Non annullabile.";
 			d["reset.confirm"] = "Reimpostare le impostazioni degli strumenti memorizzate?";
 			d["resetall.label"] = "Reimposta tutte le impostazioni";
@@ -501,8 +501,8 @@ namespace ToolModeMemory
 			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Apri il sito della serie Rainbow.";
 
-			// ---------- 1 Anarchy ----------
-			d["item.anarchy.desc"] = "Ricorda lo stato del pulsante Anarchy aggiunto dal mod Anarchy. Anarchy è condiviso in tutto il gioco, quindi questa voce è globale; una volta attivo puoi cambiare l'ambito di condivisione. Senza il mod Anarchy questa voce non fa nulla.";
+			// ---------- Anarchy ----------
+			d["item.anarchy.desc"] = "Ricorda lo stato del pulsante Anarchy aggiunto dal mod Anarchy. Anarchy è condiviso in tutto il gioco, quindi questa voce è globale; una volta attivo puoi cambiare l'ambito di condivisione. Senza il mod Anarchy questa voce non compare.";
 			d["item.anarchy.ex.group"] = "per esempio, attivi Anarchy su una piccola strada a due corsie e anche le altre piccole strade ce l'hanno attivo, mentre una strada grande no";
 			d["item.anarchy.ex.menu"] = "tutti gli asset che clicchi nel menu Strade hanno Anarchy attivo, ma passando al menu Elettricità no";
 			d["item.anarchy.ex.category"] = "passando a una strada a sei corsie Anarchy resta attivo, ma un ponte o un binario della metropolitana doppio tornano a spento e necessitano un'impostazione propria, benché tutti siano nel menu Strade";
@@ -518,35 +518,35 @@ namespace ToolModeMemory
 			d["item.packs.ex.menu"] = "i pacchetti spuntati nel menu Strade e nel menu Elettricità vengono ricordati separatamente";
 			d["item.packs.ex.category"] = "la spunta di questa riga è lo stato del filtro della barra degli strumenti stesso, ricordata per il menu e la categoria in cui ti trovi; l'originale la azzera ogni volta che cambi categoria";
 
-			// ---------- 2 Modalità strumento ----------
+			// ---------- Modalità strumento ----------
 			d["item.toolMode.label"] = "Modalità strumento";
 			d["item.toolMode.desc"] = "Ricorda la modalità scelta per ogni strumento e le opzioni cambiano a seconda dello strumento: strade, binari e tubi offrono Rettilineo, Curva semplice, Curva complessa, Continua, Griglia, Sostituisci, Punto; edifici, oggetti e alberi offrono Posiziona uno, Posiziona multipli, Linea, Curva, Strumento timbro oggetti; le zone offrono Riempi, Seleziona, Pittura; le aree offrono Modifica, Genera griglia mappa. Le modalità degli asset e quelle delle funzioni sono ricordate separatamente perché le opzioni non sono le stesse.";
 			d["item.toolMode.ex.group"] = "per esempio, scegli Curva semplice su una piccola strada a due corsie e anche le altre piccole strade usano Curva semplice, mentre una strada grande no";
 			d["item.toolMode.ex.menu"] = "tutti gli asset che clicchi nel menu Strade sono su Curva semplice, ma passando al menu Elettricità no";
 			d["item.toolMode.ex.category"] = "passando a una strada a sei corsie resta Curva semplice, ma un ponte o un binario della metropolitana doppio ripartono dalla loro modalità predefinita e necessitano un'impostazione propria, benché tutti siano nel menu Strade";
 
-			// ---------- 3 Elevazione ----------
+			// ---------- Elevazione ----------
 			d["item.elevation.label"] = "Elevazione";
 			d["item.elevation.desc"] = "Ricorda l'elevazione a cui lasci lo strumento, incluso il risultato di Aumenta elevazione e Diminuisci elevazione. Il Livello elevazione (quanto sposta una singola pressione; Anarchy chiama questa riga Step di elevazione) viene ricordato insieme ad essa e usa lo stesso ambito di condivisione. L'elevazione degli incroci non è inclusa. Alcuni asset hanno un proprio intervallo di elevazione consentito: se il valore condiviso esce da ciò che l'asset selezionato ammette, questo conserva un'elevazione a esso possibile e il valore condiviso memorizzato resta invariato.";
 			d["item.elevation.ex.group"] = "per esempio, porti una strada a due corsie a 10 m e anche le altre piccole strade vanno a 10 m, mentre una strada grande non è a 10 m";
 			d["item.elevation.ex.menu"] = "tutti gli asset che clicchi nel menu Strade sono a 10 m, ma passando al menu Elettricità non sono a 10 m";
 			d["item.elevation.ex.category"] = "passando a una strada a sei corsie restano 10 m, ma un ponte o un binario ferroviario doppio ripartono da 0 m e necessitano un'impostazione propria, benché tutti siano nel menu Strade";
 
-			// ---------- 4 Modalità parallelismo ----------
+			// ---------- Modalità parallelismo ----------
 			d["item.parallel.label"] = "Modalità parallelismo";
 			d["item.parallel.desc"] = "Ricorda le due voci del pannello Strada parallela: l'interruttore Modalità parallelismo (Attiva/disattiva modalità parallelismo) e la distanza della Compensazione parallelismo. Con la modalità parallelismo sono sempre due linee: una volta attiva, accanto alla linea che tracci ne viene costruita una seconda, e ciò che puoi regolare è quanto sono distanziate le due, per esempio 1 m o 2 m. Se la spegni ti resta solo la linea singola.";
 			d["item.parallel.ex.group"] = "per esempio, attivi la Modalità parallelismo su una piccola strada a due corsie e imposti la Compensazione parallelismo a 5 m, e anche le altre piccole strade tornano attive con gli stessi 5 m, mentre una strada grande no";
 			d["item.parallel.ex.menu"] = "tutti gli asset che clicchi nel menu Strade sono in parallelo con 5 m di compensazione, ma passando al menu Elettricità no";
 			d["item.parallel.ex.category"] = "passando a una strada a sei corsie resta attivo con gli stessi 5 m di compensazione, ma un ponte o un binario della metropolitana tornano a spento e necessitano un'impostazione propria, benché tutti siano nel menu Strade";
 
-			// ---------- 5 Aggancio ----------
+			// ---------- Aggancio ----------
 			d["item.snap.label"] = "Aggancio";
 			d["item.snap.desc"] = "Ricorda ogni interruttore della riga Aggancio: Aggancia alla geometria esistente, Aggancia alla lunghezza della cella di zonizzazione, Aggancia ad angoli di 90°, Aggancia ai lati di una strada, Aggancia alle strade, Aggancia al lato del proprietario, Aggancia ai lati di un edificio, Aggancia al centro di una strada, Aggancia alla costa, Aggancia alla geometria vicina, Aggancia alle linee guida, Aggancia alla griglia della zona, Aggancia ai nodi, Aggancia alla superficie di un oggetto, Aggancia in verticale, Aggancia alla griglia del lotto, Collega elementi sovrapposti a un edificio, Rimuovi solo il tipo corrispondente, Mostra le linee di contorno, Aggancia a distanza. La riga Attiva/disattiva tutti gli agganci del gioco è un interruttore multiplo e non viene ricordata.";
 			d["item.snap.ex.group"] = "per esempio, spegni «Aggancia ai lati di una strada» su una piccola strada a due corsie e anche le altre piccole strade ce l'hanno spento, mentre una strada grande ce li ha tutti accesi";
 			d["item.snap.ex.menu"] = "tutti gli asset che clicchi nel menu Strade usano questo stesso insieme di interruttori di aggancio, ma passando al menu Elettricità no";
 			d["item.snap.ex.category"] = "passando a una strada a sei corsie l'insieme resta lo stesso, ma un ponte o un sentiero ritornano ai valori predefiniti e necessitano un'impostazione propria, benché tutti siano nel menu Strade";
 
-			// ---------- 6 Topografia ----------
+			// ---------- Topografia ----------
 			d["item.topography.label"] = "Topografia";
 			d["item.topography.desc"] = "Ricorda la riga Topografia, cioè se Mostra le linee di contorno è attivo.";
 			d["item.topography.ex.group"] = "per esempio, attivi la Topografia su una piccola strada a due corsie e anche le altre piccole strade ce l'hanno attiva, mentre una strada grande no";
@@ -554,28 +554,28 @@ namespace ToolModeMemory
 			d["item.topography.ex.category"] = "passando a una strada a sei corsie le linee restano, ma un ponte o i cavi elettrici hanno la riga spenta e necessitano un'impostazione propria";
 
 
-			// ---------- 8 Sinistra e destra (Anarchy) ----------
+			// ---------- Sinistra e destra (Anarchy) ----------
 			d["item.leftRight.label"] = "Sinistra e destra";
-			d["item.leftRight.desc"] = "Ricorda quali potenziamenti di rete sono scelti sulle righe Sinistra e Destra del pannello di rete di Anarchy, per esempio Pista ciclabile, Alberi, Parcheggio, Banchina, Muro di contenimento e Barriera insonorizzante. Richiede Anarchy (mod Paradox 74604); senza, questa voce non fa nulla.";
+			d["item.leftRight.desc"] = "Ricorda quali potenziamenti di rete sono scelti sulle righe Sinistra e Destra del pannello di rete di Anarchy, per esempio Pista ciclabile, Alberi, Erba, Banchina, Muro di contenimento e Barriera insonorizzante. Richiede Anarchy (mod Paradox 74604); senza, questa voce non compare.";
 			d["item.leftRight.ex.group"] = "per esempio, scegli Pista ciclabile sul lato destro di una piccola strada a due corsie e anche le altre piccole strade ce l'hanno a destra, mentre una strada grande no";
 			d["item.leftRight.ex.menu"] = "tutti gli asset che clicchi nel menu Strade usano questo stesso paio di scelte laterali, ma passando al menu Elettricità no";
 			d["item.leftRight.ex.category"] = "passando a una strada a sei corsie la pista ciclabile resta a destra, ma un ponte o un binario ferroviario doppio tornano a niente di scelto e necessitano un'impostazione propria, benché tutti siano nel menu Strade";
 
-			// ---------- 9 Generale (Anarchy) ----------
+			// ---------- Generale (Anarchy) ----------
 			d["item.general.label"] = "Generale";
-			d["item.general.desc"] = "Ricorda gli interruttori della riga Generale del pannello di rete di Anarchy: Terreno, Elevato, Tunnel, Pendio costante, Mediana ampia e Intervallo di elevazione ampliato (che toglie il limite di altezza). Richiede Anarchy (mod Paradox 74604); senza, questa voce non fa nulla.";
+			d["item.general.desc"] = "Ricorda gli interruttori della riga Generale del pannello di rete di Anarchy: Terreno, Elevato, Tunnel, Pendio costante, Mediana ampia e Intervallo di elevazione ampliato (che toglie il limite di altezza). Richiede Anarchy (mod Paradox 74604); senza, questa voce non compare.";
 			d["item.general.ex.group"] = "per esempio, scegli Tunnel su una piccola strada a due corsie e anche le altre piccole strade vengono forzate in tunnel, mentre una strada grande no";
 			d["item.general.ex.menu"] = "tutti gli asset che clicchi nel menu Strade usano questo stesso insieme di interruttori di Generale, ma passando al menu Elettricità no";
 			d["item.general.ex.category"] = "passando a una strada a sei corsie resta Tunnel, ma un ponte o un binario della metropolitana doppio tornano a niente di spuntato e necessitano un'impostazione propria, benché tutti siano nel menu Strade";
 
-			// ---------- 10 Modalità sottosuolo ----------
+			// ---------- Modalità sottosuolo ----------
 			d["item.underground.label"] = "Modalità sottosuolo";
 			d["item.underground.desc"] = "Ricorda l'interruttore Modalità sottosuolo (Attiva/disattiva modalità sottosuolo), che decide se ciò che piazzi va sotto terra o sopra.";
 			d["item.underground.ex.group"] = "per esempio, attivi la Modalità sottosuolo su una piccola strada a due corsie e anche le altre piccole strade vanno sottoterra, mentre una strada grande no";
 			d["item.underground.ex.menu"] = "tutti gli asset che clicchi nel menu Strade vengono costruiti sottoterra, ma passando al menu Elettricità no";
 			d["item.underground.ex.category"] = "passando a una strada a sei corsie si resta sottoterra, ma un ponte o un binario ferroviario doppio rimangono in superficie e necessitano un'impostazione propria, benché tutti siano nel menu Strade";
 
-			// ---------- 11 Altro ----------
+			// ---------- Altro ----------
 			d["item.other.label"] = "Altro";
 			d["item.other.desc"] = "Ricorda le altre righe che un pannello strumento può registrare: i colori delle strade nella riga Colore.";
 			d["item.other.ex.group"] = "per esempio, imposti il colore di una piccola strada a due corsie su blu e anche le altre piccole strade diventano blu, mentre una strada grande no";
@@ -584,7 +584,7 @@ namespace ToolModeMemory
 
 			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
 			d["item.brush.label"] = "Pennello";
-			d["item.brush.desc"] = "Ricorda le righe Dimensione pennello e Robustezza pennello: la dimensione stabilisce quanta area copre una passata, la robustezza quanto cambia ogni passata. Riguarda solo gli strumenti che hanno queste due righe, cioè gli strumenti di Architettura del paesaggio (Alza, Abbassa, Ammorbidisci, Dipingi texture e gli altri) e la modalità Pennello quando si posizionano oggetti; gli strumenti senza queste righe non sono né registrati né modificati.";
+			d["item.brush.desc"] = "Ricorda le righe Dimensione pennello e Robustezza pennello: la dimensione stabilisce quanta area copre una passata, la robustezza quanto cambia ogni passata. Riguarda solo gli strumenti che hanno queste due righe, cioè gli strumenti di Architettura del paesaggio (Strumento sposta terreno, Strumento addolcimento terreno, Strumento livellamento terreno, Strumento inclinazione terreno, Strumento pennello texture e gli altri) e la modalità Pennello quando si posizionano oggetti; gli strumenti senza queste righe non sono né registrati né modificati.";
 			d["item.brush.ex.group"] = "per esempio, imposti Alza su una dimensione pennello di 30 m e anche gli altri strumenti del paesaggio dello stesso gruppo sono a 30 m, mentre uno di un altro gruppo no";
 			d["item.brush.ex.menu"] = "tutti gli strumenti del paesaggio che clicchi nel menu Architettura del paesaggio usano questa stessa dimensione e robustezza del pennello, ma passando al menu Elettricità no";
 			d["item.brush.ex.category"] = "questa opzione raggruppa gli asset per ciò che servono; gli strumenti del paesaggio non servono nulla, quindi ognuno tiene una copia tutta sua: passando da Alza a Dipingi texture il pennello è quello di quello strumento (serve un'impostazione propria)";
