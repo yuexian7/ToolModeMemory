@@ -197,6 +197,9 @@ namespace ToolModeMemory
 		private static bool s_WarnedNoAnarchy;
 		private static bool s_WarnedSystemFail;
 
+		/// <summary>AppDomain.AssemblyLoad 监听是否已挂上（见 <see cref="WatchAnarchyAssembly"/>）。</summary>
+		private static bool s_AssemblyWatched;
+
 		// ================= 缓存（每个存档清一次，见 ForgetNames） =================
 
 		/// <summary>实体 -> prefab 名（菜单名 / 分类名）。</summary>
@@ -1657,6 +1660,96 @@ namespace ToolModeMemory
 			}
 			catch { }
 			return h;
+		}
+
+		/// <summary>
+		/// 设置页的隐藏判据：<b>确证</b>玩家没装（或没启用）Anarchy —— 三行 no-op 的开关就整块不出现。
+		///
+		/// 判据只允许有一处（性能纪律第 12 条）：这里复用的就是捕获 / 写回那条懒解析机器
+		/// <see cref="Anarchy"/>，所以「界面上这三行不该出现」与「代码里这三项 no-op」是同一次判定，
+		/// 不会出现「行灰着但其实能用」或「行能点但其实没装」这种两面不一致。
+		///
+		/// 什么时候回答「没装」（返回 true）：<b>两条证据同时成立</b>。
+		///  1. <see cref="ModsLoadingFinished"/> —— 游戏的 ModManager 已经把启用清单里的模组全跑完
+		///     （decompiled ModManager.Initialize：RegisterMods → InitializeMods → m_Initialized=true，
+		///      所以这一刻所有该进 AppDomain 的程序集都已经进来了）；
+		///  2. 按类型全名扫已加载程序集，Anarchy 的两个 UI 类型一个都没有。
+		/// 其余一律返回 false = 照旧显示可点。<b>没有证据就不许藏行</b>：0.6.2 审查里最初的想法是
+		/// 用 DisableByCondition 变灰，但反编译证明 disabled 只在设置页构建那一刻求值一次
+		/// （AutomaticSettings.BuildTab → Widget.UpdateBase），而我们的 RegisterInOptionsUI 比 Anarchy
+		/// 的程序集进 AppDomain 早约 2 秒 —— 那样会把装了 Anarchy 的玩家那三行永久冻灰，
+		/// 比现状（能点、静默 no-op）更糟。hidden 走的是每帧重算的 UpdateVisibility，所以隐藏判据能随
+		/// 判定落地当场生效，装了自动回来、没装自动消失。
+		///
+		/// 这条判据会被选项页每帧问 6 次（且只在停在 Options 画面时），所以它既不抛也不做重活：
+		/// 扫描由 <see cref="Anarchy"/> 自己的 2 秒节流与整包缓存兜着。
+		/// 万一 Anarchy 真的在预算用完之后才进来，<see cref="OnAssemblyLoad"/> 会重开窗口，三行自己回来。
+		/// </summary>
+		public static bool AnarchyConfirmedAbsent()
+		{
+			if (s_Anarchy != null) return false;
+			try
+			{
+				if (!ModsLoadingFinished()) return false;
+				if (Anarchy() != null) return false;
+				return s_Anarchy == null;
+			}
+			catch { return false; }
+		}
+
+		/// <summary>
+		/// 游戏自己的「模组全部加载完毕」信号。取不到（GameManager 还没建、正在卸载、模组被禁用）
+		/// 都返回 false —— 判不出来的结果就是「什么都不藏」。
+		/// </summary>
+		private static bool ModsLoadingFinished()
+		{
+			Game.SceneFlow.GameManager gm = Game.SceneFlow.GameManager.instance;
+			if (gm == null) return false;
+			Game.Modding.ModManager mm = gm.modManager;
+			return mm != null && mm.isInitialized;
+		}
+
+		/// <summary>
+		/// 挂上「有新程序集进来就重探一次 Anarchy」的监听（模组 OnLoad 里调一次）。
+		/// 为什么需要：懒解析的 40 次预算用完就不再看第二眼，而隐藏判据直接吃这个结论 ——
+		/// 万一 Anarchy 在那之后才进 AppDomain（玩家会话中途启用模组），三行就该回来而不是永远藏掉。
+		/// 监听器只做两件事：把节流窗口打开、把重试次数清零，不反射、不写日志、不碰 World
+		/// （程序集可能在任何线程上被加载）。
+		/// </summary>
+		public static void WatchAnarchyAssembly()
+		{
+			if (s_AssemblyWatched) return;
+			try
+			{
+				AppDomain.CurrentDomain.AssemblyLoad += OnAssemblyLoad;
+				s_AssemblyWatched = true;
+			}
+			catch { }
+		}
+
+		/// <summary>
+		/// 卸载模组时必须摘掉：AppDomain 是游戏的对象，活得比我们的程序集久，
+		/// 留着委托 = 下次任何程序集加载都要回调进一个已经消失的程序集。
+		/// </summary>
+		public static void UnwatchAnarchyAssembly()
+		{
+			if (!s_AssemblyWatched) return;
+			try { AppDomain.CurrentDomain.AssemblyLoad -= OnAssemblyLoad; } catch { }
+			s_AssemblyWatched = false;
+		}
+
+		private static void OnAssemblyLoad(object sender, AssemblyLoadEventArgs args)
+		{
+			// 重新打开重试窗口 + 清零预算，下一次有人问（捕获 / 写回 / 选项页）再真去扫。
+			// 这里绝不做扫描：碰 args 之外的东西都可能把加载线程带下水。
+			try
+			{
+				if (s_Anarchy != null) return;
+				s_AnarchyTries = 0;
+				s_AnarchyNextTry = 0;
+				s_WarnedNoAnarchy = false;
+			}
+			catch { }
 		}
 
 		/// <summary>

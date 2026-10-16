@@ -179,6 +179,10 @@ namespace ToolModeMemory.Tests
 			RealFieldFiles();
 			AssetValueLimits();
 			ResetCurrentSaveWithoutAName();
+			IndexObjectNeverNull();
+			FileNameSanitizerHardening();
+			BrushItemMemory();
+			SaveAsCopiesImmediately();
 
 			Console.WriteLine();
 			Console.WriteLine(s_Fails == 0
@@ -677,17 +681,18 @@ namespace ToolModeMemory.Tests
 		/// <summary>0.2.2 工具目录：项数、项 id、板块归属、子字段与范围推荐。</summary>
 		private static void CatalogShape()
 		{
-			Console.WriteLine("[18] 工具目录形状（12 项 / 板块 / Subs）");
+			Console.WriteLine("[18] 工具目录形状（13 项 / 板块 / Subs）");
 
 			ToolItemDef[] items = ToolItemCatalog.Items;
-			Check(items.Length == 12, "v0.2.2 = 12 个工具项（官方 9 + Anarchy 3）");
+			Check(items.Length == 13, "v0.6.2 = 13 个工具项（官方 10 + Anarchy 3）");
 			Check(ToolItemCatalog.Count == items.Length, "Count 与数组一致");
 
 			string[] expectIds =
 			{
 				ToolItemCatalog.kThemes, ToolItemCatalog.kPacks, ToolItemCatalog.kToolMode,
 				ToolItemCatalog.kElevation, ToolItemCatalog.kParallel, ToolItemCatalog.kSnap,
-				ToolItemCatalog.kTopography, ToolItemCatalog.kUnderground, ToolItemCatalog.kOther,
+				ToolItemCatalog.kTopography, ToolItemCatalog.kUnderground, ToolItemCatalog.kBrush,
+				ToolItemCatalog.kOther,
 				ToolItemCatalog.kAnarchy, ToolItemCatalog.kLeftRight, ToolItemCatalog.kGeneral
 			};
 			bool idsInOrder = expectIds.Length == items.Length;
@@ -695,7 +700,7 @@ namespace ToolModeMemory.Tests
 			{
 				if (items[i].Id != expectIds[i] || items[i].Number != i + 1) idsInOrder = false;
 			}
-			Check(idsInOrder, "项 id 与设置页序号 1..12 逐一对应（跨板块连续编号）");
+			Check(idsInOrder, "项 id 与设置页序号 1..13 逐一对应（跨板块连续编号）");
 
 			// 板块归属由 Source 决定：Vanilla + Toolbar -> 「官方工具项设置」，AnarchyMod -> Anarchy 板块。
 			int official = 0;
@@ -719,8 +724,8 @@ namespace ToolModeMemory.Tests
 				if (eff < 0 || eff > (int)MemoryScope.GlobalUnique) ok = false;
 			}
 			Check(ok, "推荐/原版档位都在枚举范围内（含 -1 哨兵）");
-			Check(official == 9 && anarchyItems == 3 && extra == 0,
-				"板块划分：官方 9 项 / Anarchy 3 项 / 没有 Extra Networks 项（两块面板反编译确认属 Anarchy）");
+			Check(official == 10 && anarchyItems == 3 && extra == 0,
+				"板块划分：官方 10 项（v0.6.2 起含「笔刷」）/ Anarchy 3 项 / 没有 Extra Networks 项（两块面板反编译确认属 Anarchy）");
 			Check(ToolItemCatalog.Find(ToolItemCatalog.kThemes).Source == ItemSource.Toolbar
 				&& ToolItemCatalog.Find(ToolItemCatalog.kPacks).Source == ItemSource.Toolbar,
 				"地区主题 / 数据包 = 工具栏筛选项（进官方板块）");
@@ -734,7 +739,7 @@ namespace ToolModeMemory.Tests
 				&& !ToolItemCatalog.Find(ToolItemCatalog.kUnderground).DefaultEnabled,
 				"地下模式推荐 == 原版 -> 出厂不开");
 			Check(ToolItemCatalog.Find(ToolItemCatalog.kOther).VanillaScope == ToolItemCatalog.kVanillaNone,
-				"「其它」（配色/笔刷）原版不记忆");
+				"「其它」（道路配色）原版不记忆");
 			Check(ToolItemCatalog.Find(ToolItemCatalog.kOther).RecommendedScope == ToolItemCatalog.kNoRecommendation
 				&& ToolItemCatalog.Find(ToolItemCatalog.kOther).EffectiveRecommendedScope() == (int)MemoryScope.Group,
 				"「其它」无推荐 -> 出厂退到同组");
@@ -765,10 +770,14 @@ namespace ToolModeMemory.Tests
 			}
 			// 枚举 / 位掩码项反过来：同一个数字在道路工具和区域工具里是两回事，
 			// 并成一把键会把非法组合写进工具，必须继续按域 + 家族分开。
+			// 「笔刷」也在这里：地形笔刷与摆件的刷涂模式都用 ToolBaseSystem.brushSize，
+			// 可一个是每一下的位移量、一个是物体密度（原版自己也是两份独立值：
+			// TerrainToolSystem 私有 TerraformingBrushValues[4] 与 ObjectToolBaseSystem.m_BrushSize），
+			// 所以 0.6.2 没有按审查建议给笔刷套 family-free —— 地形侧仍然只有一把 F|S$other。
 			string[] familyBound = new string[]
 			{
 				ToolItemCatalog.kToolMode, ToolItemCatalog.kElevation, ToolItemCatalog.kParallel,
-				ToolItemCatalog.kSnap, ToolItemCatalog.kOther
+				ToolItemCatalog.kSnap, ToolItemCatalog.kOther, ToolItemCatalog.kBrush
 			};
 			for (int i = 0; i < familyBound.Length; i++)
 			{
@@ -791,10 +800,14 @@ namespace ToolModeMemory.Tests
 			Check(lr != null && lr.Length == 2 && lr[0] == "leftRight.left" && lr[1] == "leftRight.right",
 				"左侧和右侧 = 左右两个子字段");
 			string[] other = ToolItemCatalog.Find(ToolItemCatalog.kOther).Subs;
-			Check(other != null && other.Length == 6
+			Check(other != null && other.Length == 4
 				&& other[0] == "other.color0" && other[1] == "other.color1" && other[2] == "other.color2"
-				&& other[4] == "other.brushSize" && other[5] == "other.brushStrength",
-				"其它 = 配色 3+1 通道 / 笔刷大小 / 笔刷强度");
+				&& other[3] == "other.color3",
+				"其它 = 配色 3+1 通道（v0.6.2 起笔刷两项已经独立成行）");
+			string[] brush = ToolItemCatalog.Find(ToolItemCatalog.kBrush).Subs;
+			Check(brush != null && brush.Length == 2
+				&& brush[0] == "other.brushSize" && brush[1] == "other.brushStrength",
+				"笔刷 = 粗细 + 强度两个子字段，且**桶名沿用 other.***（改名会抹掉玩家记过的笔刷）");
 
 			// 高度阶段不再是一项，而是「高度」的子字段：共用高度的开关、范围与记忆键，
 			// 字段 id 仍是 "elevation" / "elevationStep"，所以 0.2.1 及更早的记忆文件照旧读得回。
@@ -820,9 +833,10 @@ namespace ToolModeMemory.Tests
 			Check(ToolItemCatalog.Find("leftRight.left").Id == ToolItemCatalog.kLeftRight
 				&& ToolItemCatalog.Find("leftRight.right").Id == ToolItemCatalog.kLeftRight,
 				"leftRight.* 认回父项");
-			Check(ToolItemCatalog.Find("other.color2").Id == ToolItemCatalog.kOther
-				&& ToolItemCatalog.Find("other.brushStrength").Id == ToolItemCatalog.kOther,
-				"other.* 认回父项");
+			Check(ToolItemCatalog.Find("other.color2").Id == ToolItemCatalog.kOther, "other.color* 认回「其它」");
+			Check(ToolItemCatalog.Find("other.brushSize").Id == ToolItemCatalog.kBrush
+				&& ToolItemCatalog.Find("other.brushStrength").Id == ToolItemCatalog.kBrush,
+				"笔刷两个桶认回新独立项「笔刷」（Subs 精确匹配优先于点号前缀兜底，老文件不换名）");
 
 			// 0.1.x 的项 id 一律不认识；0.2.2 里 elevationStep 只作为「高度」的子字段存在
 			Check(ToolItemCatalog.Find("net.draw") == null && ToolItemCatalog.Find("net.snap") == null
@@ -855,8 +869,11 @@ namespace ToolModeMemory.Tests
 					if (fieldId != items[i].Id && itemIds.Contains(fieldId)) unique = false;
 				}
 			}
-			Check(unique && itemIds.Count == 12 && seen.Count == 20 && buckets == 20,
-				"20 个记忆桶全部唯一且认得回父项（elevation 既是项 id 也是「高度」的字段 id，属同一桶）");
+			// 条数与桶数一起钉：加一项（0.6.2 的「笔刷」）或改一个 Subs 都会让这里变红，
+			// 而 itemIds.Count == items.Length 另挡一种事故——两项用了同一个 id。
+			Check(unique && items.Length == 13 && itemIds.Count == items.Length
+				&& seen.Count == 20 && buckets == 20,
+				"13 项 / 20 个记忆桶全部唯一且认得回父项（elevation 既是项 id 也是「高度」的字段 id，属同一桶）");
 		}
 
 		/// <summary>0.2.2 工具栏筛选项（地区主题 / 数据包）：一选项一键 + 计数哨兵。</summary>
@@ -1692,5 +1709,306 @@ namespace ToolModeMemory.Tests
 			Check(File.Exists(empty.CurrentFilePath()), "文件真的落下来了");
 		}
 
+		/// <summary>
+		/// v0.6.2 第三轮审查抓到的真缺陷：CS2 的 ModManager 用
+		/// FormatterServices.GetUninitializedObject 造 IMod 实例，**构造函数与字段初始化器都不跑**，
+		/// 于是 ToolModeMemoryMod.m_Index 自 0.4.0 起恒为 null —— 进档/存盘各吞一条 NRE，
+		/// _index.txt 从来没被生成过（实机日志 + ModsData 目录里确实没有这个文件）。
+		/// 规则「索引对象永远不是 null」已经搬进纯 BCL 的 SaveIndexFile，所以能在不开游戏的情况下钉住。
+		/// </summary>
+		private static void IndexObjectNeverNull()
+		{
+			Console.WriteLine("[26] 索引对象永不 null：CS2 不跑 IMod 构造函数（v0.6.2 回归钉）");
+			FreshDir("indexfile");
+			string dir = MemoryStore.DataDirectory;
+			string path = MemoryStore.IndexPath;
+			string err;
+
+			// ① 缺陷现场：传进来的索引是 null（字段初始化器没执行），文件也还没有
+			SaveIndex fromNull = SaveIndexFile.Load(path, null, out err);
+			Check(fromNull != null, "索引为 null + 文件不存在 -> 仍然拿到可用索引（旧代码在这里直接 NRE）");
+			Check(fromNull.Count == 0 && err == null, "没有文件不算出错，给的是空索引");
+			bool threw = false;
+			try { fromNull.Set("g1", "城市一"); } catch { threw = true; }
+			Check(!threw, "补出来的索引可以立刻用");
+
+			// ② Ensure：null 补一份，非 null 原样还（同引用，条目一条不丢）
+			Check(SaveIndexFile.Ensure(null) != null, "Ensure(null) 当场补一份");
+			Check(ReferenceEquals(SaveIndexFile.Ensure(fromNull), fromNull), "Ensure 不动已有索引");
+			Check(SaveIndexFile.Ensure(fromNull).LookupName("g1") == "城市一", "Ensure 之后条目还在");
+
+			// ③ 写盘 -> 读回 -> 再读一次（幂等：第二次结果与第一次一致，不越读越少）
+			string werr;
+			Check(SaveIndexFile.Write(dir, path, fromNull, out werr) && werr == null, "索引写盘成功");
+			Check(File.Exists(path), "「_index.txt 真的被写出来了」——修复生效的磁盘凭据（离线等价）");
+			SaveIndex once = SaveIndexFile.Load(path, null, out err);
+			Check(once != null && once.LookupName("g1") == "城市一", "写进去的名字读得回来");
+			SaveIndex twice = SaveIndexFile.Load(path, once, out err);
+			Check(twice != null && twice.Count == once.Count && twice.LookupName("g1") == "城市一",
+				"连着读两次内容不变（幂等，不会越读越少）");
+
+			// ④ 读盘被独占（IOException）：保留现有条目、报出异常类型、绝不返回 null
+			using (new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+			{
+				SaveIndex blocked = SaveIndexFile.Load(path, once, out err);
+				Check(blocked != null, "读盘抛异常也绝不返回 null");
+				Check(blocked.LookupName("g1") == "城市一", "读失败时保留手里那份，不清空");
+				Check(err != null, "异常类型名经 error 传给调用方写日志（" + err + "）");
+			}
+
+			// ⑤ 文件在但内容全是脏行：Parse 自己跳行不抛，以磁盘为准（旧行为保持）
+			File.WriteAllText(path, "garbage\n\n# comment\n", Encoding.UTF8);
+			SaveIndex dirty = SaveIndexFile.Load(path, once, out err);
+			Check(dirty != null && dirty.Count == 0 && err == null, "脏内容按磁盘为准（空索引），不抛也不报错");
+
+			// ⑥ 写盘失败只报告不抛
+			string badErr;
+			Check(!SaveIndexFile.Write(dir, dir, once, out badErr) && badErr != null,
+				"路径指向目录 -> 写失败返回 false 并报出异常，不抛（" + badErr + "）");
+			Check(!SaveIndexFile.Write(dir, null, once, out badErr) && badErr == "EmptyPath", "空路径拒绝写并说明原因");
+			Check(SaveIndexFile.Write(dir, path, null, out badErr) && badErr == null, "null 索引也能写（先兜底）");
+
+			// ⑦ 端到端：修好之后索引通道真的能把存档名认回来（0.4.0~0.6.1 从未做到过）
+			FreshDir("indexresolve");
+			string dir2 = MemoryStore.DataDirectory;
+			string path2 = MemoryStore.IndexPath;
+			SaveIndex idx = SaveIndexFile.Ensure(null);      // = OnLoad 里那句显式初始化的等价动作
+			idx.Set("guidabc", "瑞泉市");
+			idx.Set(SaveIdentity.SessionKey("sess123"), "瑞泉市");
+			SaveIndexFile.Write(dir2, path2, idx, out werr);
+			SaveIndex reloaded = SaveIndexFile.Load(path2, null, out err);
+			string nm;
+			bool ph;
+			SaveIdentity.SaveMetaInfo unknown = new SaveIdentity.SaveMetaInfo();   // 资产库查不到
+			bool named = SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true,
+				"guidabc", unknown, reloaded, null, out nm, out ph);
+			Check(named && nm == "瑞泉市" && !ph, "资产库查不到时，索引这条兜底通道能把存档名认回来");
+
+			// ⑧ 反面教材：索引为 null 时 TryResolveName 不抛，只是静默退回 _auto_ 占位名
+			//     —— 这正是老版本「功能看着正常、日志里全是 WARN」的形态。
+			bool namedNull = SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true,
+				"guidabc", unknown, null, null, out nm, out ph);
+			Check(namedNull && ph && nm == SaveIdentity.AUTO_PREFIX + "guidabc",
+				"索引为 null 时不抛，但认名通道静默退化成 _auto_ 占位名（旧行为，留档）");
+
+			// ⑨ 索引文件与记忆文件同目录，且不是 .json（ResetAllSaves 不会把它当记忆删掉）
+			Check(path.EndsWith("_index.txt"), "索引文件名照旧");
+			Check(path.StartsWith(dir, StringComparison.Ordinal), "索引与记忆同目录");
+		}
+
+		/// <summary>
+		/// v0.6.2 P2：文件名净化补 Windows 保留设备名与结尾点/空格。
+		/// 玩家把城市存成 CON / COM1 / "我的城市." 这类名字时，旧净化结果写盘必抛，
+		/// 而写盘失败是**静默退避**的，于是这一档的记忆永远存不下来却一句日志都没有。
+		/// </summary>
+		private static void FileNameSanitizerHardening()
+		{
+			Console.WriteLine("[27] 存档名净化：保留设备名与结尾点（写不进去的静默失败）");
+
+			Check(MemoryStore.SanitizeFileName("CON") == "_CON", "CON 是 Windows 保留设备名");
+			Check(MemoryStore.SanitizeFileName("con") == "_con", "保留名判定不分大小写，大小写照搬玩家原样");
+			Check(MemoryStore.SanitizeFileName("PRN.txt") == "_PRN.txt", "点前面的段命中保留名也算（Windows 就是这么判的）");
+			Check(MemoryStore.SanitizeFileName("COM1") == "_COM1" && MemoryStore.SanitizeFileName("LPT9") == "_LPT9",
+				"COM1-9 / LPT1-9 全在内");
+			Check(MemoryStore.SanitizeFileName("COM10") == "COM10", "COM10 不是保留名，别误伤");
+			Check(MemoryStore.SanitizeFileName("CONFIG") == "CONFIG" && MemoryStore.SanitizeFileName("MYCON") == "MYCON",
+				"只是包含这些字母的正常名字不误伤");
+			Check(MemoryStore.SanitizeFileName("我的城市.") == "我的城市", "结尾的点会被 Windows 吃掉，先去掉");
+			Check(MemoryStore.SanitizeFileName("城市...  ") == "城市", "结尾的点与空格一起去掉");
+			Check(MemoryStore.SanitizeFileName("...") == "_unnamed", "全是点 -> 无名占位，绝不交出空串或点");
+			Check(MemoryStore.SanitizeFileName("测试档.CON") == "测试档.CON", "点后面是 CON 不保留（保留名看第一段）");
+
+			// 截断到 80 字之后正好停在一个点上：去点这一步必须在截断之后再走一遍
+			string longName = new string('丙', 79) + ".tail";
+			string cut = MemoryStore.SanitizeFileName(longName);
+			Check(cut.Length == 79 && cut[cut.Length - 1] != '.', "截断正好停在点上 -> 再去一次点（顺序不能反）");
+			string longDots = new string('乙', 80) + "...";
+			string cut2 = MemoryStore.SanitizeFileName(longDots);
+			Check(cut2.Length == 80 && cut2[cut2.Length - 1] != '.', "80 字上限照旧，且截断结果不留尾点");
+
+			// 净化结果必须真的能写盘（这条才是「静默失败」的正解）
+			FreshDir("sanitize");
+			MemoryStore s = new MemoryStore();
+			s.UseSaveName("CON");
+			s.Set(ToolItemCatalog.kToolMode, K(kSmallRoads, false, "net"), 2);
+			Check(s.SaveToDisk(true), "改过名的 CON 记忆写得进去");
+			Check(File.Exists(s.CurrentFilePath()), "文件真的存在：「" + Path.GetFileName(s.CurrentFilePath()) + "」");
+			MemoryStore r = new MemoryStore();
+			r.UseSaveName("CON");
+			bool found;
+			Check(r.LoadForCurrentSave() && r.Get(ToolItemCatalog.kToolMode,
+				K(kSmallRoads, false, "net"), out found) == 2 && found, "下次进档读得回同一份记忆");
+		}
+
+		/// <summary>
+		/// v0.6.2 功能①：地形笔刷（笔刷粗细 / 笔刷强度）从「其它」里独立成行。
+		/// 离线层钉的是目录形状与记忆桶：桶名一改，玩家 0.6.1 及以前记下的笔刷设置就会整桶丢掉。
+		/// </summary>
+		private static void BrushItemMemory()
+		{
+			Console.WriteLine("[28] 笔刷独立成行（目录形状 + 记忆桶向后兼容）");
+
+			ToolItemDef brush = ToolItemCatalog.Find(ToolItemCatalog.kBrush);
+			Check(brush != null && brush.Number == 9, "笔刷 = 官方板块第 9 行");
+			Check(brush != null && brush.Source == ItemSource.Vanilla, "笔刷进「官方工具项设置」板块");
+			Check(brush != null && brush.VanillaScope == ToolItemCatalog.kVanillaNone,
+				"原版不跨存档记忆笔刷（TerrainToolSystem 私有 TerraformingBrushValues[4] 只活到本次会话）");
+			Check(brush != null && brush.RecommendedScope == (int)MemoryScope.GlobalShared
+				&& brush.EffectiveRecommendedScope() == (int)MemoryScope.GlobalShared,
+				"推荐档 = 全局共用（各类地形工具共用一把，不用每进档重回 100 m）");
+			Check(brush != null && !brush.DefaultEnabled, "出厂关（owner 定）");
+			Check(brush != null && brush.Subs != null && brush.Subs.Length == 2, "笔刷覆盖两个游戏字段");
+			if (brush == null || brush.Subs == null || brush.Subs.Length != 2) return;
+
+			// 桶名沿用旧名：记忆文件里的键就是子字段 id，改名等于抹掉玩家记过的值
+			Check(brush.Subs[0] == "other.brushSize" && brush.Subs[1] == "other.brushStrength",
+				"两个桶名照旧（0.6.1 及以前的记忆文件不用迁移）");
+			Check(ToolItemCatalog.Find("other.brushSize").Id == ToolItemCatalog.kBrush
+				&& ToolItemCatalog.Find("other.brushStrength").Id == ToolItemCatalog.kBrush,
+				"Subs 精确匹配优先于「点号前缀」兜底：笔刷桶认回「笔刷」而不是「其它」");
+			Check(ToolItemCatalog.Find("other.color0").Id == ToolItemCatalog.kOther
+				&& ToolItemCatalog.Find("other.color3").Id == ToolItemCatalog.kOther,
+				"配色三个通道 + 占位仍归「其它」");
+			string[] otherSubs = ToolItemCatalog.Find(ToolItemCatalog.kOther).Subs;
+			bool otherClean = otherSubs != null && otherSubs.Length == 4;
+			for (int i = 0; otherClean && i < otherSubs.Length; i++)
+			{
+				if (otherSubs[i] == "other.brushSize" || otherSubs[i] == "other.brushStrength") otherClean = false;
+			}
+			Check(otherClean, "「其它」的 Subs 里已经没有笔刷（关掉配色不再连带关掉笔刷）");
+
+			// 跨板块连续编号：「其它」= 10、Anarchy 三项顺次 11..13
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kOther).Number == 10
+				&& ToolItemCatalog.Find(ToolItemCatalog.kAnarchy).Number == 11
+				&& ToolItemCatalog.Find(ToolItemCatalog.kLeftRight).Number == 12
+				&& ToolItemCatalog.Find(ToolItemCatalog.kGeneral).Number == 13,
+				"「其它」= 官方板块最后（10）、Anarchy 三项 = 11/12/13，编号仍然跨板块连续");
+
+			// 与审查建议不同的一处：笔刷**不**套 family-free。地形笔刷与摆件刷涂模式共用
+			// ToolBaseSystem.brushSize，可含义不同（位移量 vs 物体密度），原版也是两套独立值，
+			// 并成一把裸键会把地形调好的 35 m 灌给摆件刷涂。
+			Check(!brush.FamilyFreeScope
+				&& !ToolItemCatalog.UsesFamilyFreeKey(brush, MemoryScope.GlobalShared),
+				"笔刷仍按域 + 枚举家族分键");
+			Check(K(MemoryKeys.Shared(), true, "other") == "F|S$other"
+				&& K(MemoryKeys.Shared(), false, "obj") == "A|S$obj"
+				&& K(MemoryKeys.Shared(), true, "other") != K(MemoryKeys.Shared(), false, "obj"),
+				"地形那把是 F|S$other，摆件刷涂是另一把，互不污染");
+
+			// 记忆往返：两个桶 × 地形侧的全局共用键
+			FreshDir("brushitem");
+			string tKey = K(MemoryKeys.Shared(), true, "other");
+			MemoryStore s = new MemoryStore();
+			s.UseSaveName("笔刷市");
+			s.Set("other.brushSize", tKey, 3500);       // 35 m × 100
+			s.Set("other.brushStrength", tKey, 75);     // 0.75 × 100
+			Check(s.SaveToDisk(true), "笔刷记忆写盘");
+			MemoryStore r = new MemoryStore();
+			r.UseSaveName("笔刷市");
+			bool found;
+			Check(r.LoadForCurrentSave(), "读盘成功");
+			Check(r.Get("other.brushSize", tKey, out found) == 3500 && found, "笔刷粗细读得回来");
+			Check(r.Get("other.brushStrength", tKey, out found) == 75 && found, "笔刷强度读得回来");
+			Check(r.EntryCount == 2, "两个桶都活过了读档过滤（Find 认不回父项就会被整桶丢掉）");
+
+			// 0.6.1 那份文件（笔刷记在「其它」的范围下）升级后仍然读得回，不会凭空丢
+			string legacy = "{\"v\":3,\"save\":\"老档\",\"items\":{"
+				+ "\"other.color0\":{\"A|G:Roads/SmallRoads$net\":16711680},"
+				+ "\"other.brushSize\":{\"A|G:Roads/SmallRoads$net\":3000},"
+				+ "\"other.brushStrength\":{\"A|G:Roads/SmallRoads$net\":50}}}";
+			FreshDir("brushlegacy");
+			MemoryStore l = new MemoryStore();
+			l.UseSaveName("老档");
+			File.WriteAllText(l.CurrentFilePath(), legacy, Encoding.UTF8);
+			Check(l.LoadForCurrentSave() && l.EntryCount == 3, "升级后第一次进老档：三条值一条不丢");
+			Check(l.Get("other.brushSize", K(kSmallRoads, false, "net"), out found) == 3000 && found,
+				"老笔刷值按原来的键照读（玩家不必重新调一遍）");
+		}
+
+		/// <summary>
+		/// v0.6.2 功能③：游戏内「另存为」立即复制。
+		/// 反编译结论（GameManager.Save）：游戏先把存档包写盘并复查存在，才 raise
+		/// onGameSaveLoad(start=false)（第二发），所以回调到达时新档已经在磁盘上了；
+		/// 旧实现直接从磁盘上的旧档文件 <c>File.Copy</c> —— 而实时落盘有 10 秒防抖，
+		/// 于是复制的是最多 10 秒前的旧账，而且本局之后再不写旧档名，
+		/// 旧存档那份记忆就永远停在那 10 秒前。修法在 MemoryStore 内部：改名前先落盘一次。
+		/// </summary>
+		private static void SaveAsCopiesImmediately()
+		{
+			Console.WriteLine("[29] 另存为立即复制：改名前先落盘到旧档名");
+			string key = K(kSmallRoads, false, "net");
+			bool found;
+
+			// A) 正常路径：旧档落过盘，内存里还有一笔没写（防抖窗口内另存为）
+			FreshDir("saveas_dirty");
+			MemoryStore s = new MemoryStore();
+			s.UseSaveName("旧档名");
+			s.Set(ToolItemCatalog.kToolMode, key, 1);
+			Check(s.SaveToDisk(true), "旧档先落过一次盘");
+			s.Set(ToolItemCatalog.kToolMode, key, 5);
+			Check(s.Dirty, "还有一笔改动没到落盘时间（另存为就发生在这 10 秒里）");
+			Check(s.CarryOverTo("新档名"), "换了名字");
+			string dirA = DirOf(s);
+			Check(File.Exists(Path.Combine(dirA, "旧档名.json")) && File.Exists(Path.Combine(dirA, "新档名.json")),
+				"两份文件都在，旧档没被搬走");
+			MemoryStore ro = new MemoryStore();
+			ro.UseSaveName("旧档名");
+			Check(ro.LoadForCurrentSave() && ro.Get(ToolItemCatalog.kToolMode, key, out found) == 5 && found,
+				"旧档那份补成了当前值，不再停在 10 秒前");
+			MemoryStore rn = new MemoryStore();
+			rn.UseSaveName("新档名");
+			Check(rn.LoadForCurrentSave() && rn.Get(ToolItemCatalog.kToolMode, key, out found) == 5 && found,
+				"新档名当场拿到同一份记忆，不用等退档");
+			Check(s.SaveName == "新档名" && !s.IsPlaceholder, "本局之后按新档名写");
+
+			// B) 旧档一次盘都没落过（刚进档就另存为）
+			FreshDir("saveas_first");
+			MemoryStore f = new MemoryStore();
+			f.UseSaveName("只有内存");
+			f.Set(ToolItemCatalog.kElevation, key, 1000);
+			Check(f.CarryOverTo("复制出来的"), "没写过盘也照样改名 + 复制");
+			string dirB = DirOf(f);
+			Check(File.Exists(Path.Combine(dirB, "只有内存.json")), "改名前先把当前内存写进了旧档名");
+			Check(File.Exists(Path.Combine(dirB, "复制出来的.json")), "新档名立刻有副本");
+
+			// C) 目标档名已经有自己的记忆：不许覆盖别人，但本局照样换名
+			FreshDir("saveas_target");
+			MemoryStore own = new MemoryStore();
+			own.UseSaveName("目标档");
+			own.Set(ToolItemCatalog.kToolMode, key, 4);
+			Check(own.SaveToDisk(true), "先造出目标档自己的记忆");
+			MemoryStore src = new MemoryStore();
+			src.UseSaveName("源档");
+			src.Set(ToolItemCatalog.kToolMode, key, 9);
+			Check(src.CarryOverTo("目标档"), "目标已存在时也换了名字");
+			string dirC = DirOf(src);
+			MemoryStore keep = new MemoryStore();
+			keep.UseSaveName("目标档");
+			Check(keep.LoadForCurrentSave() && keep.Get(ToolItemCatalog.kToolMode, key, out found) == 4 && found,
+				"目标档自己的值原样保留（以那份档为准）");
+			Check(File.Exists(Path.Combine(dirC, "源档.json")), "源档仍先把当前内存落成了自己的文件");
+
+			// D) 名字没变（普通覆盖存盘）：早退，不复制也不改脏标记
+			FreshDir("saveas_same");
+			MemoryStore same = new MemoryStore();
+			same.UseSaveName("同一个档");
+			same.Set(ToolItemCatalog.kToolMode, key, 7);
+			Check(!same.CarryOverTo("同一个档"), "同名 -> 返回 false");
+			Check(same.Dirty, "早退不顺手落盘（那一步交给调用方）");
+			Check(!File.Exists(Path.Combine(DirOf(same), "同一个档.json")), "同名这条路径不产生文件");
+
+			// E) 读坏 / 空名字：一律拒绝，什么都不写
+			FreshDir("saveas_blocked");
+			MemoryStore bad = new MemoryStore();
+			bad.UseSaveName("坏档");
+			bad.Set(ToolItemCatalog.kToolMode, key, 1);
+			bad.SaveToDisk(true);
+			File.WriteAllText(bad.CurrentFilePath(), "{坏掉的 json", Encoding.UTF8);
+			Check(!bad.LoadForCurrentSave() && bad.WriteBlocked, "先造出写禁状态");
+			Check(!bad.CarryOverTo("别写我"), "写禁时拒绝改名复制");
+			Check(!File.Exists(Path.Combine(DirOf(bad), "别写我.json")), "没写出新文件");
+			Check(!bad.CarryOverTo(null) && !bad.CarryOverTo(""), "空名字拒绝");
+			Check(bad.SaveName == "坏档", "名字一点没动");
+		}
 	}
 }

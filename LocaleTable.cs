@@ -177,8 +177,9 @@ namespace ToolModeMemory
 		}
 
 		/// <summary>
-		/// 11 个工具项：启用开关 + 共用范围下拉。标签在这里补上目录里的序号，
-		/// 语言表里的 item.*.label 一律不带数字。
+		/// 目录里的每一项（v0.6.2 起 13 项）：启用开关 + 共用范围下拉，两行都按 <see cref="ToolItemDef.Number"/>
+		/// 与 <see cref="ToolItemDef.Source"/> 自动出现，新增一项不需要改这里。
+		/// 标签在这里补上目录里的序号，语言表里的 item.*.label 一律不带数字。
 		/// 需求 4（v0.2.1 修正）：五种共用范围的定义写进**本项**共用范围行的说明文本，
 		/// 例子按本项的数值来举。
 		/// </summary>
@@ -495,10 +496,18 @@ namespace ToolModeMemory
 
 			// ---------- 11 其它 ----------
 			d["item.other.label"] = "其它";
-			d["item.other.desc"] = "记忆工具面板上其余可以记录的行：「颜色」一行的道路配色，以及「笔刷粗细」「笔刷强度」。";
+			d["item.other.desc"] = "记忆工具面板上其余可以记录的行：「颜色」一行的道路配色。";
 			d["item.other.ex.group"] = "比如把两车道小型道路的颜色改成蓝色，切换到其它的小型道路，同样是蓝色，但切换到大型道路就不是了";
-			d["item.other.ex.menu"] = "点击道路菜单里面的所有资产，颜色和笔刷都是这一套，但切换到电力菜单就不是了";
+			d["item.other.ex.menu"] = "点击道路菜单里面的所有资产，颜色都是这一套，但切换到电力菜单就不是了";
 			d["item.other.ex.category"] = "切换到六车道道路也是蓝色，但切换到桥梁或双线铁路就按它自己那一类另记一份（需单独设置），即使它们都在道路菜单下";
+
+			// ---------- 12 笔刷（v0.6.2 从「其它」里独立出来：地形工具玩家的痛点） ----------
+			// 行名取官方语言包：Toolbar.BRUSH_SIZE = 笔刷粗细，Toolbar.BRUSH_STRENGTH = 笔刷强度。
+			d["item.brush.label"] = "笔刷";
+			d["item.brush.desc"] = "记忆「笔刷粗细」和「笔刷强度」两行：笔刷粗细决定一次刷过多大范围，笔刷强度决定每一下改变多少。面板上有这两行的工具才起作用，也就是城市美化里的地形工具（抬升、降低、软化、绘制纹理等），以及摆放物体时的刷涂；没有这两行的工具既不记录也不会被改动。";
+			d["item.brush.ex.group"] = "比如把抬升的笔刷粗细调到30米，同一组里的其它地形工具也是30米，但换到另一组就不是了";
+			d["item.brush.ex.menu"] = "点击城市美化菜单里面的所有地形工具，笔刷粗细和强度都是这一套，但切换到其它菜单就不是了";
+			d["item.brush.ex.category"] = "这一档按资产服务的对象归群，地形工具没有服务对象可判，所以每种地形工具各记一份：从抬升换到绘制纹理就是它自己那份笔刷（需单独设置）";
 			return d;
 		}
 
@@ -635,10 +644,17 @@ namespace ToolModeMemory
 
 			// ---------- 11 其他 ----------
 			d["item.other.label"] = "其他";
-			d["item.other.desc"] = "記憶工具面板上其餘可以記錄的行：「顏色」一行的道路配色，以及「筆刷大小」「筆刷硬度」。";
+			d["item.other.desc"] = "記憶工具面板上其餘可以記錄的行：「顏色」一行的道路配色。";
 			d["item.other.ex.group"] = "例如把兩車道小型道路的顏色改成藍色，切換到其他小型道路同樣是藍色，但切換到大型道路就不是了";
-			d["item.other.ex.menu"] = "點選道路選單裡面的所有資產，顏色和筆刷都是這一組設定，但切換到電力選單就不是了";
+			d["item.other.ex.menu"] = "點選道路選單裡面的所有資產，顏色都是這一組設定，但切換到電力選單就不是了";
 			d["item.other.ex.category"] = "切換到六車道道路也是藍色，但切換到橋樑或雙軌鐵路就按它自己那一類另記一份（需單獨設定），即使它們都在道路選單下";
+
+			// 行名取官方語言包：Toolbar.BRUSH_SIZE = 筆刷大小，Toolbar.BRUSH_STRENGTH = 筆刷硬度
+			d["item.brush.label"] = "筆刷";
+			d["item.brush.desc"] = "記憶「筆刷大小」和「筆刷硬度」兩行：筆刷大小決定一次刷過多大範圍，筆刷硬度決定每一下改變多少。面板上有這兩行的工具才會起作用，也就是景觀美化裡的地形工具（升高、降低、軟化、繪製紋理等），以及擺放物件時的塗刷；沒有這兩行的工具既不記錄也不會被改動。";
+			d["item.brush.ex.group"] = "例如把升高的筆刷大小調成30公尺，同一組裡面的其他地形工具也是30公尺，但換到另一組就不是了";
+			d["item.brush.ex.menu"] = "點選景觀美化選單裡面的所有地形工具，筆刷大小和硬度都是這一組設定，但切換到其他選單就不是了";
+			d["item.brush.ex.category"] = "這一檔按資產服務的對象歸群，地形工具沒有服務對象可判，所以每種地形工具各記一份：從升高換到繪製紋理就是它自己那一份筆刷（需單獨設定）";
 			return d;
 		}
 
@@ -775,10 +791,17 @@ namespace ToolModeMemory
 
 			// ---------- 11 Other ----------
 			d["item.other.label"] = "Other";
-			d["item.other.desc"] = "Remembers the remaining rows a tool panel can record: the road colours on the Color row, plus Brush Size and Brush Strength.";
+			d["item.other.desc"] = "Remembers the remaining rows a tool panel can record: the road colours on the Color row.";
 			d["item.other.ex.group"] = "for example, set the colour of a two-lane small road to blue and the other small roads turn blue too, while a large road does not";
-			d["item.other.ex.menu"] = "every asset you click in the Roads menu uses this same colour and brush setting, but moving to the Electricity menu it does not";
+			d["item.other.ex.menu"] = "every asset you click in the Roads menu uses this same colour, but moving to the Electricity menu it does not";
 			d["item.other.ex.category"] = "switching to a six-lane road is still blue, but a bridge or a double train track keeps its own copy and needs its own setting, even though they are all in the Roads menu";
+
+			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
+			d["item.brush.label"] = "Brush";
+			d["item.brush.desc"] = "Remembers the Brush Size and Brush Strength rows: Brush Size sets how wide one stroke reaches, Brush Strength sets how much each stroke changes. Only tools whose panel really has these two rows are affected, that is the Landscaping tools (Raise, Lower, Soften, Paint Texture and the rest) and the Paint mode used when placing items; tools without those rows are neither recorded nor changed.";
+			d["item.brush.ex.group"] = "for example, set Raise to a 30 m brush size and the other landscaping tools in the same group are 30 m too, while a tool in another group is not";
+			d["item.brush.ex.menu"] = "every landscaping tool you open in the Landscaping menu uses this same brush size and strength, but moving to another menu it does not";
+			d["item.brush.ex.category"] = "this level groups assets by what they serve, and landscaping tools serve nothing, so each of them keeps its own copy: switching from Raise to Paint Texture uses that tool's own brush (needs its own setting)";
 			return d;
 		}
 

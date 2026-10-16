@@ -24,7 +24,7 @@
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
 	<ModId Value="160529" />
-	<ModVersion Value="0.6.1" />
+	<ModVersion Value="0.6.2" />
 	<GameVersion Value="1.6.*" />
 	<!--Private = 不公开（用户要求）。若平台拒绝此值再改 Unlisted。-->
 	<AccessLevel Value="Private" />
@@ -38,12 +38,20 @@
 	<ExternalLink Type="kofi" Url="https://ko-fi.com/yuexian7" />
 	<ExternalLink Type="x" Url="https://x.com/yuexian777/status/2101942150447702427?s=20" />
 	<ChangeLog>
-v0.6.1
+v0.6.2
 
-*   No feature or wording change: this release only audits what the mod does every frame and removes the leftover memory churn (the per-asset colour probe was the main one). That kind of garbage is invisible in a short session but shows up as occasional stutter after hours of play, so it is worth being quiet about. Sharing scopes, remembering and restoring behave exactly as in 0.6.0.
+*   New tool item: Brush. Brush Size and Brush Strength now have a row of their own, so you can have the brush remembered without also switching on the road colours. It ships switched off, and nothing changes until you turn it on.
+*   The three ANARCHY tool items no longer show up when ANARCHY is not installed. They come back by themselves once it is.
+*   Save As now brings the settings you just made into the new save right away, instead of waiting for the next automatic write.
+*   Fixed: a renamed save no longer starts from scratch. It now finds the memory file it already had.
+*   Fixed: a save whose name Windows keeps for itself, such as CON or COM1, now gets a memory file like any other save.
 
 中文
 
-*   功能与文案都没有变化：这一版只复核了模组每帧做的事，并清掉多余的内存分配（主要是配色那处每帧重复探测）。这类垃圾在短时间游玩里完全看不出来，往往是连着玩几小时后才以偶发卡顿的形式露头，所以还是安静地把它消掉。共用范围、记忆与恢复的表现与 0.6.0 完全一致。
+*   新增工具项「笔刷」：笔刷粗细、笔刷强度单独成行，想让笔刷被记住不用再连带打开道路配色。出厂默认关闭，不打开就没有任何变化。
+*   没安装 ANARCHY 时，ANARCHY 的三个工具项不再出现在列表里干占一行；装上之后它们自己会回来。
+*   另存为现在会把你刚刚调好的设置立刻带进新存档，不再等下一次自动写入。
+*   修复：改过名字的存档不再从头开始，它现在能认回自己原本那份记忆文件。
+*   修复：名字撞上 Windows 保留名（例如 CON、COM1）的存档，现在也能正常写出记忆文件。
 </ChangeLog>
 </PublishConfiguration>

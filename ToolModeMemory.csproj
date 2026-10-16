@@ -26,15 +26,31 @@
 	</Target>
 
 	<ItemGroup>
+		<!--
+		  源码通配收（Mod.props 的默认 Compile glob），所以**每一个非源码目录都必须点名排除**。
+		  第三轮审查 P3 的理由：SDK 跳过点开目录、跳过 bin/obj 都是默认项里的隐式行为，
+		  依赖它 = 埋雷。今天这些目录里 0 个 .cs（Library/state 实测），
+		  但它们是工具链与运行时生成的，哪天生成物里出现 .cs 就会被编进模组产物，
+		  而且是在 nobody 看得见的位置上出错。点名排除的成本是一次编辑。
+		-->
 		<Compile Remove="research\**" />
 		<Compile Remove="template\**" />
 		<Compile Remove="tests\**" />
 		<Compile Remove="releases\**" />
 		<Compile Remove="tools\**" />
+		<Compile Remove="Library\**" />
+		<Compile Remove="state\**" />
+		<Compile Remove=".git\**" />
+		<Compile Remove=".github\**" />
+		<Compile Remove=".vs\**" />
+		<Compile Remove=".idea\**" />
+		<Compile Remove=".qoder-credits\**" />
 		<None Remove="research\**" />
 		<None Remove="template\**" />
 		<None Remove="tests\**" />
 		<None Remove="releases\**" />
+		<None Remove="Library\**" />
+		<None Remove="state\**" />
 	</ItemGroup>
 
 	<ItemGroup>

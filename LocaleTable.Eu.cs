@@ -142,10 +142,17 @@ namespace ToolModeMemory
 
 			// ---------- 11 Sonstiges ----------
 			d["item.other.label"] = "Sonstiges";
-			d["item.other.desc"] = "Merkt die übrigen Zeilen, die ein Werkzeugpanel aufzeichnen kann: die Straßenfarben der Zeile Farbe sowie Pinselgröße und Pinselstärke.";
+			d["item.other.desc"] = "Merkt die übrigen Zeilen, die ein Werkzeugpanel aufzeichnen kann: die Straßenfarben der Zeile Farbe.";
 			d["item.other.ex.group"] = "zum Beispiel färbst du eine zweispurige kleine Straße blau, andere kleine Straßen werden ebenfalls blau, eine große Straße dagegen nicht";
-			d["item.other.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, nutzt dieselbe Farb- und Pinseleinstellung, im Menü Strom dagegen nicht";
+			d["item.other.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, nutzt dieselbe Farbe, im Menü Strom dagegen nicht";
 			d["item.other.ex.category"] = "wechselt man zu einer sechsspurigen Straße, bleibt es blau, aber eine Brücke oder doppelte Bahngleise behalten ihre eigene Aufzeichnung und brauchen eine eigene Einstellung, obwohl alle im Menü Straßen liegen";
+
+			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
+			d["item.brush.label"] = "Pinsel";
+			d["item.brush.desc"] = "Merkt sich die Zeilen Pinselgröße und Pinselstärke: Pinselgröße bestimmt, wie viel Fläche eine Bewegung erfasst, Pinselstärke, wie viel sie verändert. Wirkt nur bei Werkzeugen, die diese beiden Zeilen haben, also den Landschaftsbau-Werkzeugen (Erhöhen, Absenken, Glätten, Textur malen und die übrigen) sowie dem Pinselmodus beim Platzieren von Objekten; Werkzeuge ohne diese Zeilen werden weder aufgezeichnet noch geändert.";
+			d["item.brush.ex.group"] = "zum Beispiel setzt du Erhöhen auf eine Pinselgröße von 30 m, die anderen Landschaftsbau-Werkzeuge derselben Gruppe sind dann auch 30 m, ein Werkzeug einer anderen Gruppe nicht";
+			d["item.brush.ex.menu"] = "jedes Landschaftsbau-Werkzeug, das du im Menü Landschaftsbau anklickst, nutzt dieselbe Pinselgröße und -stärke, im Menü Strom dagegen nicht";
+			d["item.brush.ex.category"] = "diese Stufe gruppiert Assets nach dem, was sie bedienen; Landschaftsbau-Werkzeuge bedienen nichts, deshalb hält jedes eine eigene Aufzeichnung: von Erhöhen zu Textur malen wechselt auf den Pinsel dieses Werkzeugs (braucht eine eigene Einstellung)";
 			return d;
 		}
 
@@ -280,10 +287,17 @@ namespace ToolModeMemory
 
 			// ---------- 11 Otros ----------
 			d["item.other.label"] = "Otros";
-			d["item.other.desc"] = "Recuerda las demás filas que un panel de herramienta puede registrar: los colores de carretera de la fila Color, más Tamaño de pincel y Fuerza de pincel.";
+			d["item.other.desc"] = "Recuerda las demás filas que un panel de herramienta puede registrar: los colores de carretera de la fila Color.";
 			d["item.other.ex.group"] = "por ejemplo, pones el color de una carretera pequeña de dos carriles en azul y las otras carreteras pequeñas también se vuelven azules, mientras que una carretera grande no";
-			d["item.other.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras usan este mismo color y ajuste de pincel, pero al pasar al menú de Electricidad no";
+			d["item.other.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras usan este mismo color, pero al pasar al menú de Electricidad no";
 			d["item.other.ex.category"] = "cambiar a una carretera de seis carriles sigue siendo azul, pero un puente o unas vías de tren dobles guardan su propia copia y necesitan su propio ajuste, aunque todos estén en el menú de Carreteras";
+
+			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
+			d["item.brush.label"] = "Pincel";
+			d["item.brush.desc"] = "Recuerda las filas Tamaño de pincel y Fuerza de pincel: el tamaño define hasta dónde llega una pasada y la fuerza cuánto cambia cada pasada. Solo afecta a las herramientas que tienen esas dos filas: las herramientas de Paisajismo (Elevar, Hundir, Suavizar, Pintar textura y las demás) y el modo Pincel al colocar objetos; las herramientas sin esas filas no se registran ni se modifican.";
+			d["item.brush.ex.group"] = "por ejemplo, pones Elevar a 30 m de tamaño de pincel y las otras herramientas de paisajismo del mismo grupo también usan 30 m, pero una de otro grupo no";
+			d["item.brush.ex.menu"] = "todas las herramientas de paisajismo que pulsas en el menú de Paisajismo usan este mismo tamaño y fuerza de pincel, pero al pasar al menú de Electricidad no";
+			d["item.brush.ex.category"] = "este nivel agrupa los activos según lo que atienden; las herramientas de paisajismo no atienden nada, así que cada una guarda su propia copia: pasar de Elevar a Pintar textura usa el pincel de esa herramienta (necesita su propio ajuste)";
 			return d;
 		}
 
@@ -418,10 +432,17 @@ namespace ToolModeMemory
 
 			// ---------- 11 Autres ----------
 			d["item.other.label"] = "Autres";
-			d["item.other.desc"] = "Mémorise les autres lignes qu'un panneau d'outil peut enregistrer : les couleurs de route de la ligne Couleur, plus Taille du pinceau et Force du pinceau.";
+			d["item.other.desc"] = "Mémorise les autres lignes qu'un panneau d'outil peut enregistrer : les couleurs de route de la ligne Couleur.";
 			d["item.other.ex.group"] = "par exemple, mettez la couleur d'une petite route à deux voies en bleu, les autres petites routes deviennent bleues aussi, mais une grande route non";
-			d["item.other.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes utilisent ce même réglage de couleur et de pinceau, mais dans le menu Électricité ce n'est plus le cas";
+			d["item.other.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes utilisent ce même réglage de couleur, mais dans le menu Électricité ce n'est plus le cas";
 			d["item.other.ex.category"] = "passer à une route à six voies reste en bleu, mais un pont ou une double voie ferrée gardent leur propre copie et réclament leur propre réglage, bien que tous soient dans le menu Routes";
+
+			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
+			d["item.brush.label"] = "Pinceau";
+			d["item.brush.desc"] = "Mémorise les lignes Taille du pinceau et Force du pinceau : la taille définit l'étendue d'une passe et la force définit ce que chaque passe modifie. Seuls les outils qui affichent ces deux lignes sont concernés, c'est-à-dire les outils d'Aménagement paysager (Augmenter, Diminuer, Adoucir, Peindre la texture et les autres) et le mode Pinceau lors du placement d'objets ; les outils sans ces lignes ne sont ni enregistrés ni modifiés.";
+			d["item.brush.ex.group"] = "par exemple, vous mettez Augmenter à 30 m de taille de pinceau, les autres outils d'aménagement du même groupe sont aussi à 30 m, mais un outil d'un autre groupe non";
+			d["item.brush.ex.menu"] = "tous les outils d'aménagement que vous cliquez dans le menu Aménagement paysager utilisent cette même taille et force de pinceau, mais dans le menu Électricité ce n'est plus le cas";
+			d["item.brush.ex.category"] = "ce niveau groupe les assets selon ce qu'ils desservent ; les outils d'aménagement ne desservent rien, donc chacun garde sa propre copie : passer d'Augmenter à Peindre la texture utilise le pinceau de cet outil (réglage séparé nécessaire)";
 			return d;
 		}
 
@@ -556,10 +577,17 @@ namespace ToolModeMemory
 
 			// ---------- 11 Altro ----------
 			d["item.other.label"] = "Altro";
-			d["item.other.desc"] = "Ricorda le altre righe che un pannello strumento può registrare: i colori delle strade nella riga Colore, più Dimensione pennello e Robustezza pennello.";
+			d["item.other.desc"] = "Ricorda le altre righe che un pannello strumento può registrare: i colori delle strade nella riga Colore.";
 			d["item.other.ex.group"] = "per esempio, imposti il colore di una piccola strada a due corsie su blu e anche le altre piccole strade diventano blu, mentre una strada grande no";
-			d["item.other.ex.menu"] = "tutti gli asset che clicchi nel menu Strade usano questo stesso colore e impostazione del pennello, ma passando al menu Elettricità no";
+			d["item.other.ex.menu"] = "tutti gli asset che clicchi nel menu Strade usano questo stesso colore, ma passando al menu Elettricità no";
 			d["item.other.ex.category"] = "passando a una strada a sei corsie resta blu, ma un ponte o un binario ferroviario doppio tengono una copia tutta loro e necessitano un'impostazione propria, benché tutti siano nel menu Strade";
+
+			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
+			d["item.brush.label"] = "Pennello";
+			d["item.brush.desc"] = "Ricorda le righe Dimensione pennello e Robustezza pennello: la dimensione stabilisce quanta area copre una passata, la robustezza quanto cambia ogni passata. Riguarda solo gli strumenti che hanno queste due righe, cioè gli strumenti di Architettura del paesaggio (Alza, Abbassa, Ammorbidisci, Dipingi texture e gli altri) e la modalità Pennello quando si posizionano oggetti; gli strumenti senza queste righe non sono né registrati né modificati.";
+			d["item.brush.ex.group"] = "per esempio, imposti Alza su una dimensione pennello di 30 m e anche gli altri strumenti del paesaggio dello stesso gruppo sono a 30 m, mentre uno di un altro gruppo no";
+			d["item.brush.ex.menu"] = "tutti gli strumenti del paesaggio che clicchi nel menu Architettura del paesaggio usano questa stessa dimensione e robustezza del pennello, ma passando al menu Elettricità no";
+			d["item.brush.ex.category"] = "questa opzione raggruppa gli asset per ciò che servono; gli strumenti del paesaggio non servono nulla, quindi ognuno tiene una copia tutta sua: passando da Alza a Dipingi texture il pennello è quello di quello strumento (serve un'impostazione propria)";
 			return d;
 		}
 	}

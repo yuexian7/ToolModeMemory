@@ -18,11 +18,12 @@ namespace ToolModeMemory
 	/// <summary>
 	/// Tool Mode Memory 选项页。
 	/// v0.2.2 结构：模组设置 = 三个板块 —— 顶部总开关（**不显示板块名**）、
-	/// 「官方工具项设置」（原版 9 项）、「Anarchy工具项设置」（该模组的 3 项）；
-	/// 序号跨板块连续 1..12；每项 = 是否恢复 + 共用范围，五种共用范围的定义写在
+	/// 「官方工具项设置」（原版 10 项，v0.6.2 起含「笔刷」）、「Anarchy工具项设置」（该模组的 3 项）；
+	/// 序号跨板块连续 1..13；每项 = 是否恢复 + 共用范围，五种共用范围的定义写在
 	/// 每一项自己的共用范围说明里。关于 = 记忆管理 + 版本/作者/链接按钮（v0.6.0 起「兼容性」那一块已去掉：
 	/// 工具栏层级只有被其它模组改写过的这一份数据，那个开关关掉也一样按对方的分组记，留着只会误导）。
 	/// 总开关关闭时，下面所有工具项仍然变灰不可点（DisableByCondition 仍挂在每一项上）。
+	/// Anarchy 那三块不一样，挂的是 HideByCondition：没装 Anarchy 就整块不出现（理由见 Anarchy 段注释）。
 	/// 全部改动实时生效（setter 内 Sync + Persist）。
 	/// </summary>
 	[FileLocation(nameof(ToolModeMemory))]
@@ -99,7 +100,7 @@ namespace ToolModeMemory
 			return !m_Enabled;
 		}
 
-		// ---------- 官方工具项设置（1..9）：是否恢复 + 共用范围 ----------
+		// ---------- 官方工具项设置（1..10）：是否恢复 + 共用范围 ----------
 
 		[SettingsUISection(kTabMod, kGroupOfficial)]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
@@ -183,6 +184,16 @@ namespace ToolModeMemory
 
 		[SettingsUISection(kTabMod, kGroupOfficial)]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
+		public bool BrushEnabled { get { return GetEnabled(ToolItemCatalog.kBrush); } set { SetEnabled(ToolItemCatalog.kBrush, value); } }
+
+		[SettingsUISection(kTabMod, kGroupOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetBrushScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsBrushScopeDisabled))]
+		public int BrushScope { get { return GetScope(ToolItemCatalog.kBrush); } set { SetScope(ToolItemCatalog.kBrush, value); } }
+
+		[SettingsUISection(kTabMod, kGroupOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
 		public bool OtherEnabled { get { return GetEnabled(ToolItemCatalog.kOther); } set { SetEnabled(ToolItemCatalog.kOther, value); } }
 
 		[SettingsUISection(kTabMod, kGroupOfficial)]
@@ -191,36 +202,53 @@ namespace ToolModeMemory
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsOtherScopeDisabled))]
 		public int OtherScope { get { return GetScope(ToolItemCatalog.kOther); } set { SetScope(ToolItemCatalog.kOther, value); } }
 
-		// ---------- Anarchy工具项设置（10..12）：只在装了 Anarchy 时有实际作用 ----------
+		// ---------- Anarchy工具项设置（11..13）：只在装了 Anarchy 时有实际作用 ----------
+		//
+		// 这六行挂的是 **HideByCondition**，不是 DisableByCondition。原因（反编译 Game.dll 核实）：
+		// 变灰那条路只在「设置页构建的那一刻」求值一次 —— AutomaticSettings.BuildTab 里
+		// 逐个 widget.Update()，而 Widget.UpdateBase() 才读 disabled()；游戏每帧只做
+		// Page.UpdateVisibility / UpdateNameAndDescription / UpdateWarning
+		// （OptionsUISystem.OnUpdate，且只有停在 Options 画面才跑），没有第二次 disabled()。
+		// 本模组的 RegisterInOptionsUI 又发生在 OnLoad，比 Anarchy 的程序集进 AppDomain
+		// 早约 2 秒（玩家实测日志），拿「没装 Anarchy」当禁用条件就会把这三行**永久冻灰**，
+		// 连装了 Anarchy 的玩家也点不动 —— 那是比现状（能点、静默 no-op）更糟的回归。
+		// hidden() 走的 UpdateVisibility() 是每帧重算的，所以隐藏判据会随 Anarchy 判定落地
+		// 当场生效：没装 = 整块消失，装了 = 自动回来。判定未落地前一律不隐藏（见 ToolMemoryBridge）。
 
 		[SettingsUISection(kTabMod, kGroupAnarchy)]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
+		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
 		public bool AnarchyEnabled { get { return GetEnabled(ToolItemCatalog.kAnarchy); } set { SetEnabled(ToolItemCatalog.kAnarchy, value); } }
 
 		[SettingsUISection(kTabMod, kGroupAnarchy)]
 		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetAnarchyScopeItems))]
 		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyScopeDisabled))]
+		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
 		public int AnarchyScope { get { return GetScope(ToolItemCatalog.kAnarchy); } set { SetScope(ToolItemCatalog.kAnarchy, value); } }
 
 		[SettingsUISection(kTabMod, kGroupAnarchy)]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
+		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
 		public bool LeftRightEnabled { get { return GetEnabled(ToolItemCatalog.kLeftRight); } set { SetEnabled(ToolItemCatalog.kLeftRight, value); } }
 
 		[SettingsUISection(kTabMod, kGroupAnarchy)]
 		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetLeftRightScopeItems))]
 		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsLeftRightScopeDisabled))]
+		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
 		public int LeftRightScope { get { return GetScope(ToolItemCatalog.kLeftRight); } set { SetScope(ToolItemCatalog.kLeftRight, value); } }
 
 		[SettingsUISection(kTabMod, kGroupAnarchy)]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsMasterOff))]
+		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
 		public bool GeneralEnabled { get { return GetEnabled(ToolItemCatalog.kGeneral); } set { SetEnabled(ToolItemCatalog.kGeneral, value); } }
 
 		[SettingsUISection(kTabMod, kGroupAnarchy)]
 		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetGeneralScopeItems))]
 		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsGeneralScopeDisabled))]
+		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
 		public int GeneralScope { get { return GetScope(ToolItemCatalog.kGeneral); } set { SetScope(ToolItemCatalog.kGeneral, value); } }
 
 		// ---------- 每项的共用范围行是否可点：总开关关闭 或 本项没开 ----------
@@ -243,11 +271,26 @@ namespace ToolModeMemory
 
 		public bool IsOtherScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kOther); }
 
+		public bool IsBrushScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kBrush); }
+
 		public bool IsAnarchyScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kAnarchy); }
 
 		public bool IsLeftRightScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kLeftRight); }
 
 		public bool IsGeneralScopeDisabled() { return IsMasterOff() || !GetEnabled(ToolItemCatalog.kGeneral); }
+
+		/// <summary>
+		/// Anarchy 那三行（共 6 行）的隐藏判据：玩家没装 / 没启用 Anarchy 时整块不出现。
+		/// 判据本身在 <see cref="ToolMemoryBridge.AnarchyConfirmedAbsent"/>：
+		/// 只有「扫过已加载的程序集、确实找不到 Anarchy 的两个 UI 类型，并且启动宽限期也过了」
+		/// 才算没装；拿不准（Anarchy 还在加载、世界没建好、扫描抛异常）一律返回 false = 照旧显示。
+		/// 这条判据被选项页每帧调用（只在停在 Options 画面时），所以它自己必须既不抛也不做重活。
+		/// </summary>
+		public bool IsAnarchyMissing()
+		{
+			try { return ToolMemoryBridge.AnarchyConfirmedAbsent(); }
+			catch { return false; }
+		}
 
 		// ---------- 关于页：记忆管理 ----------
 
@@ -345,8 +388,6 @@ namespace ToolModeMemory
 		}
 
 		// ---------- 范围下拉（只显示短名；五种范围的定义写在每一项自己的说明里） ----------
-
-		// ---------- 范围下拉（只显示短名；五种范围的定义写在每一项自己的说明里） ----------
 		public DropdownItem<int>[] GetThemesScopeItems() { return BuildScopeItems(ToolItemCatalog.kThemes); }
 		public DropdownItem<int>[] GetPacksScopeItems() { return BuildScopeItems(ToolItemCatalog.kPacks); }
 		public DropdownItem<int>[] GetToolModeScopeItems() { return BuildScopeItems(ToolItemCatalog.kToolMode); }
@@ -356,6 +397,7 @@ namespace ToolModeMemory
 		public DropdownItem<int>[] GetTopographyScopeItems() { return BuildScopeItems(ToolItemCatalog.kTopography); }
 		public DropdownItem<int>[] GetUndergroundScopeItems() { return BuildScopeItems(ToolItemCatalog.kUnderground); }
 		public DropdownItem<int>[] GetOtherScopeItems() { return BuildScopeItems(ToolItemCatalog.kOther); }
+		public DropdownItem<int>[] GetBrushScopeItems() { return BuildScopeItems(ToolItemCatalog.kBrush); }
 		public DropdownItem<int>[] GetAnarchyScopeItems() { return BuildScopeItems(ToolItemCatalog.kAnarchy); }
 		public DropdownItem<int>[] GetLeftRightScopeItems() { return BuildScopeItems(ToolItemCatalog.kLeftRight); }
 		public DropdownItem<int>[] GetGeneralScopeItems() { return BuildScopeItems(ToolItemCatalog.kGeneral); }

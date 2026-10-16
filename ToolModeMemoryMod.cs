@@ -22,7 +22,7 @@ namespace ToolModeMemory
 	/// </summary>
 	public class ToolModeMemoryMod : IMod
 	{
-		public const string kVersion = "0.6.1";
+		public const string kVersion = "0.6.2";
 
 		public static ILog log = LogManager.GetLogger(nameof(ToolModeMemory)).SetShowsErrorsInUI(false);
 
@@ -33,7 +33,15 @@ namespace ToolModeMemory
 		private ToolModeMemorySettings m_Setting;
 		private ToolMemorySystem m_System;
 		private bool m_QuitHooked;
-		private SaveIndex m_Index = new SaveIndex();
+
+		/// <summary>
+		/// guid → 存档名 索引。<b>故意不写字段初始化器</b>：CS2 的 ModManager 用
+		/// <c>FormatterServices.GetUninitializedObject</c> 造 IMod 实例，构造函数与字段初始化器
+		/// 一行都不执行（实机日志证据与全部推导见 <see cref="SaveIndexFile"/> 的类注释）。
+		/// 0.4.0~0.6.1 就是靠初始化器赋值，结果整个索引通道恒为 null，进档与存盘各吞一条 NRE。
+		/// 唯一的赋值点在 <see cref="OnLoad"/> 第一句。
+		/// </summary>
+		private SaveIndex m_Index;
 
 		/// <summary>
 		/// 我们自己注册进本地化系统的 12 个词条源（卸载模组时必须一个个摘掉：
@@ -60,6 +68,12 @@ namespace ToolModeMemory
 		{
 			log.Info("Tool Mode Memory v" + kVersion + " loading...");
 			s_Instance = this;
+
+			// v0.6.2：本模组的实例字段**必须**在这里显式初始化。CS2 造 IMod 实例走
+			// FormatterServices.GetUninitializedObject，构造函数根本不跑，字段初始化器只是摆设
+			// —— m_Index 就是这么在 0.4.0~0.6.1 一直是 null 的（详见 SaveIndexFile 类注释）。
+			// 放在第一句：下面 RecoverPlaceholderFiles → ResolveNameForGuid 就要用它。
+			m_Index = SaveIndexFile.New();
 
 			Store = new MemoryStore();
 
@@ -131,6 +145,18 @@ namespace ToolModeMemory
 			}
 
 			HookQuit();
+
+			// 有新程序集进来就把 Anarchy 的探测窗口重开：选项页「没装就隐藏那三行」的判据
+			// 吃的是同一个懒解析结论，不能让它停在「预算用完」上再也不看第二眼。
+			// OnDispose 里成对摘掉（AppDomain 活得比我们久）。
+			try
+			{
+				ToolMemoryBridge.WatchAnarchyAssembly();
+			}
+			catch (Exception ex)
+			{
+				log.Warn("WatchAnarchyAssembly failed: " + ex.GetType().Name);
+			}
 
 			try
 			{
@@ -598,18 +624,37 @@ namespace ToolModeMemory
 
 			// 占位名（新建城市第一次存盘）→ 把占位文件改名接管；
 			// 已经有正式名字了但玩家「另存为」成别的名字 → 复制一份给新档，本局之后按新名字写。
+			// CarryOverTo 内部会先把当前内存写回旧档名，所以两边落盘的都是**现在**这份记忆
+			// （10 秒防抖不再让旧档停在 10 秒前 —— v0.6.2「另存为立即复制」的核实结论）。
+			bool renamed = false;
 			RunStep("save.rename", delegate
 			{
 				if (Store.IsPlaceholder) Store.AdoptSaveName(saveName);
-				else Store.CarryOverTo(saveName);
+				else renamed = Store.CarryOverTo(saveName);
 			});
 			RunStep("save.index", delegate
 			{
-				bool changed = m_Index.Set(m_CurrentGuid ?? metaId, saveName);
+				// 存盘路径不会先走 LoadIndex，所以这里再兜一道：索引对象为 null 就直接补一份，
+				// 免得又变成「Set 抛 NRE → 索引永远写不下去」的死循环（v0.4.0~0.6.1 的实际后果）。
+				m_Index = SaveIndexFile.Ensure(m_Index);
+				// 「另存为」之后本局写的已经是**新包**：GameManager.Save 用新建的
+				// saveGameData.id.guid 存档，并在 raise 结束事件之前把
+				// settings.userState.lastSaveGameMetadata 指向新档（decompiled GameManager.cs:961-995），
+				// 所以 metaId 就是新档的 guid。而 m_CurrentGuid 还是本次载入那份**旧档**的 guid，
+				// 拿它配新档名写进索引 = 把旧档的兜底认名通道指到别人的文件上（旧映射进档时已经记过）。
+				// 没改名（普通覆盖存盘）时照旧优先用载入时确证的 guid，口径与反查元数据一致。
+				string guidKey = renamed ? metaId : (m_CurrentGuid ?? metaId);
+				bool changed = false;
+				if (!string.IsNullOrEmpty(guidKey)) changed = m_Index.Set(guidKey, saveName);
 				// 玩家手动存盘 = 这条会话链现在有了正式名字，记下来，之后它的自动存档就认这个名字
 				if (!string.IsNullOrEmpty(sessionGuid))
 				{
 					changed |= m_Index.Set(SaveIdentity.SessionKey(sessionGuid), saveName);
+				}
+				if (renamed && !string.IsNullOrEmpty(metaId))
+				{
+					// 本局之后的身份就是这个新档：下一次存盘（以及这次之后任何一次）都按新 guid 记
+					m_CurrentGuid = metaId;
 				}
 				if (changed) SaveIndexToDisk();
 			});
@@ -631,32 +676,36 @@ namespace ToolModeMemory
 			else if (Store != null && Store.Dirty) Store.SaveToDisk();
 		}
 
+		/// <summary>
+		/// 读 guid → 存档名 索引。m_Index 在这里**永远变成一份可用对象**（规则与理由见
+		/// <see cref="SaveIndexFile.Load"/>）：文件读不到就保留现有条目，路径求不出来也绝不留 null。
+		/// </summary>
 		private void LoadIndex()
 		{
 			try
 			{
-				string path = MemoryStore.IndexPath;
-				if (System.IO.File.Exists(path))
-				{
-					m_Index = SaveIndex.Parse(System.IO.File.ReadAllText(path, Encoding.UTF8));
-				}
+				string error;
+				m_Index = SaveIndexFile.Load(MemoryStore.IndexPath, m_Index, out error);
+				if (error != null) log.Warn("LoadIndex failed: " + error);
 			}
 			catch (Exception ex)
 			{
+				// 连路径都求不出来：索引仍然必须是一份可用对象，绝不能留 null
+				//（0.4.0~0.6.1 的 NRE 就是这么来的，而且会把当次认名整步带下水）。
+				m_Index = SaveIndexFile.Ensure(m_Index);
 				log.Warn("LoadIndex failed: " + ex.GetType().Name);
 			}
 		}
 
 		private void SaveIndexToDisk()
 		{
-			try
+			string error;
+			// 兜底路径也在 Write 里（CreateDirectory / WriteAllText 全程 try），所以这里
+			// 不再需要额外的 try —— 但它只保证「不抛」，写不成照样要留下日志。
+			m_Index = SaveIndexFile.Ensure(m_Index);
+			if (!SaveIndexFile.Write(MemoryStore.DataDirectory, MemoryStore.IndexPath, m_Index, out error))
 			{
-				System.IO.Directory.CreateDirectory(MemoryStore.DataDirectory);
-				System.IO.File.WriteAllText(MemoryStore.IndexPath, m_Index.Serialize(), new UTF8Encoding(false));
-			}
-			catch (Exception ex)
-			{
-				log.Warn("SaveIndex failed: " + ex.GetType().Name);
+				log.Warn("SaveIndex failed: " + error);
 			}
 		}
 
@@ -707,8 +756,13 @@ namespace ToolModeMemory
 			bool placeholder;
 			string name;
 			SaveIdentity.SaveMetaInfo meta = ReadSaveMeta(g);
+			// 索引取当前实例那份；万一 OnLoad 还没跑完（或别的模组路径进来），
+			// Ensure 当场补一份空索引，绝不把 null 递给 TryResolveName 让它静默少一条认名通道。
+			SaveIndex index = s_Instance != null
+				? SaveIndexFile.Ensure(s_Instance.m_Index)
+				: SaveIndexFile.New();
 			bool ok = SaveIdentity.TryResolveName(SaveIdentity.PurposeKind.LoadedSave, true, guidText,
-				meta, s_Instance != null ? s_Instance.m_Index : new SaveIndex(),
+				meta, index,
 				(meta.known && meta.autoSave) ? CollectSaves(false) : null,
 				out name, out placeholder);
 			if (!ok || placeholder) return null;   // 认不准就不搬：留下的 _auto_ 文件比搬错强
@@ -803,6 +857,14 @@ namespace ToolModeMemory
 					AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
 					m_QuitHooked = false;
 				}
+			}
+			catch { }
+
+			// AppDomain 是游戏的对象，会活得比我们的程序集久：留着 AssemblyLoad 委托，
+			// 玩家下次加载任何程序集都要回调进一个已经卸载的模组（需求 8 同一条纪律）。
+			try
+			{
+				ToolMemoryBridge.UnwatchAnarchyAssembly();
 			}
 			catch { }
 

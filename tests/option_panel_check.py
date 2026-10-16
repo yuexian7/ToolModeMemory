@@ -3,10 +3,15 @@
 """
 选项页结构与默认值的静态检查（离线，纯源码解析）。
 
-v0.2.1 的两条硬要求：
-  1. 共用范围的五行定义不再单列板块，而是并进每一个工具项的「共用范围」说明；
-  2. 总开关与兼容开关出厂默认都是打开。
-这两条光看运行结果很费时间，所以直接对着源码形状断言。
+对着源码形状断言的硬要求：
+  1. 共用范围的五行定义不单列板块，而是并进每一个工具项的「共用范围」说明；
+  2. 总开关出厂默认打开（兼容开关 v0.6.0 已取消，不允许复活）；
+  3. 板块结构：总开关一块（不显示标题）/ 官方一块 / Anarchy 一块，行数 = 目录项数×2，
+     行数与变灰条件条数一律从目录条数推，不写死常数；
+  4. v0.6.2：Anarchy 三项「没装就整块隐藏」用 HideByCondition ——
+     DisableByCondition 只在建页那一刻求值一次（Widget.UpdateBase），会把装了的人冻灰；
+     hidden 由 OptionsUISystem.OnUpdate 每帧重算，只有它能跟随安装状态。
+  5. v0.6.2：笔刷（brush）独立成行，官方板块因此多两行、目录多一项。
 
 运行： python tests\\option_panel_check.py
 """
@@ -86,7 +91,10 @@ def main():
           "官方板块行数 = 官方项数×2（%d 行 / %d 项）" % (off_rows, src_official))
     check(an_rows == src_anarchy * 2,
           "Anarchy 板块行数 = Anarchy 项数×2（%d 行 / %d 项）" % (an_rows, src_anarchy))
-    check(len(items) == 12, "目录 12 项（地区主题/数据包/工具模式/高度/并列/对齐/地形/地下/其它 + Anarchy 三项）")
+    check(len(items) == 13, "目录 13 项（地区主题/数据包/工具模式/高度/并列/对齐/地形/地下/笔刷/其它 + Anarchy 三项）")
+    # 行数断言一律从目录条数推，不手写常数：0.6.2 加「笔刷」时第三轮审查点名「设置页 12 项」
+    # 这类硬编码会跟着漂，而漂了的数字比没有数字更坏（它看着像通过）。
+    n_items = len(items)
     # 关闭总开关后，下面每一项都要变灰：每个 *Enabled 行都必须挂 IsMasterOff。
     # 按行扫（属性三行一组：Section / DisableByCondition / 属性声明）。
     slines = s.split("\n")
@@ -95,17 +103,46 @@ def main():
         m = re.search(r"public bool (\w+)Enabled", ln)
         if not m:
             continue
-        window = "\n".join(slines[max(0, i - 4):i + 1])
+        window = "\n".join(slines[max(0, i - 6):i])
         if "kGroupOfficial" in window or "kGroupAnarchy" in window:
-            cond = re.findall(r"nameof\((\w+)\)\)\]\s*\n\s*public bool \w+Enabled", window)
-            enabled_rows.append((m.group(1), cond[0] if cond else ""))
-    check(len(enabled_rows) == 12 and all(g[1] == "IsMasterOff" for g in enabled_rows),
-          "全部 12 项的是否恢复开关都挂 IsMasterOff（总开关关闭即整块变灰）：%s"
-          % ([(n, c) for n, c in enabled_rows if c != "IsMasterOff"] or "无遗漏"))
+            # 属性行的顺序不作承诺（Anarchy 那六行在 Disable 之后还挂了 Hide），
+            # 所以往上找最近的一条 SettingsUIDisableByCondition，而不是要求紧邻。
+            cond = ""
+            for wl in reversed(slines[max(0, i - 6):i]):
+                dm = re.search(r"\[SettingsUIDisableByCondition\(typeof\(ToolModeMemorySettings\), "
+                               r"nameof\((\w+)\)\)\]", wl)
+                if dm:
+                    cond = dm.group(1)
+                    break
+            enabled_rows.append((m.group(1), cond))
+    check(len(enabled_rows) == n_items and all(g[1] == "IsMasterOff" for g in enabled_rows),
+          "全部 %d 项的是否恢复开关都挂 IsMasterOff（总开关关闭即整块变灰）：%s"
+          % (n_items, [(n, c) for n, c in enabled_rows if c != "IsMasterOff"] or "无遗漏"))
     scope_rows = re.findall(r"nameof\((Is\w+ScopeDisabled)\)\)\]", s)
-    check(len(scope_rows) == 12, "12 个共用范围行都有各自的变灰条件")
+    check(len(scope_rows) == n_items, "%d 个共用范围行都有各自的变灰条件" % n_items)
     helpers = re.findall(r"public bool (Is\w+ScopeDisabled)\(\) \{ return IsMasterOff\(\) \|\| !GetEnabled", s)
-    check(len(helpers) == 12, "12 个变灰判定都是「总开关关 或 本项没开」")
+    check(len(helpers) == n_items, "%d 个变灰判定都是「总开关关 或 本项没开」" % n_items)
+
+    # ---- 2b. Anarchy 三项：没装该**整块隐藏**，不是变灰 ----
+    # 为什么不能用 DisableByCondition（0.6.2 反编译 AutomaticSettings/Widget 得到的结论）：
+    # disabled 只在 RegisterSetting→BuildTab 建页那一瞬间求值一次（Widget.UpdateBase），
+    # 而 Anarchy 常常在选项页建好之后才进 AppDomain，灰条会永远停在「没装」的旧结论上；
+    # hidden 由 OptionsUISystem.OnUpdate→UpdateVisibility 每帧重算（只在停在选项页时），
+    # 所以只有隐藏能跟随安装状态。
+    hide = re.findall(r"\[SettingsUIHideByCondition\(typeof\(ToolModeMemorySettings\), "
+                      r"nameof\((\w+)\)\)\]", s)
+    check(len(hide) == src_anarchy * 2 and set(hide) == {"IsAnarchyMissing"},
+          "Anarchy 板块 %d 行全部挂 IsAnarchyMissing（没装就整块隐藏）：%s" % (src_anarchy * 2, hide))
+    check(re.search(r"public bool IsAnarchyMissing\(\)", s) is not None,
+          "IsAnarchyMissing() 判定方法存在")
+    check("AnarchyConfirmedAbsent()" in s,
+          "隐藏判据复用 ToolMemoryBridge.AnarchyConfirmedAbsent()（判据只允许一处）")
+    check(not re.search(r"DisableByCondition[^=\n]*IsAnarchyMissing", s),
+          "没装 Anarchy 不走变灰（DisableByCondition 建页时冻结，装了也会一直灰着）")
+    # 官方板块的 20 行不得被这条判据牵连：非 Anarchy 行不许出现隐藏属性
+    off_block = re.findall(r"\[SettingsUISection\(kTabMod, kGroupOfficial\)\](?:(?!\[SettingsUISection)[\s\S])*", s)
+    check(not any("SettingsUIHideByCondition" in b for b in off_block),
+          "官方板块没有任何行被隐藏（只有 Anarchy 三项会消失）")
 
     # ---- 3. 出厂默认：总开关打开，兼容开关（v0.6.0 已取消）不允许再出现 ----
     defaults = body_of(s, "public override void SetDefaults()")

@@ -150,6 +150,12 @@ namespace ToolModeMemory.Memory
 		/// 之后本局按新名字写。旧存档的记忆文件原地不动（它还在那儿，下次进旧档还得用）。
 		/// 目标文件已存在时什么都不复制（以那份档自己的记忆为准），但本局仍然改用新名字写。
 		/// 与 AdoptSaveName 的区别：那个只搬占位文件，这个搬正式文件，而且是复制不是移动。
+		///
+		/// v0.6.2：复制之前先把内存里的现状写回**旧档名**。调用点是游戏存盘完成之后
+		/// （GameManager.Save 的第二发 onGameSaveLoad，start=false 那一次），而本模组的实时落盘
+		/// 有 10 秒防抖 —— 不补这一步，<c>File.Copy</c> 复制的就是最多 10 秒前的旧文件：
+		/// 旧存档那份记忆永远停在 10 秒前，新档名也只跟着抄了一份旧的。玩家反馈的
+		/// 「另存为之后两边都不对」就是这么来的。写完再复制，两份都是当前状态。
 		/// 返回是否真的换了名字。
 		/// </summary>
 		public bool CarryOverTo(string saveName)
@@ -162,6 +168,8 @@ namespace ToolModeMemory.Memory
 				m_Placeholder = false;
 				return false;
 			}
+			// 先把还没落盘的改动写进旧档名（SaveToDisk 自己兜异常，写不成也只是让下面抄一份旧的）
+			if (m_Dirty) SaveToDisk();
 			string oldPath = CurrentFilePath();
 			m_SaveName = next;
 			m_Placeholder = false;
@@ -575,6 +583,18 @@ namespace ToolModeMemory.Memory
 			}
 		}
 
+		/// <summary>
+		/// 存档名 → 文件名（不带扩展名）的净化。
+		///
+		/// v0.6.2 补齐两条 Windows 自己的规则（P2）：
+		///  * **保留设备名**：CON / PRN / AUX / NUL / CLOCK$ / COM1-9 / LPT1-9 当整段（点号之前那段）
+		///    出现时，这个文件根本创建不出来 —— 而写盘失败走的是「静默指数退避」，
+		///    玩家把城市存成这类名字就会出现「记忆从来没存下来过」且一句日志都没有。
+		///  * **结尾的点与空格**：Windows 会直接吃掉，于是「城市.」和「城市」落到同一个文件上，
+		///    我们却按两个名字去查存在性、去改名。先去掉再判，判完还不剩东西就给占位名。
+		/// 截断（80 字）必须排在去尾点之前？反过来：先去尾点可能又露出新的尾点，所以去点这一步
+		/// 自己是循环的；截断放在中间，截完再去一次。
+		/// </summary>
 		public static string SanitizeFileName(string name)
 		{
 			if (string.IsNullOrEmpty(name)) return "_unnamed";
@@ -591,9 +611,46 @@ namespace ToolModeMemory.Memory
 				sb.Append(bad ? '_' : c);
 			}
 			string s = sb.ToString().Trim();
+			s = TrimTrailingDotsAndSpaces(s);
 			if (s.Length == 0) return "_unnamed";
 			if (s.Length > 80) s = s.Substring(0, 80);
+			s = TrimTrailingDotsAndSpaces(s);
+			if (s.Length == 0) return "_unnamed";
+			if (IsReservedDeviceName(s)) s = "_" + s;
 			return s;
+		}
+
+		/// <summary>去掉结尾的点与空格（循环：去掉一个点可能又露出上一个点）。</summary>
+		private static string TrimTrailingDotsAndSpaces(string s)
+		{
+			if (string.IsNullOrEmpty(s)) return "";
+			int end = s.Length;
+			while (end > 0)
+			{
+				char c = s[end - 1];
+				if (c == '.' || c == ' ') { end--; continue; }
+				break;
+			}
+			return end == s.Length ? s : s.Substring(0, end);
+		}
+
+		/// <summary>
+		/// 这个名字会不会被 Windows 当成设备而不是文件。判据是**第一段**（第一个点号之前）
+		/// 整段等于保留名，不分大小写 —— 与 CreateFile 的规则一致：
+		/// "CON.json"、"con" 都不许建，"HELLO.CON"、"CONFIG"、"COM10" 照旧能用。
+		/// </summary>
+		public static bool IsReservedDeviceName(string name)
+		{
+			if (string.IsNullOrEmpty(name)) return false;
+			int dot = name.IndexOf('.');
+			string head = dot < 0 ? name : name.Substring(0, dot);
+			if (head.Length == 0 || head.Length > 5) return false;
+			string up = head.ToUpperInvariant();
+			if (up == "CON" || up == "PRN" || up == "AUX" || up == "NUL" || up == "CLOCK$") return true;
+			if (up.Length < 4) return false;
+			if (up[0] == 'C' && up[1] == 'O' && up[2] == 'M' && up[3] >= '1' && up[3] <= '9' && up.Length == 4) return true;
+			if (up[0] == 'L' && up[1] == 'P' && up[2] == 'T' && up[3] >= '1' && up[3] <= '9' && up.Length == 4) return true;
+			return false;
 		}
 
 		public string Serialize()

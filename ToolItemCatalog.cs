@@ -98,8 +98,8 @@ namespace ToolModeMemory
 
 	/// <summary>
 	/// 工具项目录。顺序 = 设置页顺序，**跨板块连续编号**：
-	/// 「官方工具项设置」1..9（地区主题 / 数据包 / 工具模式 / 高度 / 并列模式 / 对齐 /
-	/// 地形 / 地下模式 / 其它），「Anarchy工具项设置」10..12（Anarchy / 左侧和右侧 / 常规）。
+	/// 「官方工具项设置」1..10（地区主题 / 数据包 / 工具模式 / 高度 / 并列模式 / 对齐 /
+	/// 地形 / 地下模式 / 笔刷 / 其它），「Anarchy工具项设置」11..13（Anarchy / 左侧和右侧 / 常规）。
 	/// 板块归属由 Source 决定：Vanilla 与 Toolbar 进官方板块，AnarchyMod 进 Anarchy 板块。
 	/// 项名一律采用对应语言包里的官方行名：原版项取游戏语言包（Toolbar.* / ToolOptions.*），
 	/// Anarchy 项取 Anarchy 自带语言包（Anarchy.SECTION_TITLE[...]），该语言缺失才自行翻译。
@@ -112,6 +112,16 @@ namespace ToolModeMemory
 	///    共用高度的开关与范围。字段 id 保持 "elevation" / "elevationStep" 不变，
 	///    所以旧记忆文件里的键照旧能读回来。
 	///  * 10、11、12 三项来自 Anarchy（74604），只在该模组存在时生效。
+	///
+	/// v0.6.2 变化：
+	///  * 新增 kBrush（编号 9）：把「笔刷粗细」「笔刷强度」从「其它」里拆出来独立成行，
+	///    地形工具玩家可以只开笔刷、不连带开道路配色。两个子字段 id **保持**
+	///    "other.brushSize" / "other.brushStrength" 不变 —— 它们就是记忆文件里的桶名，
+	///    改名等于把玩家已经记下的笔刷设置清零；Find() 靠 Subs 精确匹配把它们认回 kBrush。
+	///    编号跨板块连续，所以「其它」顺次变 10、Anarchy 三项顺次变 11..13
+	///    （属性名与记忆键都不含编号，不受影响）。
+	///  * 「其它」永远是官方板块最后一项（用户要求）：以后新增官方工具项一律插在笔刷之后、
+	///    「其它」之前，编号顺延，「其它」的编号永远跟着变。
 	/// </summary>
 	public static class ToolItemCatalog
 	{
@@ -124,6 +134,7 @@ namespace ToolModeMemory
 		public const string kSnap = "snap";
 		public const string kTopography = "topography";
 		public const string kElevationStep = "elevationStep";
+		public const string kBrush = "brush";
 		public const string kLeftRight = "leftRight";
 		public const string kGeneral = "general";
 		public const string kUnderground = "underground";
@@ -146,12 +157,25 @@ namespace ToolModeMemory
 
 		/// <summary>
 		/// 「其它」的游戏字段：道路配色（NetToolSystem.placementColor，ColorSet 共 3 个通道，
-		/// color3 故意留着当占位，读写都返回 false）+ 笔刷大小 / 强度（ToolBaseSystem.brushSize /
-		/// brushStrength，只有 brushing 的工具真正使用）。
+		/// color3 故意留着当占位，读写都返回 false）。
+		/// v0.6.2 起笔刷两项拆到 <see cref="kBrush"/> 独立成行，不再属于本项。
 		/// </summary>
 		private static readonly string[] s_OtherSubs = new string[]
 		{
-			"other.color0", "other.color1", "other.color2", "other.color3",
+			"other.color0", "other.color1", "other.color2", "other.color3"
+		};
+
+		/// <summary>
+		/// 「笔刷」的两个游戏字段（ToolBaseSystem.brushSize / brushStrength，只有
+		/// <c>brushing</c> 为真的工具用得到：地形工具恒真，摆件工具只在刷涂模式下真）。
+		///
+		/// 子字段 id 故意沿用 <c>other.</c> 前缀：<b>它就是记忆文件里的桶名</b>
+		/// （0.1.2~0.6.1 笔刷一直挂在「其它」这一项下）。改名叫 "brush.size" 看着更顺眼，
+		/// 但玩家已经记下的笔刷粗细/强度会整桶变成不认识的数据 —— 名字不好看只是源码里的事，
+		/// 抹掉玩家记过的值才是伤人的事。
+		/// </summary>
+		private static readonly string[] s_BrushSubs = new string[]
+		{
 			"other.brushSize", "other.brushStrength"
 		};
 
@@ -166,7 +190,7 @@ namespace ToolModeMemory
 
 		public static readonly ToolItemDef[] Items = new ToolItemDef[]
 		{
-			// ---- 官方工具项设置（1..9）----
+			// ---- 官方工具项设置（1..10）----
 			// 原版「地区主题」是全局共用，「数据包」按组显示并切组自动重置 -> 都无推荐，出厂不开
 			new ToolItemDef(kThemes, 1, ItemSource.Toolbar, (int)MemoryScope.GlobalShared, kNoRecommendation, false),
 			new ToolItemDef(kPacks, 2, ItemSource.Toolbar, (int)MemoryScope.Group, kNoRecommendation, false),
@@ -178,12 +202,24 @@ namespace ToolModeMemory
 			new ToolItemDef(kTopography, 7, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.GlobalShared, false, null, true),
 			// 地下模式：推荐同组 == 原版同组 -> 默认关（用户定的规则）
 			new ToolItemDef(kUnderground, 8, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.Group, false, null, true),
-			new ToolItemDef(kOther, 9, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false, s_OtherSubs),
+			// 笔刷（v0.6.2 独立成行）：原版只在**本次会话**里按地形类型各存一份
+			// （TerrainToolSystem 私有 TerraformingBrushValues[4]，读档/新会话回默认 100 m / 0.5），
+			// 所以 VanillaScope = 无记忆；推荐「全局共用」= 各类地形工具共用一把，
+			// 换抬地/降地/软化/刷涂不回到出厂粗细。
+			// 故意**不套 FamilyFreeScope**（与 0.6.2 审查建议不同，理由有反编译凭据）：
+			// family-free 会把「全局共用」压成裸键 S，于是地形笔刷与摆件刷涂（ObjectToolSystem 的
+			// Brush 模式，brushing 同样为真）共用同一个数 —— 可这两个数的含义不一样
+			// （地形 = 每一下的位移量，摆件 = 物体密度），原版自己也是两份独立值。
+			// 不套 family-free 时地形侧的键是 F|S$other 这一把（功能区一个家族一把），
+			// 地形玩家要的「换到哪类地形都是同一个粗细」照样成立，只是不再串到摆件刷涂上。
+			new ToolItemDef(kBrush, 9, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.GlobalShared, false, s_BrushSubs),
+			// 「其它」永远是官方板块最后一项（编号 10）：新增官方项插到笔刷之后、「其它」之前。
+			new ToolItemDef(kOther, 10, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false, s_OtherSubs),
 
-			// ---- Anarchy 工具项设置（10..12）----
-			new ToolItemDef(kAnarchy, 10, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, false, null, true),
-			new ToolItemDef(kLeftRight, 11, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Group, true, s_LeftRightSubs, true),
-			new ToolItemDef(kGeneral, 12, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, true, null, true),
+			// ---- Anarchy 工具项设置（11..13）----
+			new ToolItemDef(kAnarchy, 11, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, false, null, true),
+			new ToolItemDef(kLeftRight, 12, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Group, true, s_LeftRightSubs, true),
+			new ToolItemDef(kGeneral, 13, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, true, null, true),
 		};
 
 		/// <summary>

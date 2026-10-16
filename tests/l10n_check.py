@@ -7,8 +7,9 @@
   1. 每个语言函数（ZhHans/ZhHant/En/De/Es/Fr/It/Ja/Ko/Pl/Pt/Ru）都补齐了必需键；
   2. v0.2.1 起共用范围定义改成「每行模板 + 每项例子」：
      scope.line.* 与 scope.note 必须存在，三条带例子的模板必须含 {0}，
-     11 个工具项 × 3 个例子（group/menu/category）必须齐全；
-  3. 旧键不得复活：scope.defs（单列说明板块）、item.packs.* / item.themes.*（不在目录里）；
+     13 个工具项 × 3 个例子（group/menu/category）必须齐全；
+  3. 旧键不得复活：scope.defs（单列说明板块）与 RETIRED 里已取消独立项的 item.<x>.* 键
+     （v0.2.2 起 elevationStep 并入 elevation 的 Subs，它自己的文案键就是漏删）；
   4. 文案不得为空，也不得再出现已被证伪的归属（Extra Networks）。
 
 运行： python tests\\l10n_check.py
@@ -30,9 +31,11 @@ LANGS = {
 # Frames() 里 12 份共用、不需要各语言重复的键
 FRAMES_KEYS = {"frame.locale", "item.anarchy.label", "scope.group.none"}
 
-# v0.2.2 的 12 项（顺序 = 设置页跨板块连续编号）；elevationStep 已并入 elevation 的 Subs
+# 设置页跨板块连续编号的 13 项（v0.6.2 起「笔刷」独立成行，编号 9；「其它」永远官方板块最后，
+# 编号 10；Anarchy 三项顺次 11..13）
+# elevationStep 已并入 elevation 的 Subs，brush 用 Subs 但不需要额外键。
 ITEM_IDS = ["themes", "packs", "toolMode", "elevation", "parallel", "snap", "topography",
-            "underground", "other", "anarchy", "leftRight", "general"]
+            "underground", "brush", "other", "anarchy", "leftRight", "general"]
 # 已取消的独立项：它们的键再出现就是漏删
 RETIRED = ["elevationStep"]
 
@@ -175,6 +178,19 @@ def main():
             if m:
                 all_consts[m.group("name")] = m.group("val")
     tables = parse(text, all_consts)
+
+    # 目录与文案必须一一对应：ITEM_IDS 是手抄的，加一项忘了抄就会出现
+    # 「设置页有这行、说明是空的」——0.6.2 加「笔刷」时正是这个风险，所以直接对着源码核对。
+    cat = io.open(os.path.join(ROOT, "ToolItemCatalog.cs"), encoding="utf-8-sig").read()
+    id_consts = dict(CONST.findall(cat))
+    catalog_ids = [id_consts.get(m, m) for m in re.findall(r"new ToolItemDef\((\w+),", cat)]
+    missing_in_check = sorted(set(catalog_ids) - set(ITEM_IDS))
+    stale_in_check = sorted(set(ITEM_IDS) - set(catalog_ids))
+    if missing_in_check or stale_in_check:
+        print("FAIL 目录与 ITEM_IDS 不一致：文案未覆盖 %s / 已不存在的项 %s"
+              % (missing_in_check or "无", stale_in_check or "无"))
+        return 1
+    print("OK   目录 %d 项与 ITEM_IDS 完全对应" % len(catalog_ids))
 
     fails = 0
     print("解析到语言：%s" % ", ".join(sorted(tables)))

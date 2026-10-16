@@ -122,10 +122,17 @@ namespace ToolModeMemory
 			d["item.underground.ex.menu"] = "każdy zasób kliknięty w menu Drogi jest budowany pod ziemią, ale po przejściu do menu Elektryczność nie";
 			d["item.underground.ex.category"] = "przełączenie na drogę sześciopasmową nadal schodzi pod ziemię, ale most albo podwójne tory kolejowe zostają na powierzchni i wymagają własnego ustawienia, choć wszystkie są w menu Drogi";
 			d["item.other.label"] = "Inne";
-			d["item.other.desc"] = "Zapamiętuje pozostałe wiersze, które panel narzędzia może zapisywać: kolory dróg z wiersza Kolor oraz Rozmiar pędzla i Nacisk pędzla.";
+			d["item.other.desc"] = "Zapamiętuje pozostałe wiersze, które panel narzędzia może zapisywać: kolory dróg z wiersza Kolor.";
 			d["item.other.ex.group"] = "na przykład ustawisz kolor małej dwupasmowej drogi na niebieski i inne małe drogi też zrobią się niebieskie, a duża droga nie";
-			d["item.other.ex.menu"] = "każdy zasób kliknięty w menu Drogi używa tego samego koloru i ustawienia pędzla, ale po przejściu do menu Elektryczność nie";
+			d["item.other.ex.menu"] = "każdy zasób kliknięty w menu Drogi używa tego samego koloru, ale po przejściu do menu Elektryczność nie";
 			d["item.other.ex.category"] = "przełączenie na drogę sześciopasmową nadal jest niebieskie, ale most albo podwójne tory kolejowe mają własny zapis koloru i wymagają własnego ustawienia, choć wszystkie są w menu Drogi";
+
+			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
+			d["item.brush.label"] = "Pędzel";
+			d["item.brush.desc"] = "Zapamiętuje wiersze Rozmiar pędzla i Nacisk pędzla: rozmiar określa, jaki obszar obejmuje jedno pociągnięcie, a nacisk, ile zmienia każde pociągnięcie. Działa tylko dla narzędzi, które mają te dwa wiersze, czyli narzędzi kształtowania krajobrazu (Podnieś, Obniż, Wygładź, Maluj teksturę i pozostałych) oraz trybu pędzla przy stawianiu obiektów; narzędzia bez tych wierszy nie są ani zapisywane, ani zmieniane.";
+			d["item.brush.ex.group"] = "na przykład ustawisz Podnieś na rozmiar pędzla 30 m i inne narzędzia krajobrazu w tej samej grupie też mają 30 m, a narzędzie z innej grupy nie";
+			d["item.brush.ex.menu"] = "każde narzędzie krajobrazu kliknięte w menu Kształtowanie krajobrazu używa tego samego rozmiaru i nacisku pędzla, ale po przejściu do menu Elektryczność nie";
+			d["item.brush.ex.category"] = "ten poziom grupuje zasoby według tego, czemu służą, a narzędzia krajobrazu niczemu nie służą, więc każde ma własny zapis: przejście z Podnieś na Maluj teksturę używa pędzla tego narzędzia (wymaga własnego ustawienia)";
 			return d;
 		}
 
@@ -239,10 +246,17 @@ namespace ToolModeMemory
 			d["item.underground.ex.menu"] = "todo ativo que você clica no menu Vias é construído debaixo da terra, mas ao mudar para o menu Eletricidade não";
 			d["item.underground.ex.category"] = "mudar para uma via de 6 faixas ainda vai para o subsolo, mas uma ponte ou um trilho duplo fica na superfície e precisa do próprio ajuste, embora todos estejam no menu Vias";
 			d["item.other.label"] = "Outros";
-			d["item.other.desc"] = "Lembra as demais linhas que um painel de ferramenta pode gravar: as cores de via da linha Cor, mais Tamanho do pincel e Força do pincel.";
+			d["item.other.desc"] = "Lembra as demais linhas que um painel de ferramenta pode gravar: as cores de via da linha Cor.";
 			d["item.other.ex.group"] = "por exemplo, você põe a cor de uma rua pequena de 2 faixas em azul e as outras ruas pequenas também ficam azuis, enquanto uma via grande não";
-			d["item.other.ex.menu"] = "todo ativo que você clica no menu Vias usa este mesmo ajuste de cor e pincel, mas ao mudar para o menu Eletricidade não";
+			d["item.other.ex.menu"] = "todo ativo que você clica no menu Vias usa este mesmo ajuste de cor, mas ao mudar para o menu Eletricidade não";
 			d["item.other.ex.category"] = "mudar para uma via de 6 faixas ainda é azul, mas uma ponte ou um trilho duplo guarda a sua própria cópia e precisa do próprio ajuste, embora todos estejam no menu Vias";
+
+			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
+			d["item.brush.label"] = "Pincel";
+			d["item.brush.desc"] = "Lembra as linhas Tamanho do pincel e Força do pincel: o tamanho define até onde uma passada alcança e a força define quanto cada passada muda. Afeta só as ferramentas que têm essas duas linhas, ou seja, as ferramentas de Paisagismo (Elevar, Baixar, Suavizar, Pintar textura e as demais) e o modo Pincel ao colocar objetos; ferramentas sem essas linhas não são registradas nem alteradas.";
+			d["item.brush.ex.group"] = "por exemplo, você põe Elevar com tamanho de pincel de 30 m e as outras ferramentas de paisagismo do mesmo grupo ficam em 30 m, mas uma de outro grupo não";
+			d["item.brush.ex.menu"] = "toda ferramenta de paisagismo que você clica no menu Paisagismo usa este mesmo tamanho e força de pincel, mas ao mudar para o menu Eletricidade não";
+			d["item.brush.ex.category"] = "este nível agrupa os ativos pelo que eles atendem; as ferramentas de paisagismo não atendem nada, então cada uma guarda a própria cópia: mudar de Elevar para Pintar textura usa o pincel daquela ferramenta (precisa do próprio ajuste)";
 			return d;
 		}
 
@@ -356,10 +370,17 @@ namespace ToolModeMemory
 			d["item.underground.ex.menu"] = "у любого объекта, выбранного в меню «Дороги», всё строится под землёй, но в меню «Электричество» уже нет";
 			d["item.underground.ex.category"] = "переход на шестиполосную дорогу тоже уходит под землю, но мост или двойные железнодорожные пути остаются на поверхности и требуют собственной настройки, хотя все они находятся в меню «Дороги»";
 			d["item.other.label"] = "Прочее";
-			d["item.other.desc"] = "Запоминает прочие строки, которые панель инструмента может записывать: цвета дорог из строки «Цвет», а также «Размер кисти» и «Нажим кисти».";
+			d["item.other.desc"] = "Запоминает прочие строки, которые панель инструмента может записывать: цвета дорог из строки «Цвет».";
 			d["item.other.ex.group"] = "например, задайте небольшой двухполосной дороге синий цвет, и другие небольшие дороги тоже станут синими, а большая дорога — нет";
-			d["item.other.ex.menu"] = "у любого объекта, выбранного в меню «Дороги», используются тот же цвет и настройка кисти, но в меню «Электричество» уже нет";
+			d["item.other.ex.menu"] = "у любого объекта, выбранного в меню «Дороги», используется тот же цвет, но в меню «Электричество» уже нет";
 			d["item.other.ex.category"] = "переход на шестиполосную дорогу тоже остаётся синим, но мост или двойные железнодорожные пути хранят собственный вариант цвета и требуют собственной настройки, хотя все они находятся в меню «Дороги»";
+
+			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
+			d["item.brush.label"] = "Кисть";
+			d["item.brush.desc"] = "Запоминает строки «Размер кисти» и «Нажим кисти»: размер определяет, какую площадь охватывает одно движение, а нажим — насколько сильно каждое движение все меняет. Это касается только инструментов, где эти две строки есть: инструментов ландшафтного дизайна (Поднять, Опустить, Сгладить, Рисовать текстуру и прочих) и режима кисти при размещении объектов; инструменты без этих строк не записываются и не меняются.";
+			d["item.brush.ex.group"] = "например, задайте «Поднять» размер кисти 30 м, и другие инструменты ландшафта в той же группе тоже станут 30 м, а инструмент из другой группы — нет";
+			d["item.brush.ex.menu"] = "у любого инструмента ландшафта, выбранного в меню «Ландшафтный дизайн», используются тот же размер и нажим кисти, но в меню «Электричество» уже нет";
+			d["item.brush.ex.category"] = "этот уровень группирует активы по тому, что они обслуживают; у инструментов ландшафта такого нет, поэтому каждый хранит собственный вариант: переход от «Поднять» к «Рисовать текстуру» использует кисть этого инструмента (нужна отдельная настройка)";
 			return d;
 		}
 	}
