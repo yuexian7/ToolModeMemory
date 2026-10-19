@@ -80,6 +80,21 @@ namespace ToolModeMemory
 		/// 所以只在 allowAge 为真时读写 —— 与「笔刷只在 brushing 为真时读写」同一条规矩。
 		/// </summary>
 		private const string F_DECORATION = "decoration";
+
+		// v0.8.0 新增的面板行（按 owner 要求从原「笔刷」一项与「高度」一项里独立拆出）。
+		/// <summary>笔刷类型（ToolBaseSystem.brushType）。值是 BrushPrefab 的稳定哈希（见 BrushTypeHash）。</summary>
+		private const string F_BRUSH_TYPE = "brushType";
+		/// <summary>目标高度（ToolBaseSystem.brushHeight，仅地形工具的 Level/Slope 资产）。</summary>
+		private const string F_BRUSH_HEIGHT = "brushHeight";
+		/// <summary>年龄（ObjectToolSystem.ageMask，AgeMask 位掩码，仅树且游戏模式）。</summary>
+		private const string F_AGE_MASK = "ageMask";
+		/// <summary>距离（ObjectToolSystem.distance，仅摆件工具的线/曲线模式）。</summary>
+		private const string F_DISTANCE = "distance";
+		/// <summary>Anarchy 物件高度一排的四个值（见 ToolItemCatalog.kObjectElevation）。</summary>
+		private const string F_AN_ELEV = "anarchyElevation";
+		private const string F_AN_ELEV_STEP = "anarchyElevationStep";
+		private const string F_AN_ELEV_VAR = "anarchyElevationVariance";
+		private const string F_AN_LOCK_ELEV = "anarchyLockElevation";
 		// 功能域 / 道具域的每一项**复用上面这些桶名**（"toolMode" / "snap" / "topography" /
 		// "underground" / "other.brushSize"…）：三域之间靠记忆键的 A| / F| / I| 前缀隔开，
 		// 捕获与写回再按当前工具的所属域过滤（ToolMemorySystem.CaptureNow / ApplyNow）。
@@ -188,6 +203,32 @@ namespace ToolModeMemory
 			/// <summary>两个位掩码枚举类型（取自公开属性的返回类型），用来把整数造回枚举值。</summary>
 			public Type SideUpgradesType;
 			public Type CompositionType;
+
+			// ---- v0.8.0：摆件工具面板上 Anarchy 注入的「物件高度」一排 ----
+			// 四个绑定字段都住在 AnarchyUISystem 上（同一排控件、同一份实例），
+			// 见 research/round4/anarchy_rows.md A 块：
+			//   m_ElevationValue（L491，0f）  m_ElevationStep（L492，1f）
+			//   m_ElevationVariance（L494，0f） m_LockElevation（L497，初值 Settings.ElevationLock）
+			/// <summary>四个绑定的私有字段（ValueBindingHelper&lt;float&gt; / &lt;bool&gt;）。</summary>
+			public FieldInfo ElevValueField;
+			public FieldInfo ElevStepField;
+			public FieldInfo ElevVarianceField;
+			public FieldInfo LockElevationField;
+
+			/// <summary>每个 helper 自己的 public Value 属性（写回走它才会刷面板）。</summary>
+			public PropertyInfo ElevValueProp;
+			public PropertyInfo ElevStepProp;
+			public PropertyInfo ElevVarianceProp;
+			public PropertyInfo LockElevationProp;
+
+			/// <summary>
+			/// 真正生效的那一侧：Anarchy 的 helper 只是显示镜像，物体是否真的按新高度摆放
+			/// 取决于 ObjectDefinitionSystem.ElevationDelta / .ElevationVariance（都是 setter-only）。
+			/// 详见 anarchy_rows.md Q2 的「四件套」（helper + delta + ElevationChangeIsNegative + m_ForceUpdate）。
+			/// </summary>
+			public object ObjectDefinition;
+			public PropertyInfo ElevationDeltaProp;
+			public PropertyInfo ElevationVarianceProp;
 		}
 
 		/// <summary>解析好的句柄；null = 还没解析出来（没装 Anarchy，或它比我们先加载完之前）。</summary>
@@ -1072,6 +1113,16 @@ namespace ToolModeMemory
 				// 全局没有默认值；0 = 无默认，TryApply 见 0 直接不写，否则会把笔刷废掉。
 				case F_BRUSH_SIZE:
 				case F_BRUSH_STRENGTH: return 0;
+				// 笔刷类型：默认刷子由 FindDefaultBrush 选（ToolBaseSystem L616），按查询结果而定，
+				// 没有可写死的全局默认；0 = 无默认。
+				case F_BRUSH_TYPE: return 0;
+				// 目标高度：地形工具的 m_TargetHeight 来自资产（TerraformingBrush 组件），
+				// 没有全局默认值；0 = 无默认。
+				case F_BRUSH_HEIGHT: return 0;
+				// 年龄：ObjectToolSystem.ResetToolPreferences L2642 ageMask = AgeMask.Sapling
+				case F_AGE_MASK: return (int)Game.Tools.AgeMask.Sapling;
+				// 距离：ObjectToolSystem.ResetToolPreferences L2639 distance = 3f
+				case F_DISTANCE: return (int)(3f * kScale);
 				// Anarchy 三项的 0 是**真出厂值**（不是「无默认」哨兵）：AnarchyUISystem 的
 				// m_AnarchyEnabled 初值 false，NetworkAnarchyUISystem 的三个绑定初值
 				// SideUpgrades.None / Composition.None（OnCreate L171-173），
@@ -1080,6 +1131,13 @@ namespace ToolModeMemory
 				case F_LR_LEFT: return 0;
 				case F_LR_RIGHT: return 0;
 				case F_GENERAL: return 0;
+				// Anarchy 物件高度一排：ElevationValue 初值 0f、ElevationStep 初值 1f、
+				// ElevationVariance 初值 0f、LockElevation 初值 Settings.ElevationLock（默认 false）
+				// —— 见 anarchy_rows.md A 块（AnarchyUISystem L491-501）。全是真出厂值。
+				case F_AN_ELEV: return 0;
+				case F_AN_ELEV_STEP: return (int)(1f * kScale);
+				case F_AN_ELEV_VAR: return 0;
+				case F_AN_LOCK_ELEV: return 0;
 				default: return 0;
 			}
 		}
@@ -1112,6 +1170,14 @@ namespace ToolModeMemory
 					case F_COLOR3: return CaptureColor(tool, 3, out value);
 					case F_BRUSH_SIZE: return CaptureBrush(tool, true, out value);
 					case F_BRUSH_STRENGTH: return CaptureBrush(tool, false, out value);
+					case F_BRUSH_TYPE: return CaptureBrushType(tool, out value);
+					case F_BRUSH_HEIGHT: return CaptureBrushHeight(tool, out value);
+					case F_AGE_MASK: return CaptureAgeMask(tool, out value);
+					case F_DISTANCE: return CaptureDistance(tool, out value);
+					case F_AN_ELEV: return CaptureAnarchyElevation(F_AN_ELEV, out value);
+					case F_AN_ELEV_STEP: return CaptureAnarchyElevation(F_AN_ELEV_STEP, out value);
+					case F_AN_ELEV_VAR: return CaptureAnarchyElevation(F_AN_ELEV_VAR, out value);
+					case F_AN_LOCK_ELEV: return CaptureAnarchyElevation(F_AN_LOCK_ELEV, out value);
 					case F_DECORATION: return CaptureDecoration(tool, out value);
 					case F_ANARCHY: return CaptureAnarchyEnabled(out value);
 					case F_LR_LEFT: return CaptureAnarchySide(tool, true, out value);
@@ -1299,6 +1365,75 @@ namespace ToolModeMemory
 		}
 
 		/// <summary>
+		/// 笔刷类型（ToolBaseSystem.brushType，Toolbar.BRUSH_TYPE）。
+		/// 值是一个 BrushPrefab 对象引用，而记忆只存整数 —— 所以存**名称的稳定哈希**
+		/// （<see cref="StableHash"/>：FNV-1a 32 位，跨会话跨机器一致，不能用 string.GetHashCode，
+		/// 那个在 .NET Core 上每个进程都不一样）。写回时按名字反查刷子列表。
+		/// 门槛与 brushSize 相同：只有 brushing 的工具真正用得到。
+		/// </summary>
+		private static bool CaptureBrushType(ToolBaseSystem tool, out int value)
+		{
+			value = 0;
+			if (!tool.brushing) return false;
+			BrushPrefab brush = tool.brushType;
+			if (brush == null || string.IsNullOrEmpty(brush.name)) return false;
+			value = StableHash(brush.name);
+			return true;
+		}
+
+		/// <summary>
+		/// 目标高度（ToolBaseSystem.brushHeight，Toolbar.BRUSH_HEIGHT）。
+		/// **只有地形工具**用这个字段（ToolUISystem L184 的 binding 条件是
+		/// <c>activeTool != TerrainToolSystem || (prefab.m_Type != Level &amp;&amp; prefab.m_Type != Slope)</c>），
+		/// 而且只在 Level（平整）与 Slope（斜坡）两种地形资产上出现这一行。
+		/// 游戏内部存的是 <c>height + SeaLevel</c>（ToolUISystem L657-660），这里按面板显示值记。
+		/// </summary>
+		private static bool CaptureBrushHeight(ToolBaseSystem tool, out int value)
+		{
+			value = 0;
+			TerrainToolSystem terrain = tool as TerrainToolSystem;
+			if (terrain == null) return false;
+			// 只有 Level / Slope 两种资产有这一行（其余 7 个地形资产没有），
+			// 拿 activePrefab 的地形类型判，判不出来就当没有。
+			PrefabBase prefab = s_CachedPrefabSystem != null ? terrain.GetPrefab() : null;
+			if (!TerrainHasTargetHeight(prefab)) return false;
+			value = (int)Math.Round(terrain.brushHeight * kScale);
+			return true;
+		}
+
+		/// <summary>
+		/// 年龄（ObjectToolSystem.ageMask，Toolbar.VEGETATION_AGE_PANEL_TITLE）。
+		/// 与「保留年代」同门：只在 allowAge 为真（游戏模式 + 资产带 TreeData）时才有这一行。
+		/// 值直接用 AgeMask 的整数位掩码（Sapling=1 / Young=2 / Mature=4 / Elderly=8）。
+		/// </summary>
+		private static bool CaptureAgeMask(ToolBaseSystem tool, out int value)
+		{
+			value = 0;
+			ObjectToolSystem obj = tool as ObjectToolSystem;
+			if (obj == null) return false;
+			if (!obj.allowAge) return false;
+			value = (int)obj.ageMask;
+			return true;
+		}
+
+		/// <summary>
+		/// 距离（ObjectToolSystem.distance，Toolbar.TOOL_MODE_DISTANCE）。
+		/// 这是「工具模式」下的**子行**，只在摆件工具的线（Line=5）/ 曲线（Curve=6）模式出现，
+		/// 因为 <c>GetUIModes</c> 只在这两个模式下给出 Line/Curve 模式项。
+		/// 其它模式下面板没有这一行，记下来也写不回去。
+		/// </summary>
+		private static bool CaptureDistance(ToolBaseSystem tool, out int value)
+		{
+			value = 0;
+			ObjectToolSystem obj = tool as ObjectToolSystem;
+			if (obj == null) return false;
+			ObjectToolSystem.Mode mode = obj.actualMode;
+			if (mode != ObjectToolSystem.Mode.Line && mode != ObjectToolSystem.Mode.Curve) return false;
+			value = (int)Math.Round(obj.distance * kScale);
+			return true;
+		}
+
+		/// <summary>
 		/// 保留年代（ObjectToolSystem.decorationMode，面板行名 ToolOptions.DECORATION_MODE_TITLE，
 		/// zh-HANS 官方译名「保留年代」，en「Preserve Age」，说明是「关闭增长与收割」）。
 		/// 只在 allowAge 为真时读写 —— 原版 L2418
@@ -1382,6 +1517,114 @@ namespace ToolModeMemory
 			return true;
 		}
 
+		/// <summary>
+		/// 读 Anarchy「物件高度」一排里的一个值（F_AN_ELEV / _STEP / _VAR / _LOCK_ELEV）。
+		/// 门槛与 Anarchy 自己的面板一致：只有**摆件工具**且处于它认可的模式时才有这一排
+		/// （anarchy_rows.md：<c>ObjectToolValidMode</c> = actualMode ∈ {Create=0, Brush=3,
+		/// Stamp=4, Line=5, Curve=6}，排除 Upgrade=1 与 Move=2）。
+		/// 值都住在 AnarchyUISystem 的 ValueBindingHelper 里：float 的按 kScale 存整数，
+		/// bool（锁定变换）存 0/1。
+		/// </summary>
+		private static bool CaptureAnarchyElevation(string fieldId, out int value)
+		{
+			value = 0;
+			AnarchyHandles h = Anarchy();
+			if (h == null) return false;
+			object ui = AnarchyUi();
+			if (ui == null) return false;
+
+			object raw = null;
+			try
+			{
+				PropertyInfo prop = null;
+				FieldInfo field = null;
+				switch (fieldId)
+				{
+					case F_AN_ELEV: prop = h.ElevValueProp; field = h.ElevValueField; break;
+					case F_AN_ELEV_STEP: prop = h.ElevStepProp; field = h.ElevStepField; break;
+					case F_AN_ELEV_VAR: prop = h.ElevVarianceProp; field = h.ElevVarianceField; break;
+					case F_AN_LOCK_ELEV: prop = h.LockElevationProp; field = h.LockElevationField; break;
+					default: return false;
+				}
+				// helper 是引用类型字段，先取到实例，再读它的 public Value
+				object helper = field != null ? field.GetValue(ui) : null;
+				if (helper != null && prop != null) raw = prop.GetValue(helper, null);
+				if (raw == null && prop != null) raw = prop.GetValue(ui, null);
+			}
+			catch { return false; }
+
+			if (raw is bool)
+			{
+				value = (bool)raw ? 1 : 0;
+				return true;
+			}
+			if (raw is float)
+			{
+				value = (int)Math.Round((float)raw * kScale);
+				return true;
+			}
+			if (raw is int)
+			{
+				value = (int)Math.Round((int)raw * kScale);
+				return true;
+			}
+			return false;
+		}
+
+		/// <summary>
+		/// 当前工具的「物件高度」这一排到底在不在（写回与捕获都用它当门槛）。
+		/// 判据 = 摆件工具 + actualMode 属于 Anarchy 认可的那 5 个（见上）。
+		/// </summary>
+		public static bool AnarchyElevationVisible(ToolBaseSystem tool)
+		{
+			ObjectToolSystem obj = tool as ObjectToolSystem;
+			if (obj == null) return false;
+			ObjectToolSystem.Mode m = obj.actualMode;
+			return m == ObjectToolSystem.Mode.Create || m == ObjectToolSystem.Mode.Brush
+				|| m == ObjectToolSystem.Mode.Stamp || m == ObjectToolSystem.Mode.Line
+				|| m == ObjectToolSystem.Mode.Curve;
+		}
+
+		/// <summary>
+		/// 目标高度这一行只在**地形工具的 Level（平整）/ Slope（斜坡）**资产上出现
+		/// （ToolUISystem L184 的 binding 条件）。资产类型从 <c>TerraformingData.m_Type</c> 读，
+		/// 判不出来就返回 false（宁可不记，也不要写到一个没有这一行的资产上）。
+		/// </summary>
+		private static bool TerrainHasTargetHeight(PrefabBase prefab)
+		{
+			if (prefab == null) return false;
+			try
+			{
+				TerraformingPrefab tf = prefab as TerraformingPrefab;
+				if (tf == null) return false;
+				Entity e = s_CachedPrefabSystem != null ? s_CachedPrefabSystem.GetEntity(prefab) : Entity.Null;
+				if (e == Entity.Null || !s_Em.Exists(e)) return false;
+				TerraformingData data;
+				if (!s_Em.TryGetComponent(e, out data)) return false;
+				return data.m_Type == TerraformingType.Level || data.m_Type == TerraformingType.Slope;
+			}
+			catch { return false; }
+		}
+
+		/// <summary>
+		/// 名称的稳定哈希（FNV-1a 32 位）。记忆文件里存整数，而刷子 / 主题这类值是对象引用，
+		/// 只能靠名字落地。**绝不能用 <c>string.GetHashCode()</c>** —— 它在 .NET Core 上
+		/// 每个进程加的种子不同，同一个档读回来就对不上。
+		/// </summary>
+		internal static int StableHash(string s)
+		{
+			unchecked
+			{
+				uint h = 2166136261u;
+				for (int i = 0; i < s.Length; i++)
+				{
+					h ^= s[i];
+					h *= 16777619u;
+				}
+				return (int)(h & 0x7FFFFFFF);
+			}
+		}
+
 		// ============================ 写回 ============================
 
 		/// <summary>写一个字段。返回 false = 当前工具没有这一项 / 该值不合法（不写）。</summary>
@@ -1406,6 +1649,14 @@ namespace ToolModeMemory
 					case F_COLOR3: return ApplyColor(tool, 3, value);
 					case F_BRUSH_SIZE: return ApplyBrush(tool, true, value);
 					case F_BRUSH_STRENGTH: return ApplyBrush(tool, false, value);
+					case F_BRUSH_TYPE: return ApplyBrushType(tool, value);
+					case F_BRUSH_HEIGHT: return ApplyBrushHeight(tool, value);
+					case F_AGE_MASK: return ApplyAgeMask(tool, value);
+					case F_DISTANCE: return ApplyDistance(tool, value);
+					case F_AN_ELEV: return ApplyAnarchyElevation(F_AN_ELEV, tool, value);
+					case F_AN_ELEV_STEP: return ApplyAnarchyElevation(F_AN_ELEV_STEP, tool, value);
+					case F_AN_ELEV_VAR: return ApplyAnarchyElevation(F_AN_ELEV_VAR, tool, value);
+					case F_AN_LOCK_ELEV: return ApplyAnarchyElevation(F_AN_LOCK_ELEV, tool, value);
 					case F_DECORATION: return ApplyDecoration(tool, value);
 					case F_ANARCHY: return ApplyAnarchyEnabled(value);
 					case F_LR_LEFT: return ApplySideUpgrade(tool, true, value);
@@ -1625,6 +1876,207 @@ namespace ToolModeMemory
 		}
 
 		/// <summary>
+		/// 写回笔刷类型：按名字哈希反查刷子，找到才写。
+		/// 刷子预制体用 ECS 查询枚举（<c>PrefabData + BrushData</c>），与 TerrainToolSystem
+		/// 自己建 m_BrushQuery 的方式一致；刷子只有个位数，且只在真正写回时走一次，
+		/// 不进每帧热路径。哈希不匹配（换了刷子包 / 记的是别的刷子）就整条不写。
+		/// </summary>
+		private static bool ApplyBrushType(ToolBaseSystem tool, int value)
+		{
+			if (value == 0) return false;
+			if (!tool.brushing) return false;
+			if (s_CachedPrefabSystem == null || !s_HaveSystems) return false;
+			BrushPrefab match = null;
+			NativeArray<Entity> found = default(NativeArray<Entity>);
+			try
+			{
+				EntityQuery q = s_Em.CreateEntityQuery(
+					ComponentType.ReadOnly<PrefabData>(), ComponentType.ReadOnly<BrushData>());
+				found = q.ToEntityArray(Allocator.Temp);
+				for (int i = 0; i < found.Length; i++)
+				{
+					string name = null;
+					try { name = s_CachedPrefabSystem.GetPrefabName(found[i]); } catch { name = null; }
+					if (string.IsNullOrEmpty(name)) continue;
+					if (StableHash(name) != value) continue;
+					match = s_CachedPrefabSystem.GetPrefab<BrushPrefab>(found[i]);
+					if (match != null) break;
+				}
+			}
+			catch { return false; }
+			finally
+			{
+				if (found.IsCreated) found.Dispose();
+			}
+			if (match == null) return false;
+			tool.brushType = match;
+			return true;
+		}
+
+		/// <summary>
+		/// 写回目标高度。门槛与捕获一致：地形工具 + Level/Slope 资产。
+		/// 原版的 <c>brushHeight</c> setter 会自己加 SeaLevel 偏移（ToolUISystem L657-660
+		/// 是先减 SeaLevel 再写的），这里直接写面板显示值，与原版那条路径一致。
+		/// </summary>
+		private static bool ApplyBrushHeight(ToolBaseSystem tool, int value)
+		{
+			if (value == 0) return false;
+			TerrainToolSystem terrain = tool as TerrainToolSystem;
+			if (terrain == null) return false;
+			PrefabBase prefab = terrain.GetPrefab();
+			if (!TerrainHasTargetHeight(prefab)) return false;
+			float f = value / kScale;
+			if (!InRange(f, kMaxBrushHeight)) return false;
+			terrain.brushHeight = f;
+			return true;
+		}
+
+		/// <summary>
+		/// 写回年龄。位掩码只允许 AgeMask 里有的位（Sapling=1 / Young=2 / Mature=4 / Elderly=8）。
+		/// 写 0 会被原版当成「一个都不选」→ 面板空白且什么都种不出来，所以 0 直接不写。
+		/// </summary>
+		private static bool ApplyAgeMask(ToolBaseSystem tool, int value)
+		{
+			ObjectToolSystem obj = tool as ObjectToolSystem;
+			if (obj == null) return false;
+			if (!obj.allowAge) return false;
+			if (value <= 0) return false;
+			if ((value & ~0xF) != 0) return false;
+			obj.ageMask = (Game.Tools.AgeMask)value;
+			return true;
+		}
+
+		/// <summary>
+		/// 写回距离。只在摆件工具的线/曲线模式写（面板上只有这两个模式有这一行）。
+		/// 距离必须是正数，0 与负数直接不写。
+		/// </summary>
+		private static bool ApplyDistance(ToolBaseSystem tool, int value)
+		{
+			ObjectToolSystem obj = tool as ObjectToolSystem;
+			if (obj == null) return false;
+			ObjectToolSystem.Mode mode = obj.actualMode;
+			if (mode != ObjectToolSystem.Mode.Line && mode != ObjectToolSystem.Mode.Curve) return false;
+			float f = value / kScale;
+			if (!InRange(f, kMaxDistance)) return false;
+			if (f <= 0f) return false;
+			obj.distance = f;
+			return true;
+		}
+
+		/// <summary>
+		/// 写回 Anarchy「物件高度」一排的一个值。
+		/// **必须四件套**（anarchy_rows.md Q2 / R4）：只写 helper 只是改显示的数字，
+		/// 场上物体一个都不会动。顺序：
+		///   ① helper.Value（面板立刻重画）
+		///   ② ObjectDefinitionSystem.ElevationDelta / ElevationVariance（真正生效）
+		///   ③ ToolBaseSystem.m_ForceUpdate（让本帧重算）
+		/// 其中 ② 是 setter-only 属性，③ 是 protected 字段，都按反射写，全包 try/catch。
+		/// </summary>
+		private static bool ApplyAnarchyElevation(string fieldId, ToolBaseSystem tool, int value)
+		{
+			AnarchyHandles h = Anarchy();
+			if (h == null) return false;
+			object ui = AnarchyUi();
+			if (ui == null) return false;
+			if (!AnarchyElevationVisible(tool)) return false;
+
+			bool isLock = fieldId == F_AN_LOCK_ELEV;
+			float f = value / kScale;
+
+			// ① 写 helper（显示镜像）。helper 是引用类型字段，先取实例再写它的 Value。
+			try
+			{
+				FieldInfo field = null;
+				PropertyInfo prop = null;
+				switch (fieldId)
+				{
+					case F_AN_ELEV: field = h.ElevValueField; prop = h.ElevValueProp; break;
+					case F_AN_ELEV_STEP: field = h.ElevStepField; prop = h.ElevStepProp; break;
+					case F_AN_ELEV_VAR: field = h.ElevVarianceField; prop = h.ElevVarianceProp; break;
+					case F_AN_LOCK_ELEV: field = h.LockElevationField; prop = h.LockElevationProp; break;
+					default: return false;
+				}
+				object helper = field != null ? field.GetValue(ui) : null;
+				if (helper != null && prop != null && prop.CanWrite)
+				{
+					prop.SetValue(helper, isLock ? (object)(value != 0) : (object)f, null);
+				}
+				else if (prop != null && prop.CanWrite)
+				{
+					prop.SetValue(ui, isLock ? (object)(value != 0) : (object)f, null);
+				}
+			}
+			catch { /* 面板写不进去也要继续走 ②，否则物体不动 */ }
+
+			// ② 写真正生效的那一侧（ObjectDefinitionSystem，setter-only）
+			try
+			{
+				object def = h.ObjectDefinition;
+				if (def == null)
+				{
+					def = GetAnarchyObjectDefinition();
+					if (h != null) h.ObjectDefinition = def;
+				}
+				if (def != null)
+				{
+					if (fieldId == F_AN_ELEV && h.ElevationDeltaProp != null && h.ElevationDeltaProp.CanWrite)
+					{
+						h.ElevationDeltaProp.SetValue(def, f, null);
+					}
+					else if (fieldId == F_AN_ELEV_VAR && h.ElevationVarianceProp != null && h.ElevationVarianceProp.CanWrite)
+					{
+						h.ElevationVarianceProp.SetValue(def, f, null);
+					}
+				}
+			}
+			catch { }
+
+			// ③ 让工具本帧重算（m_ForceUpdate 是 protected 字段）
+			try
+			{
+				if (s_ForceUpdate != null) s_ForceUpdate.SetValue(tool, true);
+			}
+			catch { }
+
+			return true;
+		}
+
+		/// <summary>ToolBaseSystem.m_ForceUpdate（protected bool），反射缓存一次。</summary>
+		private static readonly FieldInfo s_ForceUpdate = FindForceUpdate();
+
+		private static FieldInfo FindForceUpdate()
+		{
+			try
+			{
+				return typeof(ToolBaseSystem).GetField("m_ForceUpdate",
+					BindingFlags.Instance | BindingFlags.NonPublic);
+			}
+			catch { return null; }
+		}
+
+		/// <summary>
+		/// 取 Anarchy 的 <c>ObjectDefinitionSystem</c> 实例（真正决定摆放高度的那一侧）。
+		/// 它和上面两个 UI 系统一样按当前 World 缓存、用同一套 ResolveAnarchySystem 取；
+		/// 取不到就返回 null（调用方只写 helper = 面板数字变了但物体不动）。
+		/// </summary>
+		private static object GetAnarchyObjectDefinition()
+		{
+			if (s_ObjectDefResolved) return s_ObjectDef;
+			Type t = FindLoadedType(ANARCHY_OBJECTDEF_TYPE_NAME);
+			if (t == null)
+			{
+				// 模组还没加载完：不 latch，下次再试
+				return null;
+			}
+			return ResolveAnarchySystem(t, ref s_ObjectDef, ref s_ObjectDefResolved);
+		}
+
+		private static object s_ObjectDef;
+		private static bool s_ObjectDefResolved;
+
+		private const string ANARCHY_OBJECTDEF_TYPE_NAME = "Anarchy.Systems.Common.ObjectDefinitionSystem";
+
+		/// <summary>
 		/// Anarchy 总开关写回：只写私有字段 m_AnarchyEnabled，不碰它的 binding。
 		/// Anarchy 自己的 OnUpdate 里有
 		///   if (m_AnarchyEnabled != m_AnarchyBinding.Value) m_AnarchyBinding.Value = m_AnarchyEnabled;
@@ -1738,6 +2190,14 @@ namespace ToolModeMemory
 
 		/// <summary>任意「米」制的连续量上界（横向偏移之类）。地图只有约 10 km 宽。</summary>
 		private const float kMaxMeters = 100000f;
+
+		/// <summary>
+		/// 目标高度（brushHeight）与「距离」（distance）的上界，按米计。
+		/// 目标高度是地形高度，地图最高点约 1024 m（原版地形高度上限），取 4096 m 足够宽；
+		/// 距离是摆件线/曲线模式的间距，原版默认 3 m，上界取 10000 m 只为挡垃圾值。
+		/// </summary>
+		private const float kMaxBrushHeight = 4096f;
+		private const float kMaxDistance = 10000f;
 
 		/// <summary>有限、且落在 [-limit, limit] 内。NaN / 无穷一律算越界（调用方不写）。</summary>
 		private static bool InRange(float v, float limit)
@@ -2147,6 +2607,26 @@ namespace ToolModeMemory
 
 			h.SideUpgradesType = FindEnumType(h.LeftUpgradeProp);
 			h.CompositionType = FindEnumType(h.CompositionProp);
+
+			// v0.8.0：摆件工具面板上 Anarchy 注入的「物件高度」一排（见 AnarchyHandles 注释）。
+			// 四个绑定都是 ValueBindingHelper<T> 字段，Value 属性在 helper 实例上，
+			// 所以既要字段（取实例）也要它闭合类型的 Value 属性（写值）。
+			h.ElevValueField = FindField(h.UiType, "m_ElevationValue");
+			h.ElevStepField = FindField(h.UiType, "m_ElevationStep");
+			h.ElevVarianceField = FindField(h.UiType, "m_ElevationVariance");
+			h.LockElevationField = FindField(h.UiType, "m_LockElevation");
+			h.ElevValueProp = FindValueProperty(h.ElevValueField);
+			h.ElevStepProp = FindValueProperty(h.ElevStepField);
+			h.ElevVarianceProp = FindValueProperty(h.ElevVarianceField);
+			h.LockElevationProp = FindValueProperty(h.LockElevationField);
+
+			// 真正生效的那一侧（setter-only 属性），类型可能比 UI 系统晚加载，取不到就留 null
+			Type defType = FindLoadedType(ANARCHY_OBJECTDEF_TYPE_NAME);
+			if (defType != null)
+			{
+				h.ElevationDeltaProp = FindProperty(defType, "ElevationDelta");
+				h.ElevationVarianceProp = FindProperty(defType, "ElevationVariance");
+			}
 			return h;
 		}
 

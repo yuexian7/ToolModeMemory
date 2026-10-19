@@ -154,13 +154,29 @@ def main():
                 out.append("")
                 out.append("── %s" % label)
                 out.append("   说明: " + txt(item_id, "desc", suffix))
+                # v0.8.0：与 LocaleTable.ScopeDescription 完全对齐 ——
+                # 「同类 / 全局共用 / 全部不共用」三句都按当前项的域取专用键
+                # （scope.line.X.<asset|function|item>），本语言没写专用键时剥掉最后一段
+                # 退回通用句。资产页用的就是通用句，所以只有功能页 / 道具页真的会切。
+                # 这里的 suffix 就是当前页的域名（asset / function / item）。
+                def by_domain(base_key):
+                    """有专用键用专用键，否则退回不带后缀的通用句（同 C# 的 Line()）。"""
+                    if suffix == "asset":
+                        return d.get(base_key, base_key)
+                    k = base_key + "." + suffix
+                    return d.get(k, d.get(base_key, k))
+
                 shared_key = "scope.line.sharedSingle" if item_id in single else "scope.line.shared"
+                if item_id in single:
+                    shared_line = d[shared_key]          # 本页共用一份，三页通用
+                else:
+                    shared_line = by_domain("scope.line.shared")
                 scope = [d["scope.desc"],
                          fill(d["scope.line.group"], txt(item_id, "ex.group", suffix)),
                          fill(d["scope.line.menu"], txt(item_id, "ex.menu", suffix)),
                          fill(d.get(line_cat, d["scope.line.category"]), txt(item_id, "ex.category", suffix)),
-                         d[shared_key],
-                         d["scope.line.unique"],
+                         shared_line,
+                         by_domain("scope.line.unique"),
                          d["scope.note"]]
                 out.append("   共用范围（%s，本档 = %s）:" % (d["scope.label"], d[cat_key]))
                 for i, line in enumerate(scope):

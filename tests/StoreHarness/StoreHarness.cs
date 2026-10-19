@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -721,10 +721,12 @@ namespace ToolModeMemory.Tests
 			// ---- 需求 4：全部工具项都归入三域之一，没有「其它」这种兜底项 ----
 			Check(ToolItemCatalog.Find(ToolItemCatalog.kRetiredOther) == null,
 				"「其它」已从目录删除（需求 4：去掉其它、全部列出来）");
+			// v0.8.0：配色从建筑与服务页移到功能页（f.color）—— IColored 唯一实现者是
+			// RoutePrefab，只有路线工具显示这一行。桶名一个都没改（other.color*）。
 			Check(ToolItemCatalog.Find("other.color0") != null
-				&& ToolItemCatalog.Find("other.color0").Id == ToolItemCatalog.kColor,
-				"配色桶 other.color* 认回新项「颜色」（桶名不变，玩家记过的配色不丢）");
-			Check(ToolItemCatalog.Find(ToolItemCatalog.kColor).LocaleAlias == ToolItemCatalog.kRetiredOther,
+				&& ToolItemCatalog.Find("other.color0").Id == ToolItemCatalog.kFColor,
+				"配色桶 other.color* 认回「颜色」（桶名不变，玩家记过的配色不丢）");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kFColor).LocaleAlias == ToolItemCatalog.kRetiredOther,
 				"「颜色」的文案沿用旧「其它」那一份（12 语言已写好的句子不重写）");
 
 			// ---- 桶名：三域共用同一批名字，靠域前缀隔离（不是靠改桶名）----
@@ -805,12 +807,12 @@ namespace ToolModeMemory.Tests
 				&& ToolItemCatalog.Find(ToolItemCatalog.kUnderground).RecommendedScope == (int)MemoryScope.Group
 				&& !ToolItemCatalog.Find(ToolItemCatalog.kUnderground).DefaultEnabled,
 				"地下模式推荐 == 原版 -> 出厂不开");
-			Check(ToolItemCatalog.Find(ToolItemCatalog.kColor).VanillaScope == ToolItemCatalog.kVanillaNone,
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kFColor).VanillaScope == ToolItemCatalog.kVanillaNone,
 				"「颜色」（道路配色）原版不记忆");
-			Check(ToolItemCatalog.Find(ToolItemCatalog.kColor).RecommendedScope == ToolItemCatalog.kNoRecommendation
-				&& ToolItemCatalog.Find(ToolItemCatalog.kColor).EffectiveRecommendedScope() == (int)MemoryScope.Group,
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kFColor).RecommendedScope == ToolItemCatalog.kNoRecommendation
+				&& ToolItemCatalog.Find(ToolItemCatalog.kFColor).EffectiveRecommendedScope() == (int)MemoryScope.Group,
 				"「颜色」无推荐 -> 出厂退到同组");
-			Check(ToolItemCatalog.Find(ToolItemCatalog.kDecoration).VanillaScope == ToolItemCatalog.kVanillaNone,
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kIDecoration).VanillaScope == ToolItemCatalog.kVanillaNone,
 				"「保留年代」原版每次换资产都复位（ObjectToolSystem 里 decorationMode = false）");
 
 			// 10、11、12 三项属于 Anarchy（74604）：见 research/extra/anarchy
@@ -822,9 +824,13 @@ namespace ToolModeMemory.Tests
 				&& ToolItemCatalog.Find(ToolItemCatalog.kLeftRight).VanillaScope == ToolItemCatalog.kVanillaNone
 				&& ToolItemCatalog.Find(ToolItemCatalog.kGeneral).VanillaScope == ToolItemCatalog.kVanillaNone,
 				"Anarchy 三项原版无记忆");
-			Check(ToolItemCatalog.AnarchyCount(ItemDomain.Function) == 0
-				&& ToolItemCatalog.AnarchyCount(ItemDomain.Item) == 0,
-				"功能页 / 道具页目前没有第三方项（只有 Anarchy，而它只在资产页）");
+			// v0.8.0：道具页也有 Anarchy 项了（物件高度那一排出现在摆件工具面板上）。
+			// 功能页仍然没有：Anarchy 的白名单里没有功能区 / 区域 / 路线这类工具。
+			Check(ToolItemCatalog.AnarchyCount(ItemDomain.Function) == 0,
+				"功能页没有第三方项（Anarchy 白名单里没有功能区/区域/路线工具）");
+			Check(ToolItemCatalog.AnarchyCount(ItemDomain.Asset) > 0
+				&& ToolItemCatalog.AnarchyCount(ItemDomain.Item) > 0,
+				"建筑与服务页与道具页都有 Anarchy 项（物件高度在两页各一份）");
 
 			// 「全局共用」必须真的只剩一把键：游戏里只有一份值的项不能再按域/家族碎裂，
 			// 否则玩家设成全局共用后，换到另一个工具组读到的还是没记过的默认值。
@@ -842,11 +848,14 @@ namespace ToolModeMemory.Tests
 			}
 			// 枚举 / 位掩码项反过来：同一个数字在道路工具和区域工具里是两回事，
 			// 并成一把键会把非法组合写进工具，必须继续按域 + 家族分开。
+			// v0.8.0：笔刷拆成 brushType / brushSize / brushStrength 三项，三项都是
+			// 枚举/连续值，跨工具混用会把地形工具的 35 m 灌给摆件刷涂，所以同样按域分键。
 			string[] familyBound = new string[]
 			{
 				ToolItemCatalog.kToolMode, ToolItemCatalog.kElevation, ToolItemCatalog.kParallel,
-				ToolItemCatalog.kSnap, ToolItemCatalog.kColor, ToolItemCatalog.kBrush,
-				ToolItemCatalog.kDecoration
+				ToolItemCatalog.kSnap, ToolItemCatalog.kFColor, ToolItemCatalog.kFBrushType,
+				ToolItemCatalog.kFBrushSize, ToolItemCatalog.kFBrushStrength,
+				ToolItemCatalog.kFBrushHeight, ToolItemCatalog.kIAgeMask, ToolItemCatalog.kFDistance
 			};
 			for (int i = 0; i < familyBound.Length; i++)
 			{
@@ -868,18 +877,35 @@ namespace ToolModeMemory.Tests
 			string[] lr = ToolItemCatalog.Find(ToolItemCatalog.kLeftRight).Subs;
 			Check(lr != null && lr.Length == 2 && lr[0] == "leftRight.left" && lr[1] == "leftRight.right",
 				"左侧和右侧 = 左右两个子字段");
-			string[] color = ToolItemCatalog.Find(ToolItemCatalog.kColor).Subs;
+			string[] color = ToolItemCatalog.Find("other.color0").Subs;
 			Check(color != null && color.Length == 4
 				&& color[0] == "other.color0" && color[1] == "other.color1" && color[2] == "other.color2"
 				&& color[3] == "other.color3",
 				"「颜色」= 配色 3+1 通道，桶名照旧（other.color*）");
-			string[] brush = ToolItemCatalog.Find(ToolItemCatalog.kBrush).Subs;
-			Check(brush != null && brush.Length == 2
-				&& brush[0] == "other.brushSize" && brush[1] == "other.brushStrength",
-				"笔刷 = 粗细 + 强度两个子字段，且**桶名沿用 other.***（改名会抹掉玩家记过的笔刷）");
-			string[] deco = ToolItemCatalog.Find(ToolItemCatalog.kDecoration).Subs;
+			// v0.8.0：原「笔刷」一项拆成三项，每项一个桶，桶名一个都不改
+			// （other.brushSize / other.brushStrength 沿用旧名，brushType 是新行）。
+			string[] bSize = ToolItemCatalog.Find(ToolItemCatalog.kFBrushSize).Subs;
+			Check(bSize != null && bSize.Length == 1 && bSize[0] == "other.brushSize",
+				"笔刷粗细 = 单个桶 other.brushSize（桶名沿用，玩家记过的值不丢）");
+			string[] bStr = ToolItemCatalog.Find(ToolItemCatalog.kFBrushStrength).Subs;
+			Check(bStr != null && bStr.Length == 1 && bStr[0] == "other.brushStrength",
+				"笔刷强度 = 单个桶 other.brushStrength（同上）");
+			string[] bType = ToolItemCatalog.Find(ToolItemCatalog.kFBrushType).Subs;
+			Check(bType != null && bType.Length == 1 && bType[0] == "brushType",
+				"笔刷种类 = 单个桶 brushType（v0.8.0 新增行，无历史包袱）");
+			string[] deco = ToolItemCatalog.Find(ToolItemCatalog.kIDecoration).Subs;
 			Check(deco != null && deco.Length == 1 && deco[0] == "decoration",
 				"保留年代 = decoration 一个字段（新行，没有历史包袱）");
+			// 新增的四行各自一个桶
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kFBrushHeight).Subs[0] == "brushHeight",
+				"目标高度 = brushHeight 一个桶");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kIAgeMask).Subs[0] == "ageMask",
+				"年龄 = ageMask 一个桶");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kFDistance).Subs[0] == "distance",
+				"距离 = distance 一个桶");
+			string[] objElev = ToolItemCatalog.Find(ToolItemCatalog.kObjectElevation).Subs;
+			Check(objElev != null && objElev.Length == 4,
+				"物件高度 = 锁定变换 / 高度 / 变化范围 / 幅度 四个值（owner：同一排算一项）");
 
 			// 高度阶段不再是一项，而是「高度」的子字段：共用高度的开关、范围与记忆键，
 			// 字段 id 仍是 "elevation" / "elevationStep"，所以 0.2.1 及更早的记忆文件照旧读得回。
@@ -905,10 +931,15 @@ namespace ToolModeMemory.Tests
 			Check(ToolItemCatalog.Find("leftRight.left").Id == ToolItemCatalog.kLeftRight
 				&& ToolItemCatalog.Find("leftRight.right").Id == ToolItemCatalog.kLeftRight,
 				"leftRight.* 认回父项");
-			Check(ToolItemCatalog.Find("other.color2").Id == ToolItemCatalog.kColor, "other.color* 认回「颜色」");
-			Check(ToolItemCatalog.Find("other.brushSize").Id == ToolItemCatalog.kBrush
-				&& ToolItemCatalog.Find("other.brushStrength").Id == ToolItemCatalog.kBrush,
-				"笔刷两个桶认回新独立项「笔刷」（Subs 精确匹配优先于点号前缀兜底，老文件不换名）");
+			Check(ToolItemCatalog.Find("other.color2").Id == ToolItemCatalog.kFColor, "other.color* 认回「颜色」");
+			Check(ToolItemCatalog.Find("other.brushSize").Id == ToolItemCatalog.kFBrushSize
+				&& ToolItemCatalog.Find("other.brushStrength").Id == ToolItemCatalog.kFBrushStrength,
+				"拆行后两个旧桶各自认回「笔刷粗细」/「笔刷强度」（桶名不换，老文件照旧读得回）");
+			Check(ToolItemCatalog.Find("brushType").Id == ToolItemCatalog.kFBrushType
+				&& ToolItemCatalog.Find("brushHeight").Id == ToolItemCatalog.kFBrushHeight
+				&& ToolItemCatalog.Find("ageMask").Id == ToolItemCatalog.kIAgeMask
+				&& ToolItemCatalog.Find("distance").Id == ToolItemCatalog.kFDistance,
+				"新增四个桶各自认回自己的项");
 
 			// 0.1.x 的项 id 一律不认识；0.2.2 里 elevationStep 只作为「高度」的子字段存在
 			Check(ToolItemCatalog.Find("net.draw") == null && ToolItemCatalog.Find("net.snap") == null
@@ -1890,92 +1921,63 @@ namespace ToolModeMemory.Tests
 		/// </summary>
 		private static void BrushItemMemory()
 		{
-			Console.WriteLine("[28] 笔刷独立成行（目录形状 + 记忆桶向后兼容）");
+			Console.WriteLine("[28] 笔刷按面板行拆成三项（目录形状 + 记忆桶向后兼容）");
 
-			ToolItemDef brush = ToolItemCatalog.Find(ToolItemCatalog.kBrush);
-			Check(brush != null && brush.Number == 9, "笔刷 = 官方板块第 9 行");
-			Check(brush != null && brush.Source == ItemSource.Vanilla, "笔刷进「官方工具项设置」板块");
-			Check(brush != null && brush.VanillaScope == ToolItemCatalog.kVanillaNone,
-				"原版不跨存档记忆笔刷（TerrainToolSystem 私有 TerraformingBrushValues[4] 只活到本次会话）");
-			Check(brush != null && brush.RecommendedScope == (int)MemoryScope.GlobalShared
-				&& brush.EffectiveRecommendedScope() == (int)MemoryScope.GlobalShared,
-				"推荐档 = 全局共用（各类地形工具共用一把，不用每进档重回 100 m）");
-			Check(brush != null && !brush.DefaultEnabled, "出厂关（owner 定）");
-			Check(brush != null && brush.Subs != null && brush.Subs.Length == 2, "笔刷覆盖两个游戏字段");
-			if (brush == null || brush.Subs == null || brush.Subs.Length != 2) return;
+			// v0.8.0（owner）：「不要合一起了，全部独立拆开设置共用范围」。
+			// 原「笔刷」一项含 brushSize + brushStrength 两个值，拆成粗细 / 强度两项，
+			// 另加全新的「笔刷种类」。三项各自一个开关、各自一个共用范围。
+			ToolItemDef size = ToolItemCatalog.Find(ToolItemCatalog.kFBrushSize);
+			ToolItemDef strength = ToolItemCatalog.Find(ToolItemCatalog.kFBrushStrength);
+			ToolItemDef type = ToolItemCatalog.Find(ToolItemCatalog.kFBrushType);
+			Check(size != null && strength != null && type != null, "三项都独立存在于目录里");
+			if (size == null || strength == null || type == null) return;
 
-			// 桶名沿用旧名：记忆文件里的键就是子字段 id，改名等于抹掉玩家记过的值
-			Check(brush.Subs[0] == "other.brushSize" && brush.Subs[1] == "other.brushStrength",
-				"两个桶名照旧（0.6.1 及以前的记忆文件不用迁移）");
-			Check(ToolItemCatalog.Find("other.brushSize").Id == ToolItemCatalog.kBrush
-				&& ToolItemCatalog.Find("other.brushStrength").Id == ToolItemCatalog.kBrush,
-				"Subs 精确匹配优先于「点号前缀」兜底：笔刷桶认回「笔刷」而不是「其它」");
-			Check(ToolItemCatalog.Find("other.color0").Id == ToolItemCatalog.kColor
-				&& ToolItemCatalog.Find("other.color3").Id == ToolItemCatalog.kColor,
-				"配色三个通道 + 占位归新项「颜色」（桶名照旧 other.color*）");
-			string[] colorSubs = ToolItemCatalog.Find(ToolItemCatalog.kColor).Subs;
-			bool colorClean = colorSubs != null && colorSubs.Length == 4;
-			for (int i = 0; colorClean && i < colorSubs.Length; i++)
-			{
-				if (colorSubs[i] == "other.brushSize" || colorSubs[i] == "other.brushStrength") colorClean = false;
-			}
-			Check(colorClean, "「颜色」的 Subs 里已经没有笔刷（关掉配色不再连带关掉笔刷）");
+			Check(size.Id != strength.Id && size.Id != type.Id && strength.Id != type.Id,
+				"三项 id 互不相同（各自一套开关与范围）");
+			Check(size.Subs != null && size.Subs.Length == 1 && size.Subs[0] == "other.brushSize"
+				&& strength.Subs != null && strength.Subs.Length == 1
+				&& strength.Subs[0] == "other.brushStrength",
+				"两个旧桶名一个都没改（改名会抹掉玩家 0.6.1 起记下的笔刷）");
+			Check(type.Subs != null && type.Subs.Length == 1 && type.Subs[0] == "brushType",
+				"笔刷种类用新桶 brushType");
 
-			// v0.7.0 编号在每个标签页内各自从 1 数（「功能」页另起 1..5，「道具」页 1..5）：
-			// 三页是三张独立的设置单，跨页连续编号既无必要又会让资产页跳到 15、16。
-			Check(ToolItemCatalog.Find(ToolItemCatalog.kColor).Number == 10
-				&& ToolItemCatalog.Find(ToolItemCatalog.kDecoration).Number == 11
-				&& ToolItemCatalog.Find(ToolItemCatalog.kAnarchy).Number == 12
-				&& ToolItemCatalog.Find(ToolItemCatalog.kLeftRight).Number == 13
-				&& ToolItemCatalog.Find(ToolItemCatalog.kGeneral).Number == 14,
-				"资产页 = 配色 10 / 保留年代 11 / Anarchy 12/13/14");
-			Check(ToolItemCatalog.Find(ToolItemCatalog.kFBrush).Number == 5
-				&& ToolItemCatalog.Find(ToolItemCatalog.kFToolMode).Number == 1
-				&& ToolItemCatalog.FunctionItems.Length == 5,
-				"功能页另起 1..5（工具模式 1 / 笔刷 5）");
-			Check(ToolItemCatalog.Find(ToolItemCatalog.kIBrush).Number == 3
-				&& ToolItemCatalog.ItemItems.Length == 5,
-				"道具页另起 1..5（笔刷 3）");
+			// 建筑与服务页没有这三行（AllowBrush 只认地形工具与可刷涂摆件），
+			// 所以三项都在功能页与道具页，且都归官方板块。
+			Check(size.Domain == ItemDomain.Function && strength.Domain == ItemDomain.Function
+				&& type.Domain == ItemDomain.Function,
+				"功能页三项都是 Function 域（地形改造工具 9 种吃这一行）");
+			Check(size.Source == ItemSource.Vanilla && strength.Source == ItemSource.Vanilla
+				&& type.Source == ItemSource.Vanilla,
+				"三项都进「官方工具项设置」板块");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kIBrushSize) != null
+				&& ToolItemCatalog.Find(ToolItemCatalog.kIBrushStrength) != null
+				&& ToolItemCatalog.Find(ToolItemCatalog.kIBrushType) != null,
+				"道具页同样有这三项（可刷涂道具吃这一行）");
 
-			// 与审查建议不同的一处：笔刷**不**套 family-free。地形笔刷与摆件刷涂模式共用
+			// 与审查建议不同的一处：笔刷**不**套 family-free。地形笔刷与摆件刷涂共用
 			// ToolBaseSystem.brushSize，可含义不同（位移量 vs 物体密度），原版也是两套独立值，
 			// 并成一把裸键会把地形调好的 35 m 灌给摆件刷涂。
-			Check(!brush.FamilyFreeScope
-				&& !ToolItemCatalog.UsesFamilyFreeKey(brush, MemoryScope.GlobalShared),
-				"笔刷仍按域 + 枚举家族分键");
-			Check(K(MemoryKeys.Shared(), true, "other") == "F|S$other"
-				&& K(MemoryKeys.Shared(), false, "obj") == "A|S$obj"
-				&& K(MemoryKeys.Shared(), true, "other") != K(MemoryKeys.Shared(), false, "obj"),
-				"地形那把是 F|S$other，摆件刷涂是另一把，互不污染");
+			bool anyFamilyFree = size.FamilyFreeScope || strength.FamilyFreeScope || type.FamilyFreeScope;
+			Check(!anyFamilyFree, "三项都不套 family-free（仍按域 + 家族分键）");
+			Check(!ToolItemCatalog.UsesFamilyFreeKey(size, MemoryScope.GlobalShared),
+				"笔刷粗细在「全局共用」下也不用裸键");
 
-			// 记忆往返：两个桶 × 地形侧的全局共用键
-			FreshDir("brushitem");
-			string tKey = K(MemoryKeys.Shared(), true, "other");
-			MemoryStore s = new MemoryStore();
-			s.UseSaveName("笔刷市");
-			s.Set("other.brushSize", tKey, 3500);       // 35 m × 100
-			s.Set("other.brushStrength", tKey, 75);     // 0.75 × 100
-			Check(s.SaveToDisk(true), "笔刷记忆写盘");
-			MemoryStore r = new MemoryStore();
-			r.UseSaveName("笔刷市");
-			bool found;
-			Check(r.LoadForCurrentSave(), "读盘成功");
-			Check(r.Get("other.brushSize", tKey, out found) == 3500 && found, "笔刷粗细读得回来");
-			Check(r.Get("other.brushStrength", tKey, out found) == 75 && found, "笔刷强度读得回来");
-			Check(r.EntryCount == 2, "两个桶都活过了读档过滤（Find 认不回父项就会被整桶丢掉）");
-
-			// 0.6.1 那份文件（笔刷记在「其它」的范围下）升级后仍然读得回，不会凭空丢
-			string legacy = "{\"v\":3,\"save\":\"老档\",\"items\":{"
-				+ "\"other.color0\":{\"A|G:Roads/SmallRoads$net\":16711680},"
-				+ "\"other.brushSize\":{\"A|G:Roads/SmallRoads$net\":3000},"
-				+ "\"other.brushStrength\":{\"A|G:Roads/SmallRoads$net\":50}}}";
-			FreshDir("brushlegacy");
-			MemoryStore l = new MemoryStore();
-			l.UseSaveName("老档");
-			File.WriteAllText(l.CurrentFilePath(), legacy, Encoding.UTF8);
-			Check(l.LoadForCurrentSave() && l.EntryCount == 3, "升级后第一次进老档：三条值一条不丢");
-			Check(l.Get("other.brushSize", K(kSmallRoads, false, "net"), out found) == 3000 && found,
-				"老笔刷值按原来的键照读（玩家不必重新调一遍）");
+			// 目标高度 / 年龄 / 距离：同样是独立成项（owner 要求全部拆开）
+			ToolItemDef height = ToolItemCatalog.Find(ToolItemCatalog.kFBrushHeight);
+			Check(height != null && height.Domain == ItemDomain.Function
+				&& height.Subs != null && height.Subs[0] == "brushHeight",
+				"目标高度是功能页独立一项（只有地形 Level/Slope 有这一行）");
+			ToolItemDef age = ToolItemCatalog.Find(ToolItemCatalog.kIAgeMask);
+			Check(age != null && age.Domain == ItemDomain.Item
+				&& age.Subs != null && age.Subs[0] == "ageMask",
+				"年龄是道具页独立一项（只有树有这一行，v0.8.0 起树归道具页）");
+			ToolItemDef dist = ToolItemCatalog.Find(ToolItemCatalog.kFDistance);
+			Check(dist != null && dist.Domain == ItemDomain.Function
+				&& dist.Subs != null && dist.Subs[0] == "distance",
+				"距离是功能页独立一项（只有线/曲线模式有这一行）");
+			ToolItemDef iDist = ToolItemCatalog.Find(ToolItemCatalog.kIDistance);
+			Check(iDist != null && iDist.Domain == ItemDomain.Item,
+				"道具页也有自己的距离项（三页互不共用）");
 		}
 
 		/// <summary>

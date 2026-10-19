@@ -20,14 +20,17 @@ namespace ToolModeMemory
 	/// 工具项所属的大类（= 设置页的标签页）。三类的设置、共用范围与记忆键**互不相通**：
 	/// 同名项（工具模式 / 对齐 / 笔刷 / 地下模式）在三页各有一份，各配一套开关与范围。
 	///
+	/// v0.8.0 改名：「资产」→「建筑与服务」（owner：道具本身也是资产，旧名有歧义）。
+	/// 枚举名保留 Asset（记忆键前缀 A| 与老存档的键格式不能动），只有界面文案改了。
+	///
 	/// 判定在 <c>ToolMemoryBridge.DomainOf(tool, prefab)</c>，依据全部来自反编译 Game.dll：
-	///   Asset    = 用工具栏里的**资产**干活的工具：NetToolSystem（道路/轨道/管线/电线）、
-	///              ObjectToolSystem 选中的普通建筑/树木/摆件、UpgradeToolSystem。
+	///   Asset    = 建筑与服务：NetToolSystem（道路/轨道/管线/电线）、UpgradeToolSystem、
+	///              ObjectToolSystem 选中的普通建筑。
 	///   Function = 功能型工具：ZoneToolSystem / AreaToolSystem / RouteToolSystem /
 	///              TerrainToolSystem / BulldozeToolSystem / SelectionToolSystem，
 	///              外加 ObjectToolSystem 选中「标记与预制对象」（动物生成器、生成位置等）。
-	///   Item     = 城市美化菜单下的 8 类道具（自然 / 公园 / 住宅 / 商业 / 工业 / 残骸 / 贴花 / 盆栽），
-	///              同样是 ObjectToolSystem，但按**菜单 + 分类**判定。
+	///   Item     = 城市美化菜单下的 8 类道具 + 植被（树）：v0.8.0 起树木也算道具页
+	///              （owner 2026-10-20 定：树是用摆件工具刷的，与公园道具同一套面板行）。
 	/// </summary>
 	public enum ItemDomain
 	{
@@ -105,9 +108,25 @@ namespace ToolModeMemory
 		/// </summary>
 		public readonly string LocaleAlias;
 
+		/// <summary>
+		/// 本项这一行**实际会在哪几类工具/资产上出现**，用逗号分隔的稳定标记（owner 需求 2：
+		/// 「工具项在哪几类功能里有都写清楚」）。标记取自 <see cref="PlaceTokens"/>：
+		///   net/object/zone/area/route/terrain/bulldoze/water  = 原版 11 个工具（按 toolID）
+		///   upgrade/selection/default                          = 面板为空或不存在，只作记录
+		///   tree                                               = 带 TreeData 的资产（树）
+		///   brushable/stampable                                = 摆件工具里带该 flag 的资产
+		///   lineCurve                                          = 摆件工具的线/曲线模式
+		///   editorOnly                                         = 仅在编辑器出现
+		///   anarchy                                            = Anarchy 注入行
+		/// 依据 = <c>research/round4/vanilla_rows.md</c> 第 5 节「行 × 工具」反查表 +
+		/// <c>research/round4/anarchy_rows.md</c>，逐条带 文件:行号 证据。
+		/// 设置页说明文本按同一份清单写（12 语言），tests/option_panel_check.py 校验两者一致。
+		/// </summary>
+		public readonly string Places;
+
 		public ToolItemDef(string id, int number, ItemSource source, int vanillaScope,
 			int recommendedScope, bool defaultEnabled, string[] subs = null, bool familyFreeScope = false,
-			ItemDomain domain = ItemDomain.Asset, string localeAlias = null)
+			ItemDomain domain = ItemDomain.Asset, string localeAlias = null, string places = "")
 		{
 			Id = id;
 			Number = number;
@@ -119,7 +138,16 @@ namespace ToolModeMemory
 			FamilyFreeScope = familyFreeScope;
 			Domain = domain;
 			LocaleAlias = localeAlias;
+			Places = places ?? string.Empty;
 		}
+
+		/// <summary>Places 允许的标记全集。门禁据此拒绝拼错的标记。</summary>
+		public static readonly string[] PlaceTokens = new string[]
+		{
+			"net", "object", "zone", "area", "route", "terrain", "bulldoze", "water",
+			"upgrade", "selection", "default",
+			"tree", "brushable", "stampable", "lineCurve", "editorOnly", "anarchy"
+		};
 
 		/// <summary>实际用作该项默认的范围。</summary>
 		public int EffectiveRecommendedScope()
@@ -171,19 +199,29 @@ namespace ToolModeMemory
 
 	/// <summary>
 	/// 工具项目录。顺序 = 各标签页内的设置页顺序，**每个标签页各自从 1 开始编号**：
-	///   资产页 1..10（地区主题 / 数据包 / 工具模式 / 高度 / 并列模式 / 对齐 / 等高线 /
-	///               地下模式 / 笔刷 / 配色），Anarchy 板块 11..13；
-	///   功能页 1..4（工具模式 / 对齐 / 地下模式 / 笔刷）；
-	///   道具页 1..5（工具模式 / 对齐 / 笔刷 / 保留年代 / 地下模式）。
+	///   建筑与服务页 1..13，Anarchy 板块 14..16；
+	///   功能页 1..8；
+	///   道具页 1..12。
 	/// 板块归属由 Source 决定：Vanilla 与 Toolbar 进「官方工具项设置」，AnarchyMod 进 Anarchy 板块。
 	/// 项名一律采用对应语言包里的官方行名：原版项取游戏语言包（Toolbar.* / ToolOptions.*），
 	/// Anarchy 项取 Anarchy 自带语言包（Anarchy.SECTION_TITLE[...]），该语言缺失才自行翻译。
 	///
+	/// v0.8.0 变化（owner 需求 1~2：面板行要按游戏真实行拆开，不能再合并）：
+	///  * 拆行：原「笔刷」一项含 brushSize + brushStrength 两个值，现拆成**笔刷粗细 / 笔刷强度**
+	///    两项（owner：不要合一起，全部独立拆开设置共用范围）。桶名不变，各自沿用原桶。
+	///  * 新增**笔刷类型**（ToolBaseSystem.brushType，Toolbar.BRUSH_TYPE）、
+	///    **目标高度**（ToolBaseSystem.brushHeight，Toolbar.BRUSH_HEIGHT，仅地形 Level/Slope）、
+	///    **年龄**（ObjectToolSystem.ageMask，Toolbar.VEGETATION_AGE_PANEL_TITLE，仅树木）、
+	///    **距离**（ObjectToolSystem.distance，Toolbar.TOOL_MODE_DISTANCE，仅线/曲线模式）。
+	///  * 行归属按 <c>research/round4/vanilla_rows.md</c> 的工具×行矩阵定，不再按印象拍：
+	///    每一项的 <see cref="ToolItemDef.places"/> 写明「出现在哪几类功能里」（owner 需求 2）。
+	///  * 配色（color）**只在路线工具**出现（Game.dll 里 IColored 唯一实现者是 RoutePrefab），
+	///    路线工具属功能域 → 配色从建筑与服务页移到功能页。
+	///
 	/// v0.7.0 变化（owner 需求 1~7）：
-	///  * 三域拆分：资产 / 功能 / 道具，各自一套同名工具项，记忆键靠域前缀隔开，互不共用；
+	///  * 三域拆分：建筑与服务 / 功能 / 道具，各自一套同名工具项，记忆键靠域前缀隔开，互不共用；
 	///  * 「其它」取消：它原来装的配色（placementColor 三个通道）独立成「配色」一项；
-	///  * 「同类资产」统一改叫「同类」，功能域按 6 个功能分类归组、道具域按 8 个道具分类归组；
-	///  * 功能域新增「工具模式 / 对齐 / 地下模式 / 笔刷」，道具域新增「保留年代」。
+	///  * 「同类资产」统一改叫「同类」，功能域按 6 个功能分类归组、道具域按 8 个道具分类归组。
 	/// </summary>
 	public static class ToolItemCatalog
 	{
@@ -196,40 +234,88 @@ namespace ToolModeMemory
 		public const string kSnap = "snap";
 		public const string kTopography = "topography";
 		public const string kUnderground = "underground";
-		public const string kBrush = "brush";
-		/// <summary>道路配色。v0.7.0 从「其它」独立出来（owner：取消「其它」，全部列出来）。</summary>
-		public const string kColor = "color";
 		/// <summary>
-		/// 保留年代（ObjectToolSystem.decorationMode，ToolOptions.DECORATION_MODE_TITLE）。
-		/// 原版只在选中**带 TreeData 的资产**时才出现这一行（ObjectToolSystem L2418
-		/// <c>allowAge = actionMode.IsGame() &amp;&amp; HasComponent&lt;TreeData&gt;(m_SelectedPrefab)</c>），
-		/// 也就是只有树木类资产面板上有它。而树木在工具栏里属于城市美化/植被，
-		/// **不是** owner 说的 8 类道具之一 → 这一项归资产域，道具页不放这一行
-		/// （道具面板上根本没有这一行，放上去就是「设了没反应」）。
+		/// 笔刷粗细（ToolBaseSystem.brushSize，Toolbar.BRUSH_SIZE）。
+		/// v0.8.0 从原「笔刷」一项拆出（owner：不要合一起，全部独立拆开）。
+		/// 桶名沿用 <c>other.brushSize</c>，玩家已记下的值不受影响。
 		/// </summary>
-		public const string kDecoration = "decoration";
+		public const string kBrushSize = "brushSize";
+		/// <summary>笔刷强度（ToolBaseSystem.brushStrength，Toolbar.BRUSH_STRENGTH）。同上拆出，桶名 <c>other.brushStrength</c>。</summary>
+		public const string kBrushStrength = "brushStrength";
+		/// <summary>
+		/// 笔刷类型（ToolBaseSystem.brushType，Toolbar.BRUSH_TYPE，zh 官方未译仍显示 "Brush Type"）。
+		/// 出现条件：<c>AllowBrush()</c> 为真 —— 摆件工具（资产带 Brushable）与全部地形改造工具。
+		/// 值是一个 <c>BrushPrefab</c> 实体 → 记忆为实体名（不是数字），见 ToolMemoryBridge。
+		/// </summary>
+		public const string kBrushType = "brushType";
+		/// <summary>
+		/// 目标高度（ToolBaseSystem.brushHeight，Toolbar.BRUSH_HEIGHT）。
+		/// **只有地形工具的 Level（平整）/ Slope（斜坡）两种资产**出现这一行（ToolUISystem L184），
+		/// 摆件刷涂没有它。写回时游戏内部存的是 height + SeaLevel（ToolUISystem L657-660）。
+		/// </summary>
+		public const string kBrushHeight = "brushHeight";
+		/// <summary>
+		/// 年龄（ObjectToolSystem.ageMask，Toolbar.VEGETATION_AGE_PANEL_TITLE）。
+		/// 只在选中**带 TreeData 的资产**（树）时出现，且仅游戏模式（ObjectToolSystem L2418）。
+		/// v0.8.0 起树木归道具页（owner 定），所以这一项在道具页。
+		/// </summary>
+		public const string kAgeMask = "ageMask";
+		/// <summary>
+		/// 距离（ObjectToolSystem.distance，Toolbar.TOOL_MODE_DISTANCE）。
+		/// 是「工具模式」下的**子行**，只在摆件工具的 Line（5）/ Curve（6）模式出现（ToolUISystem L149-150）。
+		/// 单独成项（owner：全部独立拆开），共用范围独立于工具模式。
+		/// </summary>
+		public const string kDistance = "distance";
+		// v0.8.0：配色（原 kColor = "color"）与保留年代（原 kDecoration = "decoration"）
+		// 都已不在本页 —— 配色归功能页（kFColor，只有路线工具有这一行），
+		// 保留年代归道具页（kIDecoration，只有树有这一行）。两个旧常量已删除：
+		// 留着它们只会让人以为「建筑与服务页还有 color / decoration 这一项」。
 
 		// ---- Anarchy（资产页的第三方板块）----
 		public const string kAnarchy = "anarchy";
 		public const string kLeftRight = "leftRight";
 		public const string kGeneral = "general";
+		/// <summary>
+		/// Anarchy 注入在摆件工具面板上的「物件高度」一排（v0.8.0 新增）。
+		/// owner 2026-10-20 定：锁定变换 / 高度 / 高度变化范围 / 抬高降低幅度「这4项是同一项，
+		/// 都在同一排显示，自然一起记忆和共用」；「重置高度为 0」是瞬时按钮，不列。
+		/// 证据：research/round4/anarchy_rows.md A 块 ——
+		///   LockElevation（AnarchyUISystem L497，初值 Settings.ElevationLock=false）
+		///   ElevationValue（L491，0f）、ElevationStep（L492，1f）、ElevationVariance（L494，0f）。
+		/// </summary>
+		public const string kObjectElevation = "anarchyObjectElevation";
 
 		// ---- 功能域（id 加 "f." 前缀，与资产域的同名项彻底隔开）----
+		public const string kFThemes = "f.themes";
+		public const string kFPacks = "f.packs";
 		public const string kFToolMode = "f.toolMode";
 		public const string kFSnap = "f.snap";
 		public const string kFTopography = "f.topography";
 		public const string kFUnderground = "f.underground";
-		public const string kFBrush = "f.brush";
+		public const string kFBrushType = "f.brushType";
+		public const string kFBrushSize = "f.brushSize";
+		public const string kFBrushStrength = "f.brushStrength";
+		public const string kFBrushHeight = "f.brushHeight";
+		public const string kFDistance = "f.distance";
+		public const string kFColor = "f.color";
 
 		// ---- 道具域（id 加 "i." 前缀）----
-		// 只有四行：道具面板上真有的、且不属于资产域语义的行。
-		// 「保留年代」不在这里 —— 它只在带 TreeData 的资产上出现，而树木属于
-		// 城市美化/植被（不是 owner 点的 8 类道具），归资产域第 11 项。
+		// 老版的 kIToolMode / kISnap / kIBrush / kITopography / kIUnderground 保留原名
+		// （都是原有项，只有「笔刷」按 owner 要求拆成三项）。
+		public const string kIThemes = "i.themes";
+		public const string kIPacks = "i.packs";
 		public const string kIToolMode = "i.toolMode";
+		public const string kIDistance = "i.distance";
+		public const string kIBrushType = "i.brushType";
+		public const string kIBrushSize = "i.brushSize";
+		public const string kIBrushStrength = "i.brushStrength";
+		public const string kIAgeMask = "i.ageMask";
+		public const string kIDecoration = "i.decoration";
 		public const string kISnap = "i.snap";
-		public const string kIBrush = "i.brush";
 		public const string kITopography = "i.topography";
 		public const string kIUnderground = "i.underground";
+		public const string kIAnarchy = "i.anarchy";
+		public const string kIObjectElevation = "i.anarchyObjectElevation";
 
 		/// <summary>已退役的项 id：v0.7.0 取消「其它」（配色独立成 kColor）。</summary>
 		public const string kRetiredOther = "other";
@@ -262,17 +348,49 @@ namespace ToolModeMemory
 		};
 
 		/// <summary>
-		/// 资产域「笔刷」的两个游戏字段（ToolBaseSystem.brushSize / brushStrength，只有
-		/// <c>brushing</c> 为真的工具用得到）。
+		/// 笔刷粗细的桶名（ToolBaseSystem.brushSize）。
 		///
-		/// 子字段 id 故意沿用 <c>other.</c> 前缀：<b>它就是记忆文件里的桶名</b>
-		/// （0.1.2~0.6.1 笔刷一直挂在「其它」这一项下）。改名叫 "brush.size" 看着更顺眼，
-		/// 但玩家已经记下的笔刷粗细/强度会整桶变成不认识的数据 —— 名字不好看只是源码里的事，
+		/// 桶名故意沿用 <c>other.</c> 前缀：<b>它就是记忆文件里的桶名</b>
+		/// （0.1.2~0.7.0 笔刷一直挂在「其它」/「笔刷」这一项下）。v0.8.0 把原来的「笔刷」
+		/// 拆成粗细 / 强度两项，项 id 变成 brushSize / brushStrength，**桶名一个都不改** ——
+		/// 改桶名会让玩家已经记下的笔刷整桶变成不认识的数据。名字好不好看只是源码里的事，
 		/// 抹掉玩家记过的值才是伤人的事。
 		/// </summary>
-		private static readonly string[] s_BrushSubs = new string[]
+		private static readonly string[] s_BrushSizeSubs = new string[] { "other.brushSize" };
+
+		/// <summary>笔刷强度的桶名（ToolBaseSystem.brushStrength），理由同上。</summary>
+		private static readonly string[] s_BrushStrengthSubs = new string[] { "other.brushStrength" };
+
+		/// <summary>笔刷类型的桶名（ToolBaseSystem.brushType，值按 BrushPrefab 名记）。</summary>
+		private static readonly string[] s_BrushTypeSubs = new string[] { "brushType" };
+
+		/// <summary>目标高度的桶名（ToolBaseSystem.brushHeight）。</summary>
+		private static readonly string[] s_BrushHeightSubs = new string[] { "brushHeight" };
+
+		/// <summary>年龄的桶名（ObjectToolSystem.ageMask，AgeMask 位掩码）。</summary>
+		private static readonly string[] s_AgeMaskSubs = new string[] { "ageMask" };
+
+		/// <summary>距离的桶名（ObjectToolSystem.distance）。</summary>
+		private static readonly string[] s_DistanceSubs = new string[] { "distance" };
+
+		/// <summary>
+		/// 「物件高度」一排的四个值（Anarchy 注入，见 kObjectElevation）。
+		/// 桶名沿用 Anarchy 自己的 binding 名，便于排查：
+		///   anarchyElevation         = ElevationValue（当前摆放高度，单位 m）
+		///   anarchyElevationStep     = ElevationStep（每次抬高/降低的幅度，4 档离散：1/5/10/50）
+		///   anarchyElevationVariance = ElevationVariance（高度变化范围，0 = 不随机）
+		///   anarchyLockElevation     = LockElevation（锁定变换：锁定后拖动不改高度）
+		/// 注意：Anarchy 的 ElevationStep 与**原版**道路 elevationStep（0.01~25 连续）语义不同，
+		/// 绝不能合并（anarchy_rows.md Q5 明确提醒）。
+		/// </summary>
+		private static readonly string[] s_ObjectElevationSubs = new string[]
 		{
-			"other.brushSize", "other.brushStrength"
+			"anarchyElevation", "anarchyElevationStep", "anarchyElevationVariance", "anarchyLockElevation"
+		};
+
+		private static readonly string[] s_IObjectElevationSubs = new string[]
+		{
+			"anarchyElevation", "anarchyElevationStep", "anarchyElevationVariance", "anarchyLockElevation"
 		};
 
 		/// <summary>
@@ -298,12 +416,27 @@ namespace ToolModeMemory
 		private static readonly string[] s_FSnapSubs = new string[] { "snap" };
 		private static readonly string[] s_FTopographySubs = new string[] { "topography" };
 		private static readonly string[] s_FUndergroundSubs = new string[] { "underground" };
+		private static readonly string[] s_FBrushSizeSubs = new string[] { "other.brushSize" };
+		private static readonly string[] s_FBrushStrengthSubs = new string[] { "other.brushStrength" };
+		private static readonly string[] s_FBrushTypeSubs = new string[] { "brushType" };
+		private static readonly string[] s_FBrushHeightSubs = new string[] { "brushHeight" };
+		private static readonly string[] s_FDistanceSubs = new string[] { "distance" };
+		private static readonly string[] s_FColorSubs = new string[]
+		{
+			"other.color0", "other.color1", "other.color2", "other.color3"
+		};
 
 		/// <summary>道具域各项的桶名，同上。</summary>
 		private static readonly string[] s_IToolModeSubs = new string[] { "toolMode" };
 		private static readonly string[] s_ISnapSubs = new string[] { "snap" };
 		private static readonly string[] s_ITopographySubs = new string[] { "topography" };
 		private static readonly string[] s_IUndergroundSubs = new string[] { "underground" };
+		private static readonly string[] s_IBrushSizeSubs = new string[] { "other.brushSize" };
+		private static readonly string[] s_IBrushStrengthSubs = new string[] { "other.brushStrength" };
+		private static readonly string[] s_IBrushTypeSubs = new string[] { "brushType" };
+		private static readonly string[] s_IAgeMaskSubs = new string[] { "ageMask" };
+		private static readonly string[] s_IDecorationSubs = new string[] { "decoration" };
+		private static readonly string[] s_IDistanceSubs = new string[] { "distance" };
 
 		/// <summary>
 		/// 资产域「保留年代」的桶名。游戏里叫 decorationMode（ToolOptions.DECORATION_MODE_TITLE），
@@ -312,103 +445,149 @@ namespace ToolModeMemory
 		private static readonly string[] s_DecorationSubs = new string[] { "decoration" };
 
 		/// <summary>
-		/// 资产域（= 资产标签页）。这一份是「用工具栏资产干活的工具」的全部可记忆项。
+		/// 建筑与服务页。这一份是「用工具栏资产干活的工具」的全部可记忆项：
+		/// NetToolSystem（道路/轨道/管线/电线）、UpgradeToolSystem、ObjectToolSystem 选中普通建筑。
+		///
+		/// v0.8.0 按 research/round4/vanilla_rows.md 第 5 节反查表逐行核过：
+		///  * 「高度」「并列模式」**只有道路工具**有（net 专属，ToolUISystem L511-543）；
+		///  * 笔刷三行（种类/粗细/强度）**不在本页** —— AllowBrush 只认摆件工具的 Brushable 资产
+		///    与地形工具，建筑不是可刷涂资产，放上来就是「设了没反应」；
+		///  * 「配色」**不在本页** —— Game.dll 里 IColored 唯一实现者是 RoutePrefab，
+		///    只有路线工具显示颜色行，已移到功能页。
 		/// </summary>
 		public static readonly ToolItemDef[] AssetItems = new ToolItemDef[]
 		{
 			// 原版「地区主题」是全局共用，「数据包」按组显示并切组自动重置 -> 都无推荐，出厂不开
 			new ToolItemDef(kThemes, 1, ItemSource.Toolbar, (int)MemoryScope.GlobalShared, kNoRecommendation, false,
-				null, false, ItemDomain.Asset),
+				null, false, ItemDomain.Asset, null, "net,object"),
 			new ToolItemDef(kPacks, 2, ItemSource.Toolbar, (int)MemoryScope.Group, kNoRecommendation, false,
-				null, false, ItemDomain.Asset),
+				null, false, ItemDomain.Asset, null, "net,object"),
 			// 原版每个工具模式按分类记忆（NetToolPreferences），故推荐全局共用才有增益
 			new ToolItemDef(kToolMode, 3, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.GlobalShared, true,
-				null, false, ItemDomain.Asset),
+				null, false, ItemDomain.Asset, null, "net,object"),
 			new ToolItemDef(kElevation, 4, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.Group, true,
-				s_ElevationSubs, false, ItemDomain.Asset),
+				s_ElevationSubs, false, ItemDomain.Asset, null, "net"),
 			new ToolItemDef(kParallel, 5, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.GlobalUnique, true,
-				s_ParallelSubs, false, ItemDomain.Asset),
+				s_ParallelSubs, false, ItemDomain.Asset, null, "net"),
 			new ToolItemDef(kSnap, 6, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.Category, true,
-				null, false, ItemDomain.Asset),
+				null, false, ItemDomain.Asset, null, "net,object"),
 			new ToolItemDef(kTopography, 7, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.GlobalShared, false,
-				null, true, ItemDomain.Asset),
+				null, true, ItemDomain.Asset, null, "net,object"),
 			// 地下模式：推荐同组 == 原版同组 -> 默认关（用户定的规则）
 			new ToolItemDef(kUnderground, 8, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.Group, false,
-				null, true, ItemDomain.Asset),
-			// 笔刷：原版只在**本次会话**里按地形类型各存一份
-			// （TerrainToolSystem 私有 TerraformingBrushValues[4]，读档/新会话回默认 100 m / 0.5），
-			// 所以 VanillaScope = 无记忆；推荐「全局共用」= 各类地形工具共用一把，
-			// 换抬地/降地/软化/刷涂不回到出厂粗细。
-			// 故意**不套 FamilyFreeScope**（与 0.6.2 审查建议不同，理由有反编译凭据）：
-			// family-free 会把「全局共用」压成裸键 S，于是地形笔刷与摆件刷涂（ObjectToolSystem 的
-			// Brush 模式，brushing 同样为真）共用同一个数 —— 可这两个数的含义不一样
-			// （地形 = 每一下的位移量，摆件 = 物体密度），原版自己也是两份独立值。
-			new ToolItemDef(kBrush, 9, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.GlobalShared, false,
-				s_BrushSubs, false, ItemDomain.Asset),
-			// 配色（v0.7.0 从「其它」独立）：原版每次换资产都按资产自带的默认色重设，无记忆。
-			// 行名换成官方语言包的「颜色」（ToolOptions.COLOR_TITLE），
-			// 说明与例子沿用旧「其它」那一份 12 语言文案（内容本来就全是讲道路颜色）。
-			new ToolItemDef(kColor, 10, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_ColorSubs, false, ItemDomain.Asset, kRetiredOther),
-			// 保留年代：只有带 TreeData 的资产（树木，工具栏在城市美化/植被下）面板上才有这一行。
-			new ToolItemDef(kDecoration, 11, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
-				s_DecorationSubs, false, ItemDomain.Asset),
+				null, true, ItemDomain.Asset, null, "net,object"),
 
-			// ---- Anarchy 工具项（资产页的第三方板块，12..14：序号在同一标签页内连续，
-			//      与 0.6.2 的规矩一致，避免一页里出现两个「1.」）----
-			new ToolItemDef(kAnarchy, 12, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, false,
-				null, true, ItemDomain.Asset),
-			new ToolItemDef(kLeftRight, 13, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Group, true,
-				s_LeftRightSubs, true, ItemDomain.Asset),
-			new ToolItemDef(kGeneral, 14, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, true,
-				null, true, ItemDomain.Asset),
+			// ---- Anarchy 板块（9..12：序号在同一标签页内连续，避免一页里出现两个「1.」）----
+			new ToolItemDef(kAnarchy, 9, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, false,
+				null, true, ItemDomain.Asset, null, "anarchy"),
+			new ToolItemDef(kLeftRight, 10, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Group, true,
+				s_LeftRightSubs, true, ItemDomain.Asset, null, "net,anarchy"),
+			new ToolItemDef(kGeneral, 11, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, true,
+				null, true, ItemDomain.Asset, null, "net,anarchy"),
+			// 物件高度（v0.8.0 新增）：Anarchy 注入在摆件工具面板上的**一排**高度控件。
+			// owner 2026-10-20：锁定变换 / 高度 / 高度变化范围 / 抬高降低幅度「这4项是同一项」，
+			// 同一排显示 → 一个工具项、一起记忆、一起共用；「重置高度为0」是瞬时按钮不列。
+			// 证据：anarchy_rows.md A 块（ElevationValue 0f / ElevationStep 1f /
+			// ElevationVariance 0f / LockElevation=Settings.ElevationLock），
+			// 门 = 摆件工具 actualMode∈{Create,Brush,Stamp,Line,Curve} 且非建筑且 ShowElevationToolOption。
+			new ToolItemDef(kObjectElevation, 12, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Group, true,
+				s_ObjectElevationSubs, false, ItemDomain.Asset, null, "object,anarchy"),
 		};
 
 		/// <summary>
-		/// 功能域（= 功能标签页）：4 个功能区、3 个区域工具、所有路线工具、9 个地形改造工具、
-		/// 5 个空间与区域工具、所有标记与预制对象。它们共用同一批面板行（工具模式 / 对齐 /
-		/// 地下模式 / 笔刷），差别只在「同类」这一档怎么归组 —— 归组由 FuncKind 决定。
+		/// 功能页：4 个功能区、3 个区域工具、所有路线工具、9 个地形改造工具、
+		/// 5 个空间与区域工具、所有标记与预制对象。行集合按 FuncKind 归组（「同类」这一档）。
+		///
+		/// v0.8.0 按反查表补齐并拆行：老版只有 5 项，漏了笔刷类型 / 目标高度 / 距离 / 配色 / 主题 / 数据包。
 		/// </summary>
 		public static readonly ToolItemDef[] FunctionItems = new ToolItemDef[]
 		{
+			// 主题/数据包：功能区、区域工具、路线工具、地形工具面板上都有这两行（视资产库而定）
+			new ToolItemDef(kFThemes, 1, ItemSource.Toolbar, (int)MemoryScope.GlobalShared, kNoRecommendation, false,
+				null, false, ItemDomain.Function, null, "zone,area,route,terrain"),
+			new ToolItemDef(kFPacks, 2, ItemSource.Toolbar, (int)MemoryScope.Group, kNoRecommendation, false,
+				null, false, ItemDomain.Function, null, "zone,area,route,terrain"),
 			// 功能型工具的模式枚举各不相同（Zone 填充/滚动/刷涂、Area 编辑/生成、Bulldoze 主要/附属/全部），
 			// 家族键把它们隔开，所以「同组」是安全默认；推荐「同类」= 6 大类归组（owner 定案）。
-			new ToolItemDef(kFToolMode, 1, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
-				s_FToolModeSubs, false, ItemDomain.Function),
-			new ToolItemDef(kFSnap, 2, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
-				s_FSnapSubs, false, ItemDomain.Function),
+			new ToolItemDef(kFToolMode, 3, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+				s_FToolModeSubs, false, ItemDomain.Function, null, "zone,area,bulldoze,object"),
+			new ToolItemDef(kFSnap, 4, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+				s_FSnapSubs, false, ItemDomain.Function, null, "zone,area,object"),
+			new ToolItemDef(kFUnderground, 5, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Group, false,
+				s_FUndergroundSubs, true, ItemDomain.Function, null, "area,route,bulldoze,object"),
 			// 等高线：游戏里全局只有一份值（UndergroundViewSystem.globalContourLinesOn）。
 			// owner 2026-10-19 明确选「三页各一份，按当前工具所属页读写」，所以功能页也有一行。
-			new ToolItemDef(kFTopography, 3, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.GlobalShared, false,
-				s_FTopographySubs, true, ItemDomain.Function),
-			new ToolItemDef(kFUnderground, 4, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Group, false,
-				s_FUndergroundSubs, true, ItemDomain.Function),
-			// 地形工具的笔刷（9 个地形改造工具都吃这一项）：原版按地形类型各存一份、不落盘。
-			// 桶名与资产域笔刷相同（other.brushSize / other.brushStrength）是安全的：
-			// 捕获与写回都按**当前工具所属域**过滤（见 ToolMemorySystem.CaptureNow），
-			// 一帧里只有一个域会写，而完整键又带着 F| 前缀，所以两域的笔刷不会互相覆盖。
-			new ToolItemDef(kFBrush, 5, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
-				s_BrushSubs, false, ItemDomain.Function),
+			new ToolItemDef(kFTopography, 6, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.GlobalShared, false,
+				s_FTopographySubs, true, ItemDomain.Function, null, "zone,terrain,water,object"),
+			// ---- v0.8.0 拆出来的笔刷家族：种类 / 粗细 / 强度 各自独立一项（owner：不要合一起）----
+			// 值都住在 ToolBaseSystem 上，地形工具与摆件工具（Brushable 资产）共用这两行。
+			new ToolItemDef(kFBrushType, 7, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+				s_FBrushTypeSubs, false, ItemDomain.Function, null, "terrain,object"),
+			new ToolItemDef(kFBrushSize, 8, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+				s_FBrushSizeSubs, false, ItemDomain.Function, null, "terrain,object"),
+			new ToolItemDef(kFBrushStrength, 9, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+				s_FBrushStrengthSubs, false, ItemDomain.Function, null, "terrain,object"),
+			// 目标高度：**只有地形工具的 Level（平整）/ Slope（斜坡）**有这一行（ToolUISystem L184），
+			// 其余 7 个地形资产与摆件刷涂都没有。写回时游戏存的是 height + SeaLevel（:657-660）。
+			new ToolItemDef(kFBrushHeight, 10, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+				s_FBrushHeightSubs, false, ItemDomain.Function, null, "terrain"),
+			// 距离：摆件工具的线/曲线模式下的子行（ToolUISystem L149-150）。功能页的标记工具也吃它。
+			new ToolItemDef(kFDistance, 11, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+				s_FDistanceSubs, false, ItemDomain.Function, null, "object,lineCurve"),
+			// 配色（v0.8.0 从建筑与服务页移来）：IColored 唯一实现者是 RoutePrefab -> 只有路线工具有这行。
+			new ToolItemDef(kFColor, 12, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
+				s_FColorSubs, false, ItemDomain.Function, kRetiredOther, "route"),
 		};
 
 		/// <summary>
-		/// 道具域（= 道具标签页）：城市美化菜单下的 8 类道具（自然 / 公园 / 住宅 / 商业 /
-		/// 工业 / 残骸 / 贴花 / 盆栽）。道具都是 ObjectToolSystem 放的，所以行与资产页相近，
-		/// 但「同类」按道具自己的 8 个分类归组。
+		/// 道具页：城市美化菜单下的 8 类道具（自然 / 公园 / 住宅 / 商业 / 工业 / 残骸 / 贴花 / 盆栽）
+		/// **外加植被（树）** —— owner 2026-10-20 定：树也是用摆件工具刷出来的，与公园道具同一套面板行，
+		/// 所以「年龄」「保留年代」两行归这一页（它们只在带 TreeData 的资产上出现）。
+		///
+		/// 面板行按反查表「Object Tool」一列列全：主题 / 数据包 / 工具模式 / 距离 / 笔刷三行 /
+		/// 年龄 / 保留年代 / 对齐 / 地形 / 地下模式。**没有「高度」** —— 老版道具页看到的「高度」
+		/// 与「高度变化范围」其实是 Anarchy 注入的那一排（见 Anarchy 板块的「物件高度」），
+		/// 原版 ObjectToolSystem 根本没有高度行（vanilla_rows.md 第 5 节：高度只有 Net Tool）。
 		/// </summary>
 		public static readonly ToolItemDef[] ItemItems = new ToolItemDef[]
 		{
-			new ToolItemDef(kIToolMode, 1, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
-				s_IToolModeSubs, false, ItemDomain.Item),
-			new ToolItemDef(kISnap, 2, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
-				s_ISnapSubs, false, ItemDomain.Item),
-			// 道具刷涂的强度 = 物体密度（与地形笔刷的位移量不是一回事，原版自己也是两份值）
-			new ToolItemDef(kIBrush, 3, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
-				s_BrushSubs, false, ItemDomain.Item),
-			new ToolItemDef(kITopography, 4, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.GlobalShared, false,
-				s_ITopographySubs, true, ItemDomain.Item),
-			new ToolItemDef(kIUnderground, 5, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Group, false,
-				s_IUndergroundSubs, true, ItemDomain.Item),
+			new ToolItemDef(kIThemes, 1, ItemSource.Toolbar, (int)MemoryScope.GlobalShared, kNoRecommendation, false,
+				null, false, ItemDomain.Item, null, "object"),
+			new ToolItemDef(kIPacks, 2, ItemSource.Toolbar, (int)MemoryScope.Group, kNoRecommendation, false,
+				null, false, ItemDomain.Item, null, "object"),
+			new ToolItemDef(kIToolMode, 3, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+				s_IToolModeSubs, false, ItemDomain.Item, null, "object"),
+			// 距离：只有线/曲线模式的道具才有这一行（刷涂/印章模式没有）
+			new ToolItemDef(kIDistance, 4, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+				s_IDistanceSubs, false, ItemDomain.Item, null, "object,lineCurve"),
+			// 笔刷家族：只有可刷涂（Brushable）/ 可印章（Stampable）的道具才有，普通静态道具没有
+			new ToolItemDef(kIBrushType, 5, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+				s_IBrushTypeSubs, false, ItemDomain.Item, null, "object,brushable"),
+			// 道具刷涂的粗细/强度 = 物体密度与范围（与地形笔刷的位移量不是一回事，原版自己也是两份值）
+			new ToolItemDef(kIBrushSize, 6, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+				s_IBrushSizeSubs, false, ItemDomain.Item, null, "object,brushable"),
+			new ToolItemDef(kIBrushStrength, 7, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+				s_IBrushStrengthSubs, false, ItemDomain.Item, null, "object,brushable"),
+			// 年龄 / 保留年代：只有树（带 TreeData 的资产）且游戏模式下才有这两行
+			new ToolItemDef(kIAgeMask, 8, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+				s_IAgeMaskSubs, false, ItemDomain.Item, null, "object,tree"),
+			new ToolItemDef(kIDecoration, 9, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+				s_IDecorationSubs, false, ItemDomain.Item, null, "object,tree"),
+			new ToolItemDef(kISnap, 10, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+				s_ISnapSubs, false, ItemDomain.Item, null, "object"),
+			new ToolItemDef(kITopography, 11, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.GlobalShared, false,
+				s_ITopographySubs, true, ItemDomain.Item, null, "object,stampable"),
+			new ToolItemDef(kIUnderground, 12, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Group, false,
+				s_IUndergroundSubs, true, ItemDomain.Item, null, "object"),
+
+			// ---- Anarchy 板块（13..14）----
+			// Anarchy 主开关在摆件工具上出现（白名单含 "Object Tool"），道具正是摆件工具放的
+			new ToolItemDef(kIAnarchy, 13, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, false,
+				null, true, ItemDomain.Item, null, "anarchy"),
+			// 物件高度：与建筑与服务页同一排控件，但owner 定的「三页互不共用」要求本页也有自己的一份
+			// （独立开关 + 独立共用范围 + I| 前缀，玩家在道具页调的高度不会覆盖建筑页的）。
+			new ToolItemDef(kIObjectElevation, 14, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Group, true,
+				s_IObjectElevationSubs, false, ItemDomain.Item, null, "object,anarchy"),
 		};
 
 		/// <summary>全表（三域拼接）。设置页、捕获/写回、回归测试都按域过滤后使用。</summary>

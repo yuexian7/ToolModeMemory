@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace ToolModeMemory
@@ -124,7 +124,6 @@ namespace ToolModeMemory
 			d["item.other.ex.category"] = "przełączenie na drogę sześciopasmową nadal jest niebieskie, ale most albo podwójne tory kolejowe mają własny zapis koloru i wymagają własnego ustawienia, choć wszystkie są w menu Drogi";
 
 			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
-			d["item.brush.label"] = "Pędzel";
 
 		// ==================== v0.7.0 新增 / 重写（pl-PL）====================
 		d["domain.asset.label"] = "Włącz pamięć pozycji narzędzi zasobów";
@@ -138,12 +137,44 @@ namespace ToolModeMemory
 		d["item.decoration.label"] = "Zachowaj wiek";
 		d["item.decoration.desc"] = "Zapamiętuje przełącznik «Zachowaj wiek»: gdy jest włączony, drzewa, które zamalujesz pędzlem albo postawisz, przestają rosnąć i przestają umierać ze starości, czyli ich wiek zostaje zamrożony na obecnym poziomie. Wiersz pojawia się tylko na zasobach przenoszących dane drzew (malowanie drzew z menu Roślinność); zasoby, których panel nie ma takiego wiersza, nie są ani zapisywane, ani zmieniane.";
 		d["item.decoration.ex.category"] = "przełączenie na inny rodzaj drzewa nadal daje włączone «Zachowaj wiek», ale ten wiersz istnieje tylko na zasobach z danymi drzew, więc malowanie naklejki nie ma wcale takiego wiersza (wymaga własnego ustawienia)";
+			d["item.i.anarchy.label"] = "Anarchy";
+			d["item.brushType.label"] = "Rodzaj pędzla";
+			d["item.brushType.desc"] = "Zapamiętuje, jaki pędzel wybrano w wierszu «Rodzaj pędzla»: okrągły, kwadratowy, z miękką krawędzią i tak dalej, co wyznacza kształt malowanej krawędzi. Ten wiersz istnieje tylko w narzędziach, którymi można malować: w dziewięciu narzędziach terraformowania oraz w narzędziu do obiektów, gdy wybrany zasób nadaje się do malowania. Panele budynków, obszarów, stref, tras i wyburzania nie mają go, więc nic tam nie jest ani zapisywane, ani zmieniane.";
+			d["item.brushType.ex.group"] = "na przykład wybierzesz kwadratowy pędzel przy malowaniu i inne zasoby w tej samej grupie nadające się do malowania też używają kwadratowego pędzla, a inna grupa nie";
+			d["item.brushType.ex.menu"] = "każdy zasób nadający się do malowania w jednym menu używa tego samego pędzla, ale po przejściu do innego menu już nie";
+			d["item.brushType.ex.category"] = "przełączenie na inną kategorię używa własnego pędzla tej kategorii (wymaga własnego ustawienia), nawet gdy obie można malować";
+			d["item.brushSize.label"] = "Rozmiar pędzla";
+			d["item.brushSize.desc"] = "Zapamiętuje wiersz «Rozmiar pędzla»: jak szeroko sięga jedno pociągnięcie. Ten wiersz istnieje tylko w narzędziach, którymi można malować: w dziewięciu narzędziach terraformowania oraz w narzędziu do obiektów, gdy wybrany zasób nadaje się do malowania. Znaczenie jest w obu przypadkach inne: w narzędziach terraformowania to obszar ziemi obejmowany jednym podniesieniem lub obniżeniem, a w malowanych rekwizytach obszar obejmowany jednym postawieniem, więc strona Funkcje i strona Rekwizyty trzymają własne kopie.";
+			d["item.brushSize.ex.group"] = "na przykład ustawisz pędzel na 30 m i inne zasoby w tej samej grupie nadające się do malowania też mają 30 m, a inna grupa nie";
+			d["item.brushSize.ex.menu"] = "każdy zasób nadający się do malowania w jednym menu używa tego samego rozmiaru pędzla, ale po przejściu do innego menu już nie";
+			d["item.brushSize.ex.category"] = "przełączenie na inną kategorię używa własnego rozmiaru pędzla tej kategorii (wymaga własnego ustawienia), nawet gdy obie można malować";
+			d["item.brushStrength.label"] = "Nacisk pędzla";
+			d["item.brushStrength.desc"] = "Zapamiętuje wiersz «Nacisk pędzla»: ile zmienia jedno pociągnięcie. Ten wiersz istnieje tylko w narzędziach, którymi można malować: w dziewięciu narzędziach terraformowania oraz w narzędziu do obiektów, gdy wybrany zasób nadaje się do malowania. Znaczenie jest w obu przypadkach inne: w narzędziach terraformowania to, jak daleko sięga jedno podniesienie lub obniżenie, a w malowanych rekwizytach gęstość stawiania, więc strona Funkcje i strona Rekwizyty trzymają własne kopie.";
+			d["item.brushStrength.ex.group"] = "na przykład ustawisz nacisk pędzla na połowę i inne zasoby w tej samej grupie nadające się do malowania też są na połowie, a inna grupa nie";
+			d["item.brushStrength.ex.menu"] = "każdy zasób nadający się do malowania w jednym menu używa tego samego nacisku pędzla, ale po przejściu do innego menu już nie";
+			d["item.brushStrength.ex.category"] = "przełączenie na inną kategorię używa własnego nacisku pędzla tej kategorii (wymaga własnego ustawienia), nawet gdy obie można malować";
+			d["item.brushHeight.label"] = "Docelowa wysokość";
+			d["item.brushHeight.desc"] = "Zapamiętuje wartość wiersza «Docelowa wysokość»: na jakiej wysokości kończy się ziemia, gdy narzędzie terraformowania ją wyrówna albo uformuje w spadku. Ten wiersz istnieje tylko w narzędziach wyrównywania terenu i tworzenia spadków; pozostałe narzędzia terraformowania go nie mają, a malowane rekwizyty nigdy, więc nic tam nie jest ani zapisywane, ani zmieniane.";
+			d["item.brushHeight.ex.group"] = "na przykład ustawisz docelową wysokość 50 m przy wyrównywaniu terenu i inne narzędzia terraformowania w tej samej grupie też używają 50 m, a inna grupa nie";
+			d["item.brushHeight.ex.menu"] = "każde narzędzie w grupie terraformowania używa tej samej docelowej wysokości, a inna grupa funkcji nie";
+			d["item.brushHeight.ex.category"] = "przełączenie na inną grupę funkcji używa własnej docelowej wysokości tej grupy (wymaga własnego ustawienia); pozostałe narzędzia terraformowania nie mają tego wiersza wcale";
+			d["item.distance.label"] = "Odległość";
+			d["item.distance.desc"] = "Zapamiętuje wartość wiersza «Odległość»: jak daleko od siebie są kolejne obiekty, gdy stawiasz je wzdłuż linii albo krzywej. Ten wiersz pojawia się tylko w trybach Linia i Krzywa (narzędzie do obiektów i narzędzia znaczników); tryby Umieść jeden, Umieść wiele, Stempel i Pędzel go nie mają.";
+			d["item.distance.ex.group"] = "na przykład ustawisz odległość 10 m i inne rekwizyty w tej samej grupie też są co 10 m, a inna grupa nie";
+			d["item.distance.ex.menu"] = "każdy zasób, który można stawiać wzdłuż linii, w jednym menu używa tej samej odległości, ale po przejściu do innego menu już nie";
+			d["item.distance.ex.category"] = "przełączenie na inną kategorię używa własnej odległości tej kategorii (wymaga własnego ustawienia), nawet gdy obie można stawiać wzdłuż linii";
+			d["item.ageMask.label"] = "Wiek";
+			d["item.ageMask.desc"] = "Zapamiętuje, które etapy wieku są zaznaczone w wierszu «Wiek»: sadzonka, młode, dojrzałe i stare, a zaznaczyć można kilka naraz. Ten wiersz istnieje tylko w zasobach drzew (przy malowaniu albo stawianiu drzew w menu Roślinność), więc inne rekwizyty go nie mają i nic tam nie jest ani zapisywane, ani zmieniane.";
+			d["item.ageMask.ex.group"] = "na przykład zaznaczysz tylko dojrzałe przy malowaniu drzew i inne drzewa w tej samej grupie też wyrastają tylko jako dojrzałe, a inna grupa nie";
+			d["item.ageMask.ex.menu"] = "każde drzewo w menu Roślinność używa tych samych etapów wieku, ale po przejściu do innego menu już nie";
+			d["item.ageMask.ex.category"] = "przełączenie na inny rodzaj drzewa zachowuje te etapy, ale ten wiersz istnieje tylko w zasobach drzew, więc malowanie naklejki i tym podobnych nie ma go wcale (wymaga własnego ustawienia)";
+			d["item.anarchyObjectElevation.label"] = "Wzniesienie obiektu";
+			d["item.anarchyObjectElevation.desc"] = "Zapamiętuje rząd kontrolek wysokości, które mod Anarchy dodaje do panelu narzędzia do obiektów: blokadę przekształceń, wzniesienie, zakres zmian wzniesienia oraz stopień podnoszenia i opuszczania. Wszystkie cztery są w jednym rzędzie, więc liczą się jako jedna pozycja i są zapamiętywane i współdzielone razem; «Przywróć wzniesienie 0» to przycisk działający natychmiast, bez stanu wartego zapamiętania, więc nie jest wymieniony. Rząd istnieje tylko wtedy, gdy narzędzie do obiektów jest w trybie Umieść jeden, Pędzel, Stempel, Linia albo Krzywa; tryby ulepszania i przenoszenia go nie mają. Strona Zasoby i strona Rekwizyty trzymają własne kopie i żadna nie nadpisuje drugiej.";
+			d["item.anarchyObjectElevation.ex.group"] = "na przykład ustawisz wysokość 15 m z zakresem zmian 2 m i inne rekwizyty w tej samej grupie używają tych samych wartości, a inna grupa nie";
+			d["item.anarchyObjectElevation.ex.menu"] = "każdy rekwizyt w jednym menu używa tego samego wzniesienia, ale po przejściu do innego menu już nie";
+			d["item.anarchyObjectElevation.ex.category"] = "przełączenie na inną kategorię rekwizytów używa własnego wzniesienia tej kategorii (wymaga własnego ustawienia)";
 		d["item.decoration.ex.group"] = "na przykład włączysz «Zachowaj wiek» przy malowaniu drzew i inne sposoby malowania roślinności w tej samej grupie też są włączone, a inna grupa nie";
 		d["item.decoration.ex.menu"] = "każdy zasób w menu Roślinność ma włączone «Zachowaj wiek», ale po przejściu do innego menu już nie";
-		d["item.f.brush.desc"] = "Zapamiętuje wiersze «Rozmiar pędzla» i «Nacisk pędzla» w panelach funkcji: rozmiar określa, jaki obszar obejmuje jedno pociągnięcie, a nacisk, ile zmienia każde pociągnięcie. Działają tylko te funkcje, których panel naprawdę ma te wiersze, czyli dziewięć narzędzi terraformowania (Narzędzie do podnoszenia lub obniżania terenu, Narzędzie do wygładzania terenu, Narzędzie do wyrównania terenu, Narzędzie do tworzenia spadków terenu, Narzędzie do malowania tekstury 01-04 i Gumka tekstury) oraz malowanie stref; funkcje bez tych wierszy nie są ani zapisywane, ani zmieniane.";
-		d["item.f.brush.ex.category"] = "przełączenie na inną grupę funkcji używa własnego pędzla tej grupy (wymaga własnego ustawienia), nawet gdy oba panele mają te dwa wiersze";
-		d["item.f.brush.ex.group"] = "na przykład ustawisz rozmiar pędzla na 30 m na jednym narzędziu terraformowania i inne narzędzia terraformowania w tej samej grupie też mają 30 m, a inna grupa nie";
-		d["item.f.brush.ex.menu"] = "każde narzędzie w grupie Terraformowanie używa tego samego rozmiaru i nacisku pędzla, a inna grupa funkcji nie";
 		d["item.f.snap.desc"] = "Zapamiętuje każdy przełącznik wiersza «Przyciąganie» w panelach funkcji: Przyciągaj do kątów prostych, Przyciągaj do siatki w strefie, Przyciągaj do dróg, Przyciągaj do strony właściciela, Pokaż linie konturów i tak dalej — to, które przełączniki się pojawią, zależy od narzędzia. Pochodzący z gry przełącznik «Wł./wył. przyciąganie» to przełącznik zbiorczy i nie jest zapamiętywany. Wiersz przyciągania na stronie Zasoby i na stronie Rekwizyty jest zapamiętywany osobno i żaden nie wpływa na pozostałe.";
 		d["item.f.snap.ex.category"] = "przełączenie na inną grupę funkcji wraca do ustawień domyślnych tej grupy (wymaga własnego ustawienia), nawet gdy obie są dostępne z tego samego menu paska narzędzi";
 		d["item.f.snap.ex.group"] = "na przykład wyłączysz «Przyciągaj do siatki w strefie» dla strefy mieszkalnej i strefy komercyjne, przemysłowe i biurowe też mają to wyłączone, a narzędzia obszarów nie";
@@ -160,10 +191,6 @@ namespace ToolModeMemory
 		d["item.f.underground.ex.category"] = "przełączenie na inną grupę funkcji używa własnej kopii tej grupy (wymaga własnego ustawienia); wiersz «Tryb podziemny» na stronie Zasoby to osobna kopia i nie jest nią objęty";
 		d["item.f.underground.ex.group"] = "na przykład włączysz tryb podziemny dla strefy mieszkalnej i strefy komercyjne, przemysłowe i biurowe też są pod ziemią";
 		d["item.f.underground.ex.menu"] = "każde narzędzie wewnątrz jednej grupy funkcji pozostaje w trybie podziemnym, a inna grupa funkcji nie";
-		d["item.i.brush.desc"] = "Zapamiętuje wiersze «Rozmiar pędzla» i «Nacisk pędzla» w panelach rekwizytów, czyli jak szeroko sięga jedno pociągnięcie pędzla i ile rekwizytów jedno pociągnięcie stawia. Działają tylko te rekwizyty, których panel naprawdę ma te wiersze; rekwizyty bez nich nie są ani zapisywane, ani zmieniane.";
-		d["item.i.brush.ex.category"] = "przełączenie na inną kategorię rekwizytów używa własnego pędzla tej kategorii (wymaga własnego ustawienia), choć obie są w menu Kształtowanie krajobrazu";
-		d["item.i.brush.ex.group"] = "na przykład ustawisz rozmiar pędzla na 20 m i inne rekwizyty tej samej grupy nadające się do malowania też mają 20 m, a inna grupa nie";
-		d["item.i.brush.ex.menu"] = "każdy rekwizyt nadający się do malowania w menu Kształtowanie krajobrazu używa tego samego pędzla, ale po przejściu do innego menu już nie";
 		d["item.i.snap.desc"] = "Zapamiętuje każdy przełącznik wiersza «Przyciąganie» w panelach rekwizytów: Przyciągaj do powierzchni obiektu, Przyciągaj do pobliskich kształtów, Przyciągaj do dróg, Usuń tylko pasujący typ i tak dalej, w zależności od rekwizytu. Wiersz przyciągania na stronie Zasoby i na stronie Funkcje jest zapamiętywany osobno i żaden nie wpływa na pozostałe.";
 		d["item.i.snap.ex.category"] = "przełączenie na inną kategorię rekwizytów wraca do ustawień domyślnych tej kategorii (wymaga własnego ustawienia), choć obie są w menu Kształtowanie krajobrazu";
 		d["item.i.snap.ex.group"] = "na przykład wyłączysz «Przyciągaj do powierzchni obiektu» dla rekwizytu z kategorii Park i inne rekwizyty w tej samej grupie też mają to wyłączone, a inna grupa nie";
@@ -191,11 +218,7 @@ namespace ToolModeMemory
 		d["enabled.label"] = "Włącz mod";
 		d["enabled.desc"] = "Domyślnie włączone. Dopóki jest włączone, każde ustawienie poniżej działa, a wartość każdej pozycji jest zapisywana na bieżąco, więc powrót do zapisu stawia panele dokładnie tak, jak je zostawiłeś; wyłączenie pojedynczej pozycji tylko powstrzymuje jej przywracanie — jej wartości nadal są zapisywane. Wyłączenie tego głównego przełącznika cofa wszystko do oryginału: zapisywanie się zatrzymuje, nic nie jest przywracane, a wszystkie ustawienia na stronach Zasoby, Funkcje i Rekwizyty są od razu wyszarzane, więc każde narzędzie zachowuje się tak, jak robi to gra sama. Przełącznik ten wyłącza się sam, gdy wszystkie trzy przełączniki stron poniżej są wyłączone, i włącza się z powrotem, gdy tylko jeden z nich jest włączony.";
 		d["scope.line.sharedSingle"] = "Współdzielone globalnie: każde narzędzie tej strony obsługujące tę pozycję używa jednej wartości";
-		d["scope.note"] = "Uwaga: strony Zasoby, Funkcje i Rekwizyty mają każdą własną pamięć, nawet gdy wiersz nazywa się tak samo na kilku stronach; «Współdzielone globalnie» i «Bez współdzielenia» obowiązują tylko na stronie, którą aktualnie oglądasz.";
-		d["item.brush.desc"] = "Zapamiętuje wiersze «Rozmiar pędzla» i «Nacisk pędzla»: rozmiar określa, jaki obszar obejmuje jedno pociągnięcie, a nacisk, ile zmienia każde pociągnięcie. Ta pozycja obejmuje tylko malowanie na stronie Zasoby, czyli stawianie zasobów takich jak drzewa z menu Roślinność w trybie pędzla; dziewięć narzędzi terraformowania ma własną pozycję pędzla na stronie Funkcje, a kategorie rekwizytów własną na stronie Rekwizyty i trzy strony nigdy nie współdzielą. Narzędzia, których panel nie ma takich wierszy, nie są ani zapisywane, ani zmieniane.";
-		d["item.brush.ex.group"] = "na przykład ustawisz rozmiar pędzla na 30 m przy malowaniu drzew i inne zasoby nadające się do malowania w tej samej grupie też mają 30 m, a narzędzie z innej grupy nie";
-		d["item.brush.ex.menu"] = "każdy zasób malowany w menu Roślinność używa tego samego rozmiaru i nacisku pędzla, ale po przejściu do innego menu już nie";
-		d["item.brush.ex.category"] = "przełączenie na inny rodzaj drzewa zachowuje ten sam pędzel, ale ten poziom grupuje zasoby według tego, komu służą, a narzędzia terraformowania i rekwizyty trzymają każdą własną kopię na innej stronie (wymagają własnego ustawienia)";
+			d["scope.note"] = "Uwaga: każdy poziom powyżej działa tylko w obrębie tej strony.";
 			return d;
 		}
 
@@ -311,17 +334,12 @@ namespace ToolModeMemory
 			d["item.other.ex.category"] = "mudar para uma via de 6 faixas ainda é azul, mas uma ponte ou um trilho duplo guarda a sua própria cópia e precisa do próprio ajuste, embora todos estejam no menu Vias";
 
 			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
-			d["item.brush.label"] = "Pincel";
 
 		// ==================== v0.7.0 新增 / 重写（pt-BR）====================
 		d["enabled.label"] = "Ativar o mod";
 		d["enabled.desc"] = "Ligado por padrão. Enquanto ele estiver ligado, todas as configurações abaixo têm efeito e o valor de cada item é gravado enquanto você trabalha, então, ao voltar para um jogo salvo, os painéis estão exatamente como você os deixou; desligar um item apenas impede que ele seja restaurado, pois os valores dele continuam sendo gravados. Desligar este interruptor geral devolve tudo ao jogo original: a gravação para, nada é restaurado e todas as configurações das páginas Ativos, Funções e Acessórios ficam acinzentadas ao mesmo tempo, e cada ferramenta se comporta como o jogo faz por conta própria. Ele se desliga sozinho quando os três interruptores por página aqui embaixo estiverem todos desligados, e se religa assim que qualquer um deles for ligado.";
 		d["scope.line.sharedSingle"] = "Global: todas as ferramentas desta página que suportam este item usam um único valor";
-		d["scope.note"] = "Nota: as páginas Ativos, Funções e Acessórios guardam cada uma a sua própria memória, mesmo quando uma linha tem o mesmo nome em mais de uma página; «Global» e «Sem partilhar» só valem dentro da página que você está vendo.";
-		d["item.brush.desc"] = "Lembra as linhas «Tamanho do pincel» e «Força do pincel»: o tamanho define até onde uma passada alcança e a força define quanto cada passada muda. Este item só cobre a pintura feita na página Ativos, ou seja, colocar com o pincel ativos como as árvores do menu Vegetação; as nove ferramentas de Terraformação têm o próprio item de pincel na página Funções e as oito categorias de acessórios têm o delas na página Acessórios, e as três páginas nunca dividem valores entre si. As ferramentas cujo painel não tem essas duas linhas não são gravadas nem alteradas.";
-		d["item.brush.ex.group"] = "por exemplo, você põe o tamanho do pincel em 30 m ao pintar árvores e os outros ativos pintáveis do mesmo grupo também ficam em 30 m, mas um ativo de outro grupo não";
-		d["item.brush.ex.menu"] = "todo ativo que você pinta no menu Vegetação usa este mesmo tamanho e força de pincel, mas ao mudar para outro menu não";
-		d["item.brush.ex.category"] = "ao mudar para outra espécie de árvore este mesmo pincel continua valendo, mas as ferramentas de Terraformação e os acessórios guardam cada um a sua própria cópia em outra página (precisa do próprio ajuste)";
+			d["scope.note"] = "Nota: cada nível acima vale apenas dentro desta página.";
 		d["domain.asset.desc"] = "Cobre todos os itens da página Ativos: a gravação e a restauração ao carregar se ligam e se desligam juntas. Enquanto ele estiver desligado, a página Ativos inteira fica acinzentada e sem efeito, as ferramentas se comportam como no jogo original e os valores já gravados continuam no arquivo intactos, então religá-lo restaura tudo como antes.";
 		d["domain.asset.label"] = "Lembrar os itens de ferramenta dos ativos";
 		d["domain.function.desc"] = "Cobre todos os itens da página Funções, ou seja, os seis grupos de funções: os tipos de zona, as ferramentas de área, todas as ferramentas de rota, as ferramentas de Terraformação, os espaços e áreas, e os marcadores e objetos pré-fabricados. Enquanto ele estiver desligado, a página Funções inteira fica acinzentada e sem efeito, as ferramentas se comportam como no jogo original e os valores já gravados continuam no arquivo intactos, então religá-lo restaura tudo como antes.";
@@ -332,13 +350,45 @@ namespace ToolModeMemory
 		d["item.color.label"] = "Cor";
 		d["item.decoration.desc"] = "Lembra o interruptor «Preservar idade»: com ele ligado, as árvores que você pinta ou coloca param de crescer e param de morrer de velhas, o que congela a idade daquele conjunto de árvores exatamente onde está. Essa linha só aparece nos ativos que carregam dados de árvore (ao pintar árvores no menu Vegetação); os ativos cujo painel não tem essa linha não são gravados nem alterados.";
 		d["item.decoration.ex.category"] = "ao mudar para outra espécie de árvore ele continua ligado, mas essa linha só existe nos ativos com dados de árvore, então pintar um decalque não tem essa linha nenhuma (precisa do próprio ajuste)";
+			d["item.i.anarchy.label"] = "Anarchy";
+			d["item.brushType.label"] = "Tipo de pincel";
+			d["item.brushType.desc"] = "Lembra qual pincel está escolhido na linha «Tipo de pincel»: circular, quadrado, com borda suave e assim por diante, o que define o formato da borda que você pinta. Essa linha só existe nas ferramentas que pintam — as nove ferramentas de Terraformação e a ferramenta de objetos quando o ativo selecionado é pintável. Os painéis de construção, área, zona, rota e demolição não a têm, então nada é gravado nem alterado ali.";
+			d["item.brushType.ex.group"] = "por exemplo, você escolhe um pincel quadrado ao pintar e os outros ativos pintáveis do mesmo grupo também usam o pincel quadrado, mas outro grupo não";
+			d["item.brushType.ex.menu"] = "todo ativo pintável de um menu usa este mesmo pincel, mas ao mudar para outro menu não";
+			d["item.brushType.ex.category"] = "ao mudar para outra categoria vale o pincel daquela própria categoria (precisa do próprio ajuste), mesmo quando as duas podem ser pintadas";
+			d["item.brushSize.label"] = "Tamanho do pincel";
+			d["item.brushSize.desc"] = "Lembra a linha «Tamanho do pincel»: até onde uma passada alcança. Essa linha só existe nas ferramentas que pintam — as nove ferramentas de Terraformação e a ferramenta de objetos quando o ativo selecionado é pintável. O significado é diferente nos dois casos: nas ferramentas de Terraformação é a área de terreno que um aumento ou uma redução cobre, e nos acessórios pintados é a área que uma colocação cobre, por isso a página Funções e a página Acessórios guardam cada uma a sua cópia.";
+			d["item.brushSize.ex.group"] = "por exemplo, você põe um pincel de 30 m e os outros ativos pintáveis do mesmo grupo também ficam em 30 m, mas outro grupo não";
+			d["item.brushSize.ex.menu"] = "todo ativo pintável de um menu usa este mesmo tamanho de pincel, mas ao mudar para outro menu não";
+			d["item.brushSize.ex.category"] = "ao mudar para outra categoria vale o tamanho de pincel daquela própria categoria (precisa do próprio ajuste), mesmo quando as duas podem ser pintadas";
+			d["item.brushStrength.label"] = "Força do pincel";
+			d["item.brushStrength.desc"] = "Lembra a linha «Força do pincel»: quanto cada passada muda. Essa linha só existe nas ferramentas que pintam — as nove ferramentas de Terraformação e a ferramenta de objetos quando o ativo selecionado é pintável. O significado é diferente nos dois casos: nas ferramentas de Terraformação é o quanto um aumento ou uma redução avança, e nos acessórios pintados é a densidade de colocação, por isso a página Funções e a página Acessórios guardam cada uma a sua cópia.";
+			d["item.brushStrength.ex.group"] = "por exemplo, você põe a força do pincel na metade e os outros ativos pintáveis do mesmo grupo também ficam na metade, mas outro grupo não";
+			d["item.brushStrength.ex.menu"] = "todo ativo pintável de um menu usa esta mesma força de pincel, mas ao mudar para outro menu não";
+			d["item.brushStrength.ex.category"] = "ao mudar para outra categoria vale a força de pincel daquela própria categoria (precisa do próprio ajuste), mesmo quando as duas podem ser pintadas";
+			d["item.brushHeight.label"] = "Altura do alvo";
+			d["item.brushHeight.desc"] = "Lembra o valor da linha «Altura do alvo»: em que altura o terreno fica depois que uma ferramenta de Terraformação o nivela ou o transforma em declive. Essa linha só existe nos ativos de terreno de nivelamento e de declive; as outras ferramentas de Terraformação não a têm, e os acessórios pintados nunca, então nada é gravado nem alterado ali.";
+			d["item.brushHeight.ex.group"] = "por exemplo, você põe a altura do alvo em 50 m ao nivelar e as outras ferramentas de Terraformação do mesmo grupo também usam 50 m, mas outro grupo não";
+			d["item.brushHeight.ex.menu"] = "todas as ferramentas do grupo de Terraformação usam esta mesma altura do alvo, mas outro grupo de funções não";
+			d["item.brushHeight.ex.category"] = "ao mudar para outro grupo de funções vale a altura do alvo daquele próprio grupo (precisa do próprio ajuste); as outras ferramentas de Terraformação não têm essa linha de jeito nenhum";
+			d["item.distance.label"] = "Distância";
+			d["item.distance.desc"] = "Lembra o valor da linha «Distância»: a que distância ficam os objetos consecutivos quando você os coloca ao longo de uma linha ou de uma curva. Essa linha só aparece nos modos Linha e Curva (ferramenta de objetos e ferramentas de marcador); os modos Colocar um, Colocar vários, Carimbo e Pintar não a têm.";
+			d["item.distance.ex.group"] = "por exemplo, você põe a distância em 10 m e os outros acessórios do mesmo grupo também ficam a 10 m, mas outro grupo não";
+			d["item.distance.ex.menu"] = "todo ativo que pode ser colocado ao longo de uma linha em um menu usa esta mesma distância, mas ao mudar para outro menu não";
+			d["item.distance.ex.category"] = "ao mudar para outra categoria vale a distância daquela própria categoria (precisa do próprio ajuste), mesmo quando as duas podem ser colocadas ao longo de uma linha";
+			d["item.ageMask.label"] = "Idade";
+			d["item.ageMask.desc"] = "Lembra quais estágios de idade estão marcados na linha «Idade»: muda, jovem, madura e anciã, e é possível marcar vários ao mesmo tempo. Essa linha só existe nos ativos de árvore (ao pintar ou colocar árvores no menu Vegetação), então os outros acessórios não a têm e nada é gravado nem alterado ali.";
+			d["item.ageMask.ex.group"] = "por exemplo, você marca só madura ao pintar árvores e as outras árvores do mesmo grupo também só nascem maduras, mas outro grupo não";
+			d["item.ageMask.ex.menu"] = "todas as árvores do menu Vegetação usam estes mesmos estágios de idade, mas ao mudar para outro menu não";
+			d["item.ageMask.ex.category"] = "ao mudar para outra espécie de árvore estes estágios continuam, mas essa linha só existe nos ativos de árvore, então pintar decalques e coisas do tipo não tem essa linha nenhuma (precisa do próprio ajuste)";
+			d["item.anarchyObjectElevation.label"] = "Elevação do objeto";
+			d["item.anarchyObjectElevation.desc"] = "Lembra a linha de controles de altura que o Anarchy acrescenta ao painel da ferramenta de objetos: bloqueio de transformação, elevação, variação de elevação e o passo de aumentar e diminuir. Os quatro ficam numa linha só, então contam como um único item e são lembrados e partilhados em conjunto; «Repor elevação em 0» é um botão instantâneo, sem estado que valha a pena lembrar, por isso não está listado. A linha só existe enquanto a ferramenta de objetos está nos modos Colocar um, Pintar, Carimbo, Linha ou Curva; os modos de melhoria e de mover não a têm. A página Ativos e a página Acessórios guardam cada uma a sua cópia, e nenhuma sobrescreve a outra.";
+			d["item.anarchyObjectElevation.ex.group"] = "por exemplo, você põe a altura em 15 m com uma variação de 2 m e os outros acessórios do mesmo grupo usam os mesmos valores, mas outro grupo não";
+			d["item.anarchyObjectElevation.ex.menu"] = "todo acessório de um menu usa esta mesma altura, mas ao mudar para outro menu não";
+			d["item.anarchyObjectElevation.ex.category"] = "ao mudar para outra categoria de acessórios vale a altura daquela própria categoria (precisa do próprio ajuste)";
 		d["item.decoration.ex.group"] = "por exemplo, você liga «Preservar idade» ao pintar árvores e as outras formas de pintar vegetação do mesmo grupo também ficam ligadas, mas as de outro grupo não";
 		d["item.decoration.ex.menu"] = "todos os ativos do menu Vegetação mantêm essa linha ligada, mas ao mudar para outro menu não";
 		d["item.decoration.label"] = "Preservar idade";
-		d["item.f.brush.desc"] = "Lembra as linhas «Tamanho do pincel» e «Força do pincel» nos painéis das funções: o tamanho define até onde uma passada alcança e a força define quanto cada passada muda. Só valem para as funções cujo painel realmente tem essas duas linhas, ou seja, as nove ferramentas de Terraformação (Ferramenta de modificação de terreno, Ferramenta de suavização de terreno, Ferramenta de nivelamento de terreno, Ferramenta de declive, Ferramenta de pintura de textura 01 a 04 e Borracha de textura) e a pintura de zonas; as funções sem essas duas linhas não são gravadas nem alteradas.";
-		d["item.f.brush.ex.category"] = "ao mudar para outro grupo de funções vale o pincel daquele próprio grupo (precisa do próprio ajuste), mesmo que os dois painéis tenham essas duas linhas";
-		d["item.f.brush.ex.group"] = "por exemplo, você põe o tamanho do pincel da Ferramenta de modificação de terreno em 30 m e as outras ferramentas de Terraformação do mesmo grupo também ficam em 30 m, mas as de outro grupo não";
-		d["item.f.brush.ex.menu"] = "todas as ferramentas do grupo Terraformação usam este mesmo tamanho e força de pincel, mas as de outro grupo de funções não";
 		d["item.f.snap.desc"] = "Lembra cada interruptor da linha «Aderir» nos painéis das funções: aderir a ângulos de 90 graus, aderir à grade, aderir a vias, aderir ao lado do proprietário, exibir linhas de contorno e assim por diante; quais interruptores aparecem dependem da ferramenta. O próprio botão do jogo que ativa ou desativa todas as aderências de uma vez é um interruptor em lote e não é lembrado. A linha «Aderir» da página Ativos e a da página Acessórios são lembradas à parte e nenhuma interfere nas outras.";
 		d["item.f.snap.ex.category"] = "ao mudar para outro grupo de funções voltam os interruptores padrão daquele grupo (precisa do próprio ajuste), mesmo que os dois possam ser abertos pelo mesmo menu da barra de ferramentas";
 		d["item.f.snap.ex.group"] = "por exemplo, você desliga a aderência à grade na zona residencial e as zonas comercial, industrial e de escritórios também ficam sem ela, mas as ferramentas de área não";
@@ -355,10 +405,6 @@ namespace ToolModeMemory
 		d["item.f.underground.ex.category"] = "ao mudar para outro grupo de funções vale a cópia daquele próprio grupo (precisa do próprio ajuste); a linha «Modo Subterrâneo» da página Ativos é uma cópia à parte e não é afetada";
 		d["item.f.underground.ex.group"] = "por exemplo, você liga o modo subterrâneo na zona residencial e as zonas comercial, industrial e de escritórios também vão para debaixo da terra";
 		d["item.f.underground.ex.menu"] = "todas as ferramentas de um mesmo grupo de funções ficam no modo subterrâneo, mas as de outro grupo de funções não";
-		d["item.i.brush.desc"] = "Lembra as linhas «Tamanho do pincel» e «Força do pincel» nos painéis dos acessórios, ou seja, até onde uma passada do pincel alcança e quantos acessórios cada passada coloca. Só valem para os acessórios cujo painel realmente tem essas duas linhas; os acessórios sem essas linhas não são gravados nem alterados.";
-		d["item.i.brush.ex.category"] = "ao mudar para outra categoria de acessórios vale o pincel daquela própria categoria (precisa do próprio ajuste), mesmo que as duas estejam no menu Paisagismo";
-		d["item.i.brush.ex.group"] = "por exemplo, você põe o tamanho do pincel em 20 m e os outros acessórios pintáveis do mesmo grupo também ficam em 20 m, mas os de outro grupo não";
-		d["item.i.brush.ex.menu"] = "todos os acessórios pintáveis do menu Paisagismo usam este mesmo pincel, mas ao mudar para outro menu não";
 		d["item.i.snap.desc"] = "Lembra cada interruptor da linha «Aderir» nos painéis dos acessórios: aderir à superfície de um objeto, aderir a geometria próxima, aderir a vias, remover apenas o tipo correspondente e assim por diante, conforme o acessório. A linha «Aderir» da página Ativos e a da página Funções são lembradas à parte e nenhuma interfere nas outras.";
 		d["item.i.snap.ex.category"] = "ao mudar para outra categoria de acessórios voltam os interruptores padrão daquela categoria (precisa do próprio ajuste), mesmo que as duas estejam no menu Paisagismo";
 		d["item.i.snap.ex.group"] = "por exemplo, você desliga a aderência à superfície de um objeto em um acessório de Parque e os outros acessórios do mesmo grupo também ficam sem ela, mas os de outro grupo não";
@@ -498,7 +544,6 @@ namespace ToolModeMemory
 			d["item.other.ex.category"] = "переход на шестиполосную дорогу тоже остаётся синим, но мост или двойные железнодорожные пути хранят собственный вариант цвета и требуют собственной настройки, хотя все они находятся в меню «Дороги»";
 
 			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
-			d["item.brush.label"] = "Кисть";
 
 		// ==================== v0.7.0 新增 / 重写（ru-RU）====================
 		d["tab.master"] = "Главный переключатель";
@@ -516,12 +561,44 @@ namespace ToolModeMemory
 		d["item.decoration.label"] = "Заморозить возраст";
 		d["item.decoration.desc"] = "Запоминает переключатель «Заморозить возраст»: когда он включён, деревья, которые вы закрашиваете или размещаете, перестают расти и умирать от старости — возраст этой группы деревьев словно замораживается на текущем значении. Эта строка появляется только на активах с данными деревьев (при закрашивании деревьев из меню «Флора»); активы, на панелях которых такой строки нет, не записываются и не меняются.";
 		d["item.decoration.ex.category"] = "при переходе к другому виду деревьев он остаётся включённым, но эта строка есть только у активов с данными деревьев, поэтому при закрашивании надписи её нет вовсе (нужна отдельная настройка)";
+			d["item.i.anarchy.label"] = "Anarchy";
+			d["item.brushType.label"] = "Тип кисти";
+			d["item.brushType.desc"] = "Запоминает, какая кисть выбрана в строке «Тип кисти»: круглая, квадратная, с мягким краем и так далее — она задаёт форму края, который вы закрашиваете. Эта строка есть только у инструментов, которыми можно закрашивать: у девяти инструментов терраформирования и у инструмента объектов, когда выбранный актив поддаётся закрашиванию. На панелях зданий, областей, зон, маршрутов и сноса её нет, поэтому там ничего не записывается и не меняется.";
+			d["item.brushType.ex.group"] = "например, выберите при закрашивании квадратную кисть, и другие активы той же группы, поддающиеся закрашиванию, тоже будут с квадратной кистью, а в другой группе — нет";
+			d["item.brushType.ex.menu"] = "все активы одного меню, поддающиеся закрашиванию, используют одну и ту же кисть, а в другом меню — нет";
+			d["item.brushType.ex.category"] = "при переходе к другой категории используется её собственная кисть (нужна отдельная настройка), даже если обе поддаются закрашиванию";
+			d["item.brushSize.label"] = "Размер кисти";
+			d["item.brushSize.desc"] = "Запоминает строку «Размер кисти»: какую площадь охватывает одно движение. Эта строка есть только у инструментов, которыми можно закрашивать: у девяти инструментов терраформирования и у инструмента объектов, когда выбранный актив поддаётся закрашиванию. Значения означают разное: у инструментов терраформирования это площадь земли, которую охватывает одно поднятие или опускание, а у закрашиваемых объектов — площадь, которую охватывает одно размещение, поэтому страница «Функции» и страница «Объекты» хранят каждая свою копию.";
+			d["item.brushSize.ex.group"] = "например, задайте кисть 30 м, и другие активы той же группы, поддающиеся закрашиванию, тоже станут 30 м, а в другой группе — нет";
+			d["item.brushSize.ex.menu"] = "все активы одного меню, поддающиеся закрашиванию, используют один и тот же размер кисти, а в другом меню — нет";
+			d["item.brushSize.ex.category"] = "при переходе к другой категории используется её собственный размер кисти (нужна отдельная настройка), даже если обе поддаются закрашиванию";
+			d["item.brushStrength.label"] = "Нажим кисти";
+			d["item.brushStrength.desc"] = "Запоминает строку «Нажим кисти»: насколько каждое движение меняет результат. Эта строка есть только у инструментов, которыми можно закрашивать: у девяти инструментов терраформирования и у инструмента объектов, когда выбранный актив поддаётся закрашиванию. Значения означают разное: у инструментов терраформирования это то, насколько сдвигает одно поднятие или опускание, а у закрашиваемых объектов — плотность размещения, поэтому страница «Функции» и страница «Объекты» хранят каждая свою копию.";
+			d["item.brushStrength.ex.group"] = "например, задайте нажим кисти вдвое меньше, и другие активы той же группы, поддающиеся закрашиванию, тоже будут вдвое меньше, а в другой группе — нет";
+			d["item.brushStrength.ex.menu"] = "все активы одного меню, поддающиеся закрашиванию, используют один и тот же нажим кисти, а в другом меню — нет";
+			d["item.brushStrength.ex.category"] = "при переходе к другой категории используется её собственный нажим кисти (нужна отдельная настройка), даже если обе поддаются закрашиванию";
+			d["item.brushHeight.label"] = "Целевая высота";
+			d["item.brushHeight.desc"] = "Запоминает значение строки «Целевая высота»: на какой высоте окажется земля после того, как инструмент терраформирования выровняет её или превратит в склон. Эта строка есть только у инструментов выравнивания рельефа и склона; у остальных инструментов терраформирования её нет, а у закрашиваемых объектов её не бывает вовсе, поэтому там ничего не записывается и не меняется.";
+			d["item.brushHeight.ex.group"] = "например, задайте целевую высоту 50 м при выравнивании, и другие инструменты терраформирования той же группы тоже будут на 50 м, а в другой группе — нет";
+			d["item.brushHeight.ex.menu"] = "все инструменты группы терраформирования используют одну и ту же целевую высоту, а в другой функциональной группе — нет";
+			d["item.brushHeight.ex.category"] = "при переходе к другой функциональной группе используется её собственная целевая высота (нужна отдельная настройка); у остальных инструментов терраформирования этой строки нет вовсе";
+			d["item.distance.label"] = "Расстояние";
+			d["item.distance.desc"] = "Запоминает значение строки «Расстояние»: на каком расстоянии друг от друга стоят соседние объекты, когда вы размещаете их вдоль линии или кривой. Эта строка появляется только в режимах «Линия» и «Кривая» (инструмент объектов и инструменты маркеров); в режимах «Разместить один», «Разместить несколько», «Инструмент копирования объекта» и «Кисть» её нет.";
+			d["item.distance.ex.group"] = "например, задайте расстояние 10 м, и другие объекты той же группы тоже будут на расстоянии 10 м, а в другой группе — нет";
+			d["item.distance.ex.menu"] = "все активы одного меню, которые можно размещать вдоль линии, используют одно и то же расстояние, а в другом меню — нет";
+			d["item.distance.ex.category"] = "при переходе к другой категории используется её собственное расстояние (нужна отдельная настройка), даже если обе можно размещать вдоль линии";
+			d["item.ageMask.label"] = "Возраст";
+			d["item.ageMask.desc"] = "Запоминает, какие стадии возраста отмечены в строке «Возраст»: саженец, молодое, зрелое и старое — и отметить можно сразу несколько. Эта строка есть только у активов деревьев (при закрашивании или размещении деревьев в меню «Флора»), поэтому у других объектов её нет и там ничего не записывается и не меняется.";
+			d["item.ageMask.ex.group"] = "например, отметьте только зрелые при закрашивании деревьев, и другие деревья той же группы тоже будут появляться только зрелыми, а в другой группе — нет";
+			d["item.ageMask.ex.menu"] = "все деревья в меню «Флора» используют эти же стадии возраста, а в другом меню — нет";
+			d["item.ageMask.ex.category"] = "при переходе к другому виду деревьев эти стадии сохраняются, но строка есть только у активов деревьев, поэтому при закрашивании надписей и подобного её нет вовсе (нужна отдельная настройка)";
+			d["item.anarchyObjectElevation.label"] = "Высота объекта";
+			d["item.anarchyObjectElevation.desc"] = "Запоминает ряд регуляторов высоты, который Anarchy добавляет на панель инструмента объектов: блокировку преобразования, высоту, разброс высоты и шаг поднятия и опускания. Все четыре стоят в одном ряду, поэтому считаются одним пунктом и запоминаются и разделяются вместе; «Сбросить высоту до 0» — кнопка мгновенного действия, у неё нет состояния, которое стоит запоминать, поэтому она не указана. Ряд существует, только пока инструмент объектов находится в режимах размещения одного, кисти, копирования объекта, линии или кривой; в режимах улучшения и перемещения его нет. Страница «Активы» и страница «Объекты» хранят каждая свою копию, и одна не перезаписывает другую.";
+			d["item.anarchyObjectElevation.ex.group"] = "например, задайте высоту 15 м с разбросом 2 м, и другие объекты той же группы используют те же значения, а в другой группе — нет";
+			d["item.anarchyObjectElevation.ex.menu"] = "все объекты одного меню используют одну и ту же высоту, а в другом меню — нет";
+			d["item.anarchyObjectElevation.ex.category"] = "при переходе к другой категории объектов используется её собственная высота (нужна отдельная настройка)";
 		d["item.decoration.ex.group"] = "например, включите «Заморозить возраст» при закрашивании деревьев, и другие способы размещения растительности в той же группе тоже останутся включёнными, а в другой группе — нет";
 		d["item.decoration.ex.menu"] = "все активы в меню «Флора» остаются с включённым «Заморозить возраст», но в других меню — нет";
-		d["item.f.brush.desc"] = "Запоминает строки «Размер кисти» и «Нажим кисти» на функциональных панелях: «Размер кисти» задаёт, какую площадь охватывает одно движение, а «Нажим кисти» — насколько каждое движение меняет результат. Действует только на те инструменты, у которых на панели есть обе строки: девять инструментов терраформирования («Высота рельефа», «Сглаживание рельефа», «Выравнивание рельефа», «Склон», «Инструмент рисования текстуры 01–04» и «Ластик текстуры») и закрашивание зон; функции, у которых этих строк нет, не записываются и не меняются.";
-		d["item.f.brush.ex.category"] = "при переходе к другой функциональной группе используется её собственная кисть (нужна отдельная настройка), даже если на обеих панелях есть эти две строки";
-		d["item.f.brush.ex.group"] = "например, задайте размер кисти 30 м для одного из инструментов рельефа, и другие инструменты терраформирования в той же группе тоже станут 30 м, а в другой группе — нет";
-		d["item.f.brush.ex.menu"] = "все инструменты в группе терраформирования используют одни и те же размер и нажим кисти, а в другой функциональной группе — нет";
 		d["item.f.snap.desc"] = "Запоминает каждый переключатель в строке «Привязка» на функциональных панелях: «Привязка к прямым углам», «Привязка к сетке», «Привязка к дорогам», «Привязка к зданию-владельцу», «Показать контурные линии» и так далее — какие переключатели показаны, зависит от инструмента. Собственная кнопка игры «Включить/выключить привязку» является пакетной и не запоминается. Строка «Привязка» на страницах «Активы» и «Объекты» запоминается отдельно, и одна на другую не влияет.";
 		d["item.f.snap.ex.category"] = "при переходе к другой функциональной группе возвращаются её собственные переключатели по умолчанию (нужна отдельная настройка), даже если обе группы открываются из одного меню панели инструментов";
 		d["item.f.snap.ex.group"] = "например, выключите «Привязку к сетке» для жилой зоны, и в коммерческих, промышленных и офисных зонах она тоже будет выключена, а у инструментов областей — нет";
@@ -538,10 +615,6 @@ namespace ToolModeMemory
 		d["item.f.underground.ex.category"] = "при переходе к другой функциональной группе используется её собственная копия (нужна отдельная настройка); строка «Режим тоннеля» на странице «Активы» — отдельная копия, и она от этой не зависит";
 		d["item.f.underground.ex.group"] = "например, включите режим тоннеля для жилой зоны, и коммерческие, промышленные и офисные зоны тоже уйдут под землю";
 		d["item.f.underground.ex.menu"] = "все инструменты в одной функциональной группе находятся в режиме тоннеля, а в другой функциональной группе — нет";
-		d["item.i.brush.desc"] = "Запоминает строки «Размер кисти» и «Нажим кисти» на панелях объектов, то есть какую площадь охватывает одно движение кисти и сколько объектов размещается за один проход. Действует только на те объекты, у которых на панели есть обе строки; объекты без этих строк не записываются и не меняются.";
-		d["item.i.brush.ex.category"] = "при переходе к другой категории объектов используется её собственная кисть (нужна отдельная настройка), даже если обе находятся в меню «Ландшафтный дизайн»";
-		d["item.i.brush.ex.group"] = "например, задайте размер кисти 20 м, и другие размещаемые кистью объекты в той же группе тоже станут 20 м, а в другой группе — нет";
-		d["item.i.brush.ex.menu"] = "все размещаемые кистью объекты в меню «Ландшафтный дизайн» используют одну и ту же кисть, а в другом меню — нет";
 		d["item.i.snap.desc"] = "Запоминает каждый переключатель в строке «Привязка» на панелях объектов: «Привязка к поверхности объекта», «Привязка к ближайшим формам», «Привязка к дорогам», «Удалить только определенный тип» и так далее — какие переключатели показаны, зависит от объекта. Строка «Привязка» на страницах «Активы» и «Функции» запоминается отдельно, и одна на другую не влияет.";
 		d["item.i.snap.ex.category"] = "при переходе к другой категории объектов возвращаются её собственные переключатели по умолчанию (нужна отдельная настройка), даже если обе находятся в меню «Ландшафтный дизайн»";
 		d["item.i.snap.ex.group"] = "например, выключите «Привязку к поверхности объекта» для объекта категории «Парк», и у других объектов в той же группе она тоже будет выключена, а в другой группе — нет";
@@ -565,11 +638,7 @@ namespace ToolModeMemory
 		d["enabled.label"] = "Включить мод";
 		d["enabled.desc"] = "По умолчанию включено. Пока это включено, все расположенные ниже настройки действуют, а значения всех инструментов записываются по мере работы, поэтому при возврате к сохранению панели оказываются точно такими, какими вы их оставили; отключение одного пункта лишь прекращает его восстановление — его значения продолжают записываться. Выключение этого главного переключателя возвращает всё к оригиналу: запись прекращается, восстановление не выполняется, а все настройки на страницах «Активы», «Функции» и «Объекты» одновременно отключаются (становятся серыми), и каждый инструмент ведёт себя так, как задумано в игре. Он выключается сам, когда все три расположенных ниже переключателя страниц выключены, и снова включается, как только включается любой из них.";
 		d["scope.line.sharedSingle"] = "Глобально: все инструменты на этой странице, поддерживающие данный пункт, используют одно значение";
-		d["scope.note"] = "Примечание: страницы «Активы», «Функции» и «Объекты» хранят память каждую отдельно, даже если строка называется одинаково на нескольких страницах; «Глобально» и «Без разделения» действуют только в пределах страницы, которую вы просматриваете.";
-		d["item.brush.desc"] = "Запоминает строки «Размер кисти» и «Нажим кисти»: размер определяет, какую площадь охватывает одно движение, а нажим — насколько каждое движение меняет результат. Этот пункт касается только закрашивания на странице «Активы», то есть размещения кистью таких активов, как деревья из меню «Флора»; у девяти инструментов терраформирования есть собственный пункт кисти на странице «Функции», у восьми категорий объектов — свой на странице «Объекты», и три страницы никогда не делят значения. Инструменты, на панелях которых нет этих строк, не записываются и не меняются.";
-		d["item.brush.ex.group"] = "например, задайте размер кисти 30 м при закрашивании деревьев, и другие размещаемые кистью активы в той же группе тоже станут 30 м, а актив из другой группы — нет";
-		d["item.brush.ex.menu"] = "все активы, закрашиваемые в меню «Флора», используют одни и те же размер и нажим кисти, а в другом меню — нет";
-		d["item.brush.ex.category"] = "при переходе к другому виду деревьев используется та же кисть, но этот уровень группирует активы по тому, кому они служат, поэтому инструменты терраформирования и объекты хранят каждый свою копию на двух других страницах (нужна отдельная настройка)";
+			d["scope.note"] = "Примечание: каждый уровень выше действует только внутри этой страницы.";
 			return d;
 		}
 	}

@@ -33,26 +33,35 @@ LANGS = {
 FRAMES_KEYS = {"frame.locale", "item.anarchy.label", "scope.group.none"}
 
 # 设置页跨板块连续编号的 13 项（v0.6.2 起「笔刷」独立成行，编号 9；「其它」永远官方板块最后，
-# v0.7.0：设置页拆成三个标签页，同名行按域各一套，项 id 带域前缀 f. / i.。
-# 顺序 = 目录顺序 = 设置页顺序（资产页 1..14，功能页 1..5，道具页 1..5；编号在每个页内各自从 1 数）。
+# v0.8.0：面板行按游戏真实行拆开（笔刷拆成种类/粗细/强度，另加目标高度、年龄、距离、
+# 物件高度），并按 research/round4/vanilla_rows.md 的工具×行矩阵重新分配每页的项。
+# 顺序 = 目录顺序 = 设置页顺序（建筑与服务页 1..12，功能页 1..12，道具页 1..14；
+# 编号在每个页内各自从 1 数）。
 # 这份表**只是文档**：真正的一致性由下面对着 ToolItemCatalog.cs 解析出来的目录核对，
 # 手抄错了会被 "目录与 ITEM_IDS 不一致" 直接拦下。
 ITEM_IDS = ["themes", "packs", "toolMode", "elevation", "parallel", "snap", "topography",
-            "underground", "brush", "color", "decoration", "anarchy", "leftRight", "general",
-            "f.toolMode", "f.snap", "f.topography", "f.underground", "f.brush",
-            "i.toolMode", "i.snap", "i.brush", "i.topography", "i.underground"]
-# 已取消的独立项：它们的键再出现就是漏删。
+            "underground", "anarchy", "leftRight", "general", "anarchyObjectElevation",
+            "f.themes", "f.packs", "f.toolMode", "f.snap", "f.underground", "f.topography",
+            "f.brushType", "f.brushSize", "f.brushStrength", "f.brushHeight", "f.distance", "f.color",
+            "i.themes", "i.packs", "i.toolMode", "i.distance", "i.brushType", "i.brushSize",
+            "i.brushStrength", "i.ageMask", "i.decoration", "i.snap", "i.topography",
+            "i.underground", "i.anarchy", "i.anarchyObjectElevation"]
 # 已取消的独立项：它们的键再出现就是漏删。
 #   elevationStep：0.2.2 并入 elevation 的 Subs。
+#   brush：v0.8.0 拆成 brushSize / brushStrength，两个桶名不变，但项 id 不再存在。
+#   color / decoration：v0.8.0 移到功能页与道具页（f.color / i.decoration），
+#     建筑与服务页不再有这两项；但 item.color.* / item.decoration.* 的文案**必须留着**
+#     （f.color 沿用 item.other.* 那份别名，i.decoration 沿用 item.decoration.*）。
 # 注意 0.7.0 的「其它」不列在这里：它作为**项**已经取消（目录里没有了，上面那条
 # 「目录与 ITEM_IDS 一致」就是钉子），但 item.other.desc / .ex.* 三句**必须留着** ——
 # 「颜色」这一项换了名字，12 种语言的文案靠 ToolItemDef.LocaleAlias 沿用旧的那份，
 # 删掉就等于把 12 种语言已经写对的句子清空。
-RETIRED = ["elevationStep"]
+RETIRED = ["elevationStep", "brush"]
 
 # 换了名字的项：id → 文案沿用哪一份旧 id（对应 ToolItemDef.LocaleAlias）。
 # 「颜色」就是 0.6.2 的「其它」，12 种语言的 desc/ex.* 内容本来就全是讲道路颜色。
-TEXT_ALIAS = {"color": "other"}
+# v0.8.0 起颜色归功能页（f.color），别名链要跟着走：f.color → other。
+TEXT_ALIAS = {"f.color": "other"}
 
 # 三个标签页与每项归属（v0.7.0）：不手抄，全部从 ToolItemCatalog.cs 里解析，见 parse_catalog。
 DOMAIN_LABEL = {"Asset": "资产", "Function": "功能", "Item": "道具"}

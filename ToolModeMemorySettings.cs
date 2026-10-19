@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using Colossal;
@@ -46,9 +46,9 @@ namespace ToolModeMemory
 	[FileLocation(nameof(ToolModeMemory))]
 	[SettingsUITabOrder(kTabMaster, kTabAssets, kTabFunctions, kTabItems, kTabAbout)]
 	[SettingsUIGroupOrder(kGroupMaster, kGroupDomain, kGroupAssetOfficial, kGroupAssetAnarchy,
-		kGroupFunctionOfficial, kGroupItemOfficial, kGroupMemory, kGroupInfo)]
+		kGroupFunctionOfficial, kGroupItemOfficial, kGroupItemAnarchy, kGroupMemory, kGroupInfo)]
 	[SettingsUIShowGroupName(kGroupDomain, kGroupAssetOfficial, kGroupAssetAnarchy,
-		kGroupFunctionOfficial, kGroupItemOfficial, kGroupMemory)]
+		kGroupFunctionOfficial, kGroupItemOfficial, kGroupItemAnarchy, kGroupMemory)]
 	public class ToolModeMemorySettings : ModSetting
 	{
 		public const string kTabMaster = "Master";
@@ -67,6 +67,8 @@ namespace ToolModeMemory
 		public const string kGroupAssetAnarchy = "AssetAnarchyItems";
 		public const string kGroupFunctionOfficial = "FunctionOfficialItems";
 		public const string kGroupItemOfficial = "ItemOfficialItems";
+		/// <summary>道具页：第三方板块（v0.8.0 新增，Anarchy 的物件高度与主开关在摆件工具上出现）。</summary>
+		public const string kGroupItemAnarchy = "ItemAnarchyItems";
 		public const string kGroupMemory = "MemoryFiles";
 		// v0.6.0 删掉了「与其他模组兼容」那一整块（原 kGroupCompat）：工具栏的菜单/分组在运行期内
 		// 只有被其它模组就地改写过的这一份数据，没有「原版那份」可回退，所以那个开关关掉也一样
@@ -284,42 +286,11 @@ namespace ToolModeMemory
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsUndergroundScopeDisabled))]
 		public int UndergroundScope { get { return GetScope(ToolItemCatalog.kUnderground); } set { SetScope(ToolItemCatalog.kUnderground, value); } }
 
-		[SettingsUISection(kTabAssets, kGroupAssetOfficial)]
-		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsAssetSectionOff))]
-		public bool BrushEnabled { get { return GetEnabled(ToolItemCatalog.kBrush); } set { SetEnabled(ToolItemCatalog.kBrush, value); } }
+		// v0.8.0：原「笔刷」一项已拆成粗细/强度两项并移到功能页与道具页
+		// （原版只有地形工具与摆件刷涂有这两行，建筑与服务页没有 → 放这里就是「设了没反应」）。
+		// v0.8.0：配色（color）已移到功能页 —— 只有路线工具显示这一行。
 
-		[SettingsUISection(kTabAssets, kGroupAssetOfficial)]
-		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetBrushScopeItems))]
-		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsBrushScopeDisabled))]
-		public int BrushScope { get { return GetScope(ToolItemCatalog.kBrush); } set { SetScope(ToolItemCatalog.kBrush, value); } }
-
-		/// <summary>道路配色：v0.7.0 从「其它」独立成一项（owner 需求 4：去掉「其它」，全部列出来）。</summary>
-		[SettingsUISection(kTabAssets, kGroupAssetOfficial)]
-		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsAssetSectionOff))]
-		public bool ColorEnabled { get { return GetEnabled(ToolItemCatalog.kColor); } set { SetEnabled(ToolItemCatalog.kColor, value); } }
-
-		[SettingsUISection(kTabAssets, kGroupAssetOfficial)]
-		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetColorScopeItems))]
-		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsColorScopeDisabled))]
-		public int ColorScope { get { return GetScope(ToolItemCatalog.kColor); } set { SetScope(ToolItemCatalog.kColor, value); } }
-
-		/// <summary>
-		/// 保留年代（ObjectToolSystem.decorationMode）。只有带 TreeData 的资产（树木）面板上才有这一行，
-		/// 树木在工具栏里属于城市美化/植被、不属于 owner 点的 8 类道具，所以列在资产页。
-		/// </summary>
-		[SettingsUISection(kTabAssets, kGroupAssetOfficial)]
-		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsAssetSectionOff))]
-		public bool DecorationEnabled { get { return GetEnabled(ToolItemCatalog.kDecoration); } set { SetEnabled(ToolItemCatalog.kDecoration, value); } }
-
-		[SettingsUISection(kTabAssets, kGroupAssetOfficial)]
-		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetDecorationScopeItems))]
-		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsDecorationScopeDisabled))]
-		public int DecorationScope { get { return GetScope(ToolItemCatalog.kDecoration); } set { SetScope(ToolItemCatalog.kDecoration, value); } }
-
-		// ==================== 资产页：Anarchy 工具项（1..3） ====================
+		// ==================== 建筑与服务页：Anarchy 工具项 ====================
 		//
 		// 这三行挂的是 **HideByCondition**，不是 DisableByCondition。原因（反编译 Game.dll 核实）：
 		// 变灰那条路只在「设置页构建的那一刻」求值一次 —— AutomaticSettings.BuildTab 里
@@ -332,10 +303,10 @@ namespace ToolModeMemory
 		// hidden() 走的 UpdateVisibility() 是每帧重算的，所以隐藏判据会随 Anarchy 判定落地
 		// 当场生效：没装 = 整块消失，装了 = 自动回来。判定未落地前一律不隐藏（见 ToolMemoryBridge）。
 		//
-		// 为什么只有资产页有 Anarchy 板块：Anarchy 的「左侧/右侧/常规」两块面板只挂在道路工具上
-		// （NetworkAnarchyUISystem 订阅的就是 EventToolChanged 里的 NetToolSystem，
-		// 见 research/extra/anarchy 反编译），功能区/道具面板上没有这三行，
-		// 所以那两个标签页没有可记的东西，硬加一行只会让玩家以为设了却什么都没发生。
+		// Anarchy 板块的归属（v0.8.0 按 research/round4/anarchy_rows.md 重建）：
+		//  * 主开关 / 左侧右侧 / 常规 —— 只有**道路工具**有（NetworkAnarchyUISystem 订的就是 NetToolSystem）；
+		//  * 物件高度 —— 只有**摆件工具**有（AnarchyUISystem 注入在 Object Tool 面板上），
+		//    所以这一项在建筑与服务页、道具页各有一份（owner 定的三页互不共用）。
 
 		[SettingsUISection(kTabAssets, kGroupAssetAnarchy)]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsAssetSectionOff))]
@@ -373,7 +344,45 @@ namespace ToolModeMemory
 		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
 		public int GeneralScope { get { return GetScope(ToolItemCatalog.kGeneral); } set { SetScope(ToolItemCatalog.kGeneral, value); } }
 
-		// ==================== 功能页：官方工具项（1..5） ====================
+		/// <summary>
+		/// 物件高度（Anarchy 注入在摆件工具面板上的那一排：锁定变换 / 高度 / 高度变化范围 /
+		/// 抬高降低的幅度）。owner 2026-10-20：这 4 项同一排显示，算同一项、一起记忆和共用；
+		/// 「重置高度为 0」是瞬时按钮，不列。
+		/// 判据用 IsAnarchyMissing：没装 Anarchy 时整块隐藏（Hide 每帧重算，见上面的长注释）。
+		/// </summary>
+		[SettingsUISection(kTabAssets, kGroupAssetAnarchy)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsAssetSectionOff))]
+		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
+		public bool AnarchyObjectElevationEnabled { get { return GetEnabled(ToolItemCatalog.kObjectElevation); } set { SetEnabled(ToolItemCatalog.kObjectElevation, value); } }
+
+		[SettingsUISection(kTabAssets, kGroupAssetAnarchy)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetAnarchyObjectElevationScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyObjectElevationScopeDisabled))]
+		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
+		public int AnarchyObjectElevationScope { get { return GetScope(ToolItemCatalog.kObjectElevation); } set { SetScope(ToolItemCatalog.kObjectElevation, value); } }
+
+		// ==================== 功能页：官方工具项（1..12） ====================
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFunctionSectionOff))]
+		public bool FThemesEnabled { get { return GetEnabled(ToolItemCatalog.kFThemes); } set { SetEnabled(ToolItemCatalog.kFThemes, value); } }
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetFThemesScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFThemesScopeDisabled))]
+		public int FThemesScope { get { return GetScope(ToolItemCatalog.kFThemes); } set { SetScope(ToolItemCatalog.kFThemes, value); } }
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFunctionSectionOff))]
+		public bool FPacksEnabled { get { return GetEnabled(ToolItemCatalog.kFPacks); } set { SetEnabled(ToolItemCatalog.kFPacks, value); } }
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetFPacksScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFPacksScopeDisabled))]
+		public int FPacksScope { get { return GetScope(ToolItemCatalog.kFPacks); } set { SetScope(ToolItemCatalog.kFPacks, value); } }
 
 		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFunctionSectionOff))]
@@ -397,16 +406,6 @@ namespace ToolModeMemory
 
 		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFunctionSectionOff))]
-		public bool FTopographyEnabled { get { return GetEnabled(ToolItemCatalog.kFTopography); } set { SetEnabled(ToolItemCatalog.kFTopography, value); } }
-
-		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
-		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetFTopographyScopeItems))]
-		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFTopographyScopeDisabled))]
-		public int FTopographyScope { get { return GetScope(ToolItemCatalog.kFTopography); } set { SetScope(ToolItemCatalog.kFTopography, value); } }
-
-		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
-		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFunctionSectionOff))]
 		public bool FUndergroundEnabled { get { return GetEnabled(ToolItemCatalog.kFUnderground); } set { SetEnabled(ToolItemCatalog.kFUnderground, value); } }
 
 		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
@@ -417,15 +416,102 @@ namespace ToolModeMemory
 
 		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFunctionSectionOff))]
-		public bool FBrushEnabled { get { return GetEnabled(ToolItemCatalog.kFBrush); } set { SetEnabled(ToolItemCatalog.kFBrush, value); } }
+		public bool FTopographyEnabled { get { return GetEnabled(ToolItemCatalog.kFTopography); } set { SetEnabled(ToolItemCatalog.kFTopography, value); } }
 
 		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
-		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetFBrushScopeItems))]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetFTopographyScopeItems))]
 		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFBrushScopeDisabled))]
-		public int FBrushScope { get { return GetScope(ToolItemCatalog.kFBrush); } set { SetScope(ToolItemCatalog.kFBrush, value); } }
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFTopographyScopeDisabled))]
+		public int FTopographyScope { get { return GetScope(ToolItemCatalog.kFTopography); } set { SetScope(ToolItemCatalog.kFTopography, value); } }
 
-		// ==================== 道具页：官方工具项（1..6） ====================
+		// v0.8.0 拆行：笔刷类型 / 笔刷粗细 / 笔刷强度 / 目标高度 各自一项、各配一套开关与范围。
+		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFunctionSectionOff))]
+		public bool FBrushTypeEnabled { get { return GetEnabled(ToolItemCatalog.kFBrushType); } set { SetEnabled(ToolItemCatalog.kFBrushType, value); } }
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetFBrushTypeScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFBrushTypeScopeDisabled))]
+		public int FBrushTypeScope { get { return GetScope(ToolItemCatalog.kFBrushType); } set { SetScope(ToolItemCatalog.kFBrushType, value); } }
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFunctionSectionOff))]
+		public bool FBrushSizeEnabled { get { return GetEnabled(ToolItemCatalog.kFBrushSize); } set { SetEnabled(ToolItemCatalog.kFBrushSize, value); } }
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetFBrushSizeScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFBrushSizeScopeDisabled))]
+		public int FBrushSizeScope { get { return GetScope(ToolItemCatalog.kFBrushSize); } set { SetScope(ToolItemCatalog.kFBrushSize, value); } }
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFunctionSectionOff))]
+		public bool FBrushStrengthEnabled { get { return GetEnabled(ToolItemCatalog.kFBrushStrength); } set { SetEnabled(ToolItemCatalog.kFBrushStrength, value); } }
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetFBrushStrengthScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFBrushStrengthScopeDisabled))]
+		public int FBrushStrengthScope { get { return GetScope(ToolItemCatalog.kFBrushStrength); } set { SetScope(ToolItemCatalog.kFBrushStrength, value); } }
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFunctionSectionOff))]
+		public bool FBrushHeightEnabled { get { return GetEnabled(ToolItemCatalog.kFBrushHeight); } set { SetEnabled(ToolItemCatalog.kFBrushHeight, value); } }
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetFBrushHeightScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFBrushHeightScopeDisabled))]
+		public int FBrushHeightScope { get { return GetScope(ToolItemCatalog.kFBrushHeight); } set { SetScope(ToolItemCatalog.kFBrushHeight, value); } }
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFunctionSectionOff))]
+		public bool FDistanceEnabled { get { return GetEnabled(ToolItemCatalog.kFDistance); } set { SetEnabled(ToolItemCatalog.kFDistance, value); } }
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetFDistanceScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFDistanceScopeDisabled))]
+		public int FDistanceScope { get { return GetScope(ToolItemCatalog.kFDistance); } set { SetScope(ToolItemCatalog.kFDistance, value); } }
+
+		/// <summary>道路配色：只有路线工具显示这一行（IColored 唯一实现者是 RoutePrefab）。</summary>
+		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFunctionSectionOff))]
+		public bool FColorEnabled { get { return GetEnabled(ToolItemCatalog.kFColor); } set { SetEnabled(ToolItemCatalog.kFColor, value); } }
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetFColorScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFColorScopeDisabled))]
+		public int FColorScope { get { return GetScope(ToolItemCatalog.kFColor); } set { SetScope(ToolItemCatalog.kFColor, value); } }
+
+		// ==================== 道具页：官方工具项（1..12） ====================
+		//
+		// v0.8.0 按 research/round4/vanilla_rows.md「Object Tool」一列把面板行列全：
+		// 主题 / 数据包 / 工具模式 / 距离 / 笔刷种类 / 笔刷粗细 / 笔刷强度 / 年龄 / 保留年代 /
+		// 对齐 / 地形 / 地下模式。**没有「高度」** —— 玩家在道具页看到的高度与高度变化范围
+		// 其实是 Anarchy 注入的那一排，见本页 Anarchy 板块的「物件高度」。
+
+		[SettingsUISection(kTabItems, kGroupItemOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsItemSectionOff))]
+		public bool IThemesEnabled { get { return GetEnabled(ToolItemCatalog.kIThemes); } set { SetEnabled(ToolItemCatalog.kIThemes, value); } }
+
+		[SettingsUISection(kTabItems, kGroupItemOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetIThemesScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsIThemesScopeDisabled))]
+		public int IThemesScope { get { return GetScope(ToolItemCatalog.kIThemes); } set { SetScope(ToolItemCatalog.kIThemes, value); } }
+
+		[SettingsUISection(kTabItems, kGroupItemOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsItemSectionOff))]
+		public bool IPacksEnabled { get { return GetEnabled(ToolItemCatalog.kIPacks); } set { SetEnabled(ToolItemCatalog.kIPacks, value); } }
+
+		[SettingsUISection(kTabItems, kGroupItemOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetIPacksScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsIPacksScopeDisabled))]
+		public int IPacksScope { get { return GetScope(ToolItemCatalog.kIPacks); } set { SetScope(ToolItemCatalog.kIPacks, value); } }
 
 		[SettingsUISection(kTabItems, kGroupItemOfficial)]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsItemSectionOff))]
@@ -439,6 +525,68 @@ namespace ToolModeMemory
 
 		[SettingsUISection(kTabItems, kGroupItemOfficial)]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsItemSectionOff))]
+		public bool IDistanceEnabled { get { return GetEnabled(ToolItemCatalog.kIDistance); } set { SetEnabled(ToolItemCatalog.kIDistance, value); } }
+
+		[SettingsUISection(kTabItems, kGroupItemOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetIDistanceScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsIDistanceScopeDisabled))]
+		public int IDistanceScope { get { return GetScope(ToolItemCatalog.kIDistance); } set { SetScope(ToolItemCatalog.kIDistance, value); } }
+
+		[SettingsUISection(kTabItems, kGroupItemOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsItemSectionOff))]
+		public bool IBrushTypeEnabled { get { return GetEnabled(ToolItemCatalog.kIBrushType); } set { SetEnabled(ToolItemCatalog.kIBrushType, value); } }
+
+		[SettingsUISection(kTabItems, kGroupItemOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetIBrushTypeScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsIBrushTypeScopeDisabled))]
+		public int IBrushTypeScope { get { return GetScope(ToolItemCatalog.kIBrushType); } set { SetScope(ToolItemCatalog.kIBrushType, value); } }
+
+		[SettingsUISection(kTabItems, kGroupItemOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsItemSectionOff))]
+		public bool IBrushSizeEnabled { get { return GetEnabled(ToolItemCatalog.kIBrushSize); } set { SetEnabled(ToolItemCatalog.kIBrushSize, value); } }
+
+		[SettingsUISection(kTabItems, kGroupItemOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetIBrushSizeScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsIBrushSizeScopeDisabled))]
+		public int IBrushSizeScope { get { return GetScope(ToolItemCatalog.kIBrushSize); } set { SetScope(ToolItemCatalog.kIBrushSize, value); } }
+
+		[SettingsUISection(kTabItems, kGroupItemOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsItemSectionOff))]
+		public bool IBrushStrengthEnabled { get { return GetEnabled(ToolItemCatalog.kIBrushStrength); } set { SetEnabled(ToolItemCatalog.kIBrushStrength, value); } }
+
+		[SettingsUISection(kTabItems, kGroupItemOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetIBrushStrengthScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsIBrushStrengthScopeDisabled))]
+		public int IBrushStrengthScope { get { return GetScope(ToolItemCatalog.kIBrushStrength); } set { SetScope(ToolItemCatalog.kIBrushStrength, value); } }
+
+		/// <summary>年龄：只有树（带 TreeData 的资产）在游戏模式下才有这一行。</summary>
+		[SettingsUISection(kTabItems, kGroupItemOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsItemSectionOff))]
+		public bool IAgeMaskEnabled { get { return GetEnabled(ToolItemCatalog.kIAgeMask); } set { SetEnabled(ToolItemCatalog.kIAgeMask, value); } }
+
+		[SettingsUISection(kTabItems, kGroupItemOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetIAgeMaskScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsIAgeMaskScopeDisabled))]
+		public int IAgeMaskScope { get { return GetScope(ToolItemCatalog.kIAgeMask); } set { SetScope(ToolItemCatalog.kIAgeMask, value); } }
+
+		/// <summary>保留年代：与年龄同门，只有树才有这一行。</summary>
+		[SettingsUISection(kTabItems, kGroupItemOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsItemSectionOff))]
+		public bool IDecorationEnabled { get { return GetEnabled(ToolItemCatalog.kIDecoration); } set { SetEnabled(ToolItemCatalog.kIDecoration, value); } }
+
+		[SettingsUISection(kTabItems, kGroupItemOfficial)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetIDecorationScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsIDecorationScopeDisabled))]
+		public int IDecorationScope { get { return GetScope(ToolItemCatalog.kIDecoration); } set { SetScope(ToolItemCatalog.kIDecoration, value); } }
+
+		[SettingsUISection(kTabItems, kGroupItemOfficial)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsItemSectionOff))]
 		public bool ISnapEnabled { get { return GetEnabled(ToolItemCatalog.kISnap); } set { SetEnabled(ToolItemCatalog.kISnap, value); } }
 
 		[SettingsUISection(kTabItems, kGroupItemOfficial)]
@@ -446,16 +594,6 @@ namespace ToolModeMemory
 		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsISnapScopeDisabled))]
 		public int ISnapScope { get { return GetScope(ToolItemCatalog.kISnap); } set { SetScope(ToolItemCatalog.kISnap, value); } }
-
-		[SettingsUISection(kTabItems, kGroupItemOfficial)]
-		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsItemSectionOff))]
-		public bool IBrushEnabled { get { return GetEnabled(ToolItemCatalog.kIBrush); } set { SetEnabled(ToolItemCatalog.kIBrush, value); } }
-
-		[SettingsUISection(kTabItems, kGroupItemOfficial)]
-		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetIBrushScopeItems))]
-		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
-		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsIBrushScopeDisabled))]
-		public int IBrushScope { get { return GetScope(ToolItemCatalog.kIBrush); } set { SetScope(ToolItemCatalog.kIBrush, value); } }
 
 		[SettingsUISection(kTabItems, kGroupItemOfficial)]
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsItemSectionOff))]
@@ -477,6 +615,36 @@ namespace ToolModeMemory
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsIUndergroundScopeDisabled))]
 		public int IUndergroundScope { get { return GetScope(ToolItemCatalog.kIUnderground); } set { SetScope(ToolItemCatalog.kIUnderground, value); } }
 
+		// ==================== 道具页：Anarchy 工具项（13..14） ====================
+
+		[SettingsUISection(kTabItems, kGroupItemAnarchy)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsItemSectionOff))]
+		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
+		public bool IAnarchyEnabled { get { return GetEnabled(ToolItemCatalog.kIAnarchy); } set { SetEnabled(ToolItemCatalog.kIAnarchy, value); } }
+
+		[SettingsUISection(kTabItems, kGroupItemAnarchy)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetIAnarchyScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsIAnarchyScopeDisabled))]
+		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
+		public int IAnarchyScope { get { return GetScope(ToolItemCatalog.kIAnarchy); } set { SetScope(ToolItemCatalog.kIAnarchy, value); } }
+
+		/// <summary>
+		/// 物件高度（道具页的那一份）：与建筑与服务页同一排 Anarchy 控件，但按 owner 定的
+		/// 「三页互不共用」独立记忆 —— 在道具页调的高度不会覆盖建筑与服务页的。
+		/// </summary>
+		[SettingsUISection(kTabItems, kGroupItemAnarchy)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsItemSectionOff))]
+		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
+		public bool IAnarchyObjectElevationEnabled { get { return GetEnabled(ToolItemCatalog.kIObjectElevation); } set { SetEnabled(ToolItemCatalog.kIObjectElevation, value); } }
+
+		[SettingsUISection(kTabItems, kGroupItemAnarchy)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetIAnarchyObjectElevationScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsIAnarchyObjectElevationScopeDisabled))]
+		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
+		public int IAnarchyObjectElevationScope { get { return GetScope(ToolItemCatalog.kIObjectElevation); } set { SetScope(ToolItemCatalog.kIObjectElevation, value); } }
+
 		// ---------- 每项的共用范围行是否可点：本域没开 或 本项没开 ----------
 
 		public bool IsThemesScopeDisabled() { return IsAssetSectionOff() || !GetEnabled(ToolItemCatalog.kThemes); }
@@ -495,37 +663,65 @@ namespace ToolModeMemory
 
 		public bool IsUndergroundScopeDisabled() { return IsAssetSectionOff() || !GetEnabled(ToolItemCatalog.kUnderground); }
 
-		public bool IsColorScopeDisabled() { return IsAssetSectionOff() || !GetEnabled(ToolItemCatalog.kColor); }
-
-		public bool IsDecorationScopeDisabled() { return IsAssetSectionOff() || !GetEnabled(ToolItemCatalog.kDecoration); }
-
-		public bool IsBrushScopeDisabled() { return IsAssetSectionOff() || !GetEnabled(ToolItemCatalog.kBrush); }
-
 		public bool IsAnarchyScopeDisabled() { return IsAssetSectionOff() || !GetEnabled(ToolItemCatalog.kAnarchy); }
 
 		public bool IsLeftRightScopeDisabled() { return IsAssetSectionOff() || !GetEnabled(ToolItemCatalog.kLeftRight); }
 
 		public bool IsGeneralScopeDisabled() { return IsAssetSectionOff() || !GetEnabled(ToolItemCatalog.kGeneral); }
 
+		public bool IsAnarchyObjectElevationScopeDisabled() { return IsAssetSectionOff() || !GetEnabled(ToolItemCatalog.kObjectElevation); }
+
+		public bool IsFThemesScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFThemes); }
+
+		public bool IsFPacksScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFPacks); }
+
 		public bool IsFToolModeScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFToolMode); }
 
 		public bool IsFSnapScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFSnap); }
 
-		public bool IsFTopographyScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFTopography); }
-
 		public bool IsFUndergroundScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFUnderground); }
 
-		public bool IsFBrushScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFBrush); }
+		public bool IsFTopographyScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFTopography); }
+
+		public bool IsFBrushTypeScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFBrushType); }
+
+		public bool IsFBrushSizeScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFBrushSize); }
+
+		public bool IsFBrushStrengthScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFBrushStrength); }
+
+		public bool IsFBrushHeightScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFBrushHeight); }
+
+		public bool IsFDistanceScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFDistance); }
+
+		public bool IsFColorScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFColor); }
+
+		public bool IsIThemesScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kIThemes); }
+
+		public bool IsIPacksScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kIPacks); }
 
 		public bool IsIToolModeScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kIToolMode); }
 
-		public bool IsISnapScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kISnap); }
+		public bool IsIDistanceScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kIDistance); }
 
-		public bool IsIBrushScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kIBrush); }
+		public bool IsIBrushTypeScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kIBrushType); }
+
+		public bool IsIBrushSizeScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kIBrushSize); }
+
+		public bool IsIBrushStrengthScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kIBrushStrength); }
+
+		public bool IsIAgeMaskScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kIAgeMask); }
+
+		public bool IsIDecorationScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kIDecoration); }
+
+		public bool IsISnapScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kISnap); }
 
 		public bool IsITopographyScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kITopography); }
 
 		public bool IsIUndergroundScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kIUnderground); }
+
+		public bool IsIAnarchyScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kIAnarchy); }
+
+		public bool IsIAnarchyObjectElevationScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kIObjectElevation); }
 
 		/// <summary>
 		/// Anarchy 那三行（共 6 行）的隐藏判据：玩家没装 / 没启用 Anarchy 时整块不出现。
@@ -644,22 +840,36 @@ namespace ToolModeMemory
 		public DropdownItem<int>[] GetSnapScopeItems() { return BuildScopeItems(ToolItemCatalog.kSnap); }
 		public DropdownItem<int>[] GetTopographyScopeItems() { return BuildScopeItems(ToolItemCatalog.kTopography); }
 		public DropdownItem<int>[] GetUndergroundScopeItems() { return BuildScopeItems(ToolItemCatalog.kUnderground); }
-		public DropdownItem<int>[] GetColorScopeItems() { return BuildScopeItems(ToolItemCatalog.kColor); }
-		public DropdownItem<int>[] GetDecorationScopeItems() { return BuildScopeItems(ToolItemCatalog.kDecoration); }
-		public DropdownItem<int>[] GetBrushScopeItems() { return BuildScopeItems(ToolItemCatalog.kBrush); }
 		public DropdownItem<int>[] GetAnarchyScopeItems() { return BuildScopeItems(ToolItemCatalog.kAnarchy); }
 		public DropdownItem<int>[] GetLeftRightScopeItems() { return BuildScopeItems(ToolItemCatalog.kLeftRight); }
 		public DropdownItem<int>[] GetGeneralScopeItems() { return BuildScopeItems(ToolItemCatalog.kGeneral); }
+		public DropdownItem<int>[] GetAnarchyObjectElevationScopeItems() { return BuildScopeItems(ToolItemCatalog.kObjectElevation); }
+		public DropdownItem<int>[] GetFThemesScopeItems() { return BuildScopeItems(ToolItemCatalog.kFThemes); }
+		public DropdownItem<int>[] GetFPacksScopeItems() { return BuildScopeItems(ToolItemCatalog.kFPacks); }
 		public DropdownItem<int>[] GetFToolModeScopeItems() { return BuildScopeItems(ToolItemCatalog.kFToolMode); }
 		public DropdownItem<int>[] GetFSnapScopeItems() { return BuildScopeItems(ToolItemCatalog.kFSnap); }
-		public DropdownItem<int>[] GetFTopographyScopeItems() { return BuildScopeItems(ToolItemCatalog.kFTopography); }
 		public DropdownItem<int>[] GetFUndergroundScopeItems() { return BuildScopeItems(ToolItemCatalog.kFUnderground); }
-		public DropdownItem<int>[] GetFBrushScopeItems() { return BuildScopeItems(ToolItemCatalog.kFBrush); }
+		public DropdownItem<int>[] GetFTopographyScopeItems() { return BuildScopeItems(ToolItemCatalog.kFTopography); }
+		public DropdownItem<int>[] GetFBrushTypeScopeItems() { return BuildScopeItems(ToolItemCatalog.kFBrushType); }
+		public DropdownItem<int>[] GetFBrushSizeScopeItems() { return BuildScopeItems(ToolItemCatalog.kFBrushSize); }
+		public DropdownItem<int>[] GetFBrushStrengthScopeItems() { return BuildScopeItems(ToolItemCatalog.kFBrushStrength); }
+		public DropdownItem<int>[] GetFBrushHeightScopeItems() { return BuildScopeItems(ToolItemCatalog.kFBrushHeight); }
+		public DropdownItem<int>[] GetFDistanceScopeItems() { return BuildScopeItems(ToolItemCatalog.kFDistance); }
+		public DropdownItem<int>[] GetFColorScopeItems() { return BuildScopeItems(ToolItemCatalog.kFColor); }
+		public DropdownItem<int>[] GetIThemesScopeItems() { return BuildScopeItems(ToolItemCatalog.kIThemes); }
+		public DropdownItem<int>[] GetIPacksScopeItems() { return BuildScopeItems(ToolItemCatalog.kIPacks); }
 		public DropdownItem<int>[] GetIToolModeScopeItems() { return BuildScopeItems(ToolItemCatalog.kIToolMode); }
+		public DropdownItem<int>[] GetIDistanceScopeItems() { return BuildScopeItems(ToolItemCatalog.kIDistance); }
+		public DropdownItem<int>[] GetIBrushTypeScopeItems() { return BuildScopeItems(ToolItemCatalog.kIBrushType); }
+		public DropdownItem<int>[] GetIBrushSizeScopeItems() { return BuildScopeItems(ToolItemCatalog.kIBrushSize); }
+		public DropdownItem<int>[] GetIBrushStrengthScopeItems() { return BuildScopeItems(ToolItemCatalog.kIBrushStrength); }
+		public DropdownItem<int>[] GetIAgeMaskScopeItems() { return BuildScopeItems(ToolItemCatalog.kIAgeMask); }
+		public DropdownItem<int>[] GetIDecorationScopeItems() { return BuildScopeItems(ToolItemCatalog.kIDecoration); }
 		public DropdownItem<int>[] GetISnapScopeItems() { return BuildScopeItems(ToolItemCatalog.kISnap); }
-		public DropdownItem<int>[] GetIBrushScopeItems() { return BuildScopeItems(ToolItemCatalog.kIBrush); }
 		public DropdownItem<int>[] GetITopographyScopeItems() { return BuildScopeItems(ToolItemCatalog.kITopography); }
 		public DropdownItem<int>[] GetIUndergroundScopeItems() { return BuildScopeItems(ToolItemCatalog.kIUnderground); }
+		public DropdownItem<int>[] GetIAnarchyScopeItems() { return BuildScopeItems(ToolItemCatalog.kIAnarchy); }
+		public DropdownItem<int>[] GetIAnarchyObjectElevationScopeItems() { return BuildScopeItems(ToolItemCatalog.kIObjectElevation); }
 
 		private DropdownItem<int>[] BuildScopeItems(string itemId)
 		{

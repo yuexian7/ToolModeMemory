@@ -311,9 +311,22 @@ namespace ToolModeMemory
 		/// </summary>
 		private static string ScopeDescription(ToolItemDef def, Dictionary<string, string> d)
 		{
+			// v0.8.0 需求 4：三页彻底分开后，「同类 / 全局共用 / 全部不共用」这三句都要说当前这一页
+			// 自己的名词（建筑与服务 / 功能 / 道具），不能再提别的页。三句都按域查专用键
+			// （scope.line.X.<域后缀>），本语言没写过专用键时 Line() 自动退回不带后缀的通用句
+			// （资产页用的就是通用句，所以只有功能页/道具页需要额外的两把键）。
+			string suffix = "." + DomainSuffix(def.Domain);
 			string categoryKey = def.Domain == ItemDomain.Asset
 				? kScopeLineCategory
-				: kScopeLineCategory + "." + DomainSuffix(def.Domain);
+				: kScopeLineCategory + suffix;
+			// 「游戏里只有一份设置」的项（等高线 / 地下模式 / Anarchy 三项）走 sharedSingle：
+			// 那句说的是「本页所有支持这项的工具共用一份」，三页通用，不用按域换名词。
+			string sharedKey = def.FamilyFreeScope
+				? kScopeLineSharedSingle
+				: (def.Domain == ItemDomain.Asset ? kScopeLineShared : kScopeLineShared + suffix);
+			string uniqueKey = def.Domain == ItemDomain.Asset
+				? kScopeLineUnique
+				: kScopeLineUnique + suffix;
 			StringBuilder sb = new StringBuilder();
 			sb.Append(Val(d, "scope.desc"));
 			sb.Append('\n');
@@ -323,9 +336,11 @@ namespace ToolModeMemory
 			sb.Append('\n');
 			sb.Append(Line(d, categoryKey, Example(d, def, "category")));
 			sb.Append('\n');
-			sb.Append(Val(d, def.FamilyFreeScope ? kScopeLineSharedSingle : kScopeLineShared));
+			// 这两句没有例子可填，但仍要走按域回退：Line(d, key, "") 有域专用键就用它，
+			// 没有就剥掉最后的域后缀用通用句（与 category 行同一套机制）。
+			sb.Append(Line(d, sharedKey, null));
 			sb.Append('\n');
-			sb.Append(Val(d, kScopeLineUnique));
+			sb.Append(Line(d, uniqueKey, null));
 			sb.Append('\n');
 			sb.Append(Val(d, kScopeNote));
 			return sb.ToString();
@@ -539,7 +554,7 @@ namespace ToolModeMemory
 			// v0.7.0 需求 3：五个标签页（总开关 / 资产 / 功能 / 道具 / 关于）。
 			d["tab.mod"] = "工具模式记忆设置";
 			d["tab.master"] = "总开关";
-			d["tab.assets"] = "资产";
+			d["tab.assets"] = "建筑与服务";
 			d["tab.functions"] = "功能";
 			d["tab.items"] = "道具";
 			d["tab.about"] = "关于";
@@ -551,32 +566,41 @@ namespace ToolModeMemory
 			d["group.about"] = "信息与链接";
 
 			// 大开关：需求 3 要求改叫「启用模组」，它管住下面所有共用设置与读档恢复。
+			// v0.8.0 需求 3：「资产」页改名「建筑与服务」（道具本身也是资产，旧名有歧义）。
 			d["enabled.label"] = "启用模组";
-			d["enabled.desc"] = "默认打开。开着时下面所有设置都生效，所有工具项的数值都会实时记录，回到存档时就是你上次离开时的样子；单独关掉某一项只是不再恢复那一项，它的数值仍在记录。关掉这个大开关则一切回到原版：停止记录、不再恢复，资产、功能、道具三页里的所有设置同时失效（灰掉），每个工具都按原版自己的规矩走。下面三个分域开关全关时这里自动跟着关；三个里任何一个打开，这里自动打开。";
-			d["domain.asset.label"] = "启用资产的工具项记忆";
-			d["domain.asset.desc"] = "管「资产」页里所有工具项：记录与读档恢复一起开关。关掉之后资产页的设置全部灰掉不生效，工具回到原版行为，已记录的数据仍保留在文件里，重新打开照旧恢复。";
+			d["enabled.desc"] = "默认打开。开着时下面所有设置都生效，所有工具项的数值都会实时记录，回到存档时就是你上次离开时的样子；单独关掉某一项只是不再恢复那一项，它的数值仍在记录。关掉这个大开关则一切回到原版：停止记录、不再恢复，建筑与服务、功能、道具三页里的所有设置同时失效（灰掉），每个工具都按原版自己的规矩走。下面三个分域开关全关时这里自动跟着关；三个里任何一个打开，这里自动打开。";
+			d["domain.asset.label"] = "启用建筑与服务的工具项记忆";
+			// v0.8.0 需求 5：分类口径的说明写在这里（不在共用范围的下拉说明里重复一遍）。
+			d["domain.asset.desc"] = "管「建筑与服务」页里所有工具项：记录与读档恢复一起开关。这一页收录的是建筑、服务设施与各类可建造的资产（道路、铁路、轨道、电线、水管、桥梁、埠头、交叉路口、停车场、学校、医院、消防、警察、供电、供水、垃圾处理、公园、广场等等，凡是放在工具栏菜单里买下来盖下去的都在这一页）。关掉之后本页的设置全部灰掉不生效，工具回到原版行为，已记录的数据仍保留在文件里，重新打开照旧恢复。";
 			d["domain.function.label"] = "启用功能的工具项记忆";
-			d["domain.function.desc"] = "管「功能」页里所有工具项：功能区、区域工具、路线工具、地形改造工具、空间与区域工具、标记与预制对象这六类。关掉之后功能页的设置全部灰掉不生效，工具回到原版行为，已记录的数据仍保留在文件里，重新打开照旧恢复。";
+			d["domain.function.desc"] = "管「功能」页里所有工具项：记录与读档恢复一起开关。这一页按六个功能分类收录工具：功能区（住宅、商业、工业、办公四种功能区的规划工具）、区域工具（市辖区创建工具、专门产业区工具、表面区域规划工具）、路线工具（交通运输菜单里的全部路线工具）、地形改造工具（海拔调整、地形平滑、地面平整、斜坡生成、纹理绘制 01～04、纹理橡皮擦共九种）、空间与区域（公园区域、徒步区域、散步区域、清空区域、剪裁地面）、标记与预制对象（动物生成工具等）。关掉之后本页的设置全部灰掉不生效，工具回到原版行为，已记录的数据仍保留在文件里，重新打开照旧恢复。";
 			d["domain.item.label"] = "启用道具的工具项记忆";
-			d["domain.item.desc"] = "管「道具」页里所有工具项：城市美化菜单里的八类道具（自然、公园、住宅道具、商业道具、工业道具、残骸、贴花、盆栽）。关掉之后道具页的设置全部灰掉不生效，工具回到原版行为，已记录的数据仍保留在文件里，重新打开照旧恢复。";
+			d["domain.item.desc"] = "管「道具」页里所有工具项：记录与读档恢复一起开关。这一页按八类道具收录城市美化菜单里的道具：自然、公园、住宅道具、商业道具、工业道具、残骸、贴花、盆栽。关掉之后本页的设置全部灰掉不生效，工具回到原版行为，已记录的数据仍保留在文件里，重新打开照旧恢复。";
 
 
 			d["scope.label"] = "共用范围";
 			d["scope.desc"] = "这一项的数值在多大范围内共用，下拉框括号里标出原版行为与推荐选择。";
 			d[kScopeLineGroup] = "同组：{0}";
 			d[kScopeLineMenu] = "同菜单：{0}";
-			d[kScopeLineCategory] = "同类资产：按资产实际服务谁归类；车道数、宽窄、级别、大小与工具栏里的分类都不算区别（小型停车场与大型停车场就同类），而桥梁、埠头、交叉路口各自单独成类：{0}";
-			// 需求 2：功能页与道具页的「同类资产」改叫「同类」/「同类道具」，归类口径也跟着换。
-			d[kScopeLineCategory + ".function"] = "同类：按功能所属的六个分类归群——功能区（住宅、商业、工业、办公）、区域工具（市辖区创建工具、专门产业区工具、表面区域规划工具）、路线工具（交通运输菜单里的全部路线）、地形改造工具（海拔调整、地形平滑、地面平整、斜坡生成、纹理绘制 01～04、纹理橡皮擦共九种）、空间与区域工具（公园区域、徒步区域、散步区域、清空区域、剪裁地面）、标记与预制对象（动物生成工具等）：{0}";
-			d[kScopeLineCategory + ".item"] = "同类道具：按城市美化菜单的八类道具归群（自然、公园、住宅道具、商业道具、工业道具、残骸、贴花、盆栽）；同一类里模型不同、大小不同都不算区别：{0}";
-			d[kScopeLineShared] = "全局共用：任何支持本项工具的资产/功能全部共用，但资产和功能之间不共用";
-			d[kScopeLineSharedSingle] = "全局共用：所有支持本项的工具共用一份";
-			d[kScopeLineUnique] = "全部不共用：所有支持本项工具的资产/功能完全独立设置";
-			d[kScopeNote] = "注意，资产、功能、道具三页各记各的，即使同名也互不相通；全局共用与全部不共用同样只在当前这一页内成立。";
+			// v0.8.0 需求 4/5：范围说明只写「共用给谁」，不再罗列分类成员，
+			// 也不再做跨页对比（三页已经完全分开，玩家在本页下拉里看到别的页只会绕）。
+			d[kScopeLineCategory] = "同类：按本页工具服务的对象归成群组，同一群共用一份：{0}";
+			d[kScopeLineCategory + ".function"] = "同类：按功能所属的分类归成群组，同一群共用一份：{0}";
+			d[kScopeLineCategory + ".item"] = "同类道具：按道具所属的分类归成群组，同一群共用一份：{0}";
+			d[kScopeLineShared] = "全局共用：本页内所有支持这一项的建筑与服务都共用一份";
+			d[kScopeLineSharedSingle] = "全局共用：本页内所有支持这一项的工具都共用一份";
+			// v0.8.0 需求 4：三页完全分开，范围说明只说当前这一页的名词，不做跨页对比。
+			// 功能页/道具页各查一把专用键，本语言没写时 Line() 自动退回上面那句通用句。
+			d[kScopeLineShared + ".function"] = "全局共用：本页内所有支持这一项的功能工具都共用一份";
+			d[kScopeLineShared + ".item"] = "全局共用：本页内所有支持这一项的道具都共用一份";
+			d[kScopeLineUnique] = "全部不共用：本页内每一种建筑与服务都各自独立设置";
+			d[kScopeLineUnique + ".function"] = "全部不共用：本页内每一个功能工具都各自独立设置";
+			d[kScopeLineUnique + ".item"] = "全部不共用：本页内每一种道具都各自独立设置";
+			d[kScopeNote] = "上面每一档都只在当前这一页里生效。";
 
 			d[kScopeGroup] = "同组";
 			d[kScopeMenu] = "同菜单";
-			d[kScopeCategory] = "同类资产";
+			d[kScopeCategory] = "同类";
 			d[kScopeCategory + ".function"] = "同类";
 			d[kScopeCategory + ".item"] = "同类道具";
 			d[kScopeGlobalShared] = "全局共用";
@@ -673,6 +697,14 @@ namespace ToolModeMemory
 			d["item.general.ex.group"] = "比如给两车道小型道路勾上强制隧道，切换到其它的小型道路，同样是强制隧道，但切换到大型道路就不是了";
 			d["item.general.ex.menu"] = "点击道路菜单里面的所有资产，常规选项都是这一套，但切换到电力菜单就不是了";
 			d["item.general.ex.category"] = "切换到六车道道路也是强制隧道，但切换到桥梁或双向地铁轨道就全部回到未勾选（需单独设置），即使它们都在道路菜单下";
+			// ---------- 物件高度（v0.8.0：Anarchy 注入在摆件工具面板上的一整排） ----------
+			// owner 2026-10-20 定：锁定变换 / 高度 / 高度变化范围 / 抬高降低的幅度 是同一排显示的，
+			// 算同一项、一起记忆一起共用；「重置高度为 0」是瞬时按钮，不列。
+			d["item.anarchyObjectElevation.label"] = "物件高度";
+			d["item.anarchyObjectElevation.desc"] = "记忆 Anarchy 在摆件工具面板上加的那一排高度控件：锁定变换、高度、高度变化范围、抬高降低的幅度。这四项在同一排显示，所以算作一项、一起记忆。只有摆件工具在放置、刷涂、印章、直线、曲线这几种模式下才有这一排，升级与移动模式没有。「重置高度为 0」是按下即生效的按钮、没有可以记住的状态，所以不列。";
+			d["item.anarchyObjectElevation.ex.group"] = "比如把高度设成15米、变化范围设为2米，同一组里的其它摆件也按这一套，但换到另一组就不是了";
+			d["item.anarchyObjectElevation.ex.menu"] = "同一个菜单里的所有摆件都是这一套高度，换到别的菜单就不是了";
+			d["item.anarchyObjectElevation.ex.category"] = "切换到另一类摆件就按它自己那一份高度（需单独设置）";
 
 			// ---------- 地下模式 ----------
 			d["item.underground.label"] = "地下模式";
@@ -688,13 +720,25 @@ namespace ToolModeMemory
 			d["item.other.ex.menu"] = "点击道路菜单里面的所有资产，颜色都是这一套，但切换到电力菜单就不是了";
 			d["item.other.ex.category"] = "切换到六车道道路也是蓝色，但切换到桥梁或双线铁路就按它自己那一类另记一份（需单独设置），即使它们都在道路菜单下";
 
-			// ---------- 笔刷（v0.6.2 从「其它」里独立出来：地形工具玩家的痛点） ----------
-			// 行名取官方语言包：Toolbar.BRUSH_SIZE = 笔刷粗细，Toolbar.BRUSH_STRENGTH = 笔刷强度。
-			d["item.brush.label"] = "笔刷";
-			d["item.brush.desc"] = "记忆「笔刷粗细」和「笔刷强度」两行：笔刷粗细决定一次刷过多大范围，笔刷强度决定每一下改变多少。本项只管资产页这边的刷涂，也就是植被菜单里可以刷着摆放的树木等资产；地形改造工具的笔刷归功能页那一项，八类道具的笔刷归道具页那一项，三页各记各的。面板上没有这两行的工具既不记录也不会被改动。";
-			d["item.brush.ex.group"] = "比如把刷树的笔刷粗细调到30米，同一组里的其它可刷资产也是30米，但换到另一组就不是了";
-			d["item.brush.ex.menu"] = "点击植被菜单里面的所有资产，笔刷粗细和强度都是这一套，但切换到其它菜单就不是了";
-			d["item.brush.ex.category"] = "切换到另一种树也是这一套，但这一档按资产服务的对象归群，地形改造工具和道具各在另两页另记一份（需单独设置）";
+			// ---------- 笔刷家族（v0.8.0 按 owner 要求全部拆开：种类 / 粗细 / 强度 各自独立一项） ----------
+			// 行名取官方语言包：Toolbar.BRUSH_TYPE（官方未译，仍显示 Brush Type）、
+			// Toolbar.BRUSH_SIZE = 笔刷粗细、Toolbar.BRUSH_STRENGTH = 笔刷强度。
+			// 本页（建筑与服务）没有这三行 —— 只有摆件工具的可刷涂资产与地形改造工具才有。
+			d["item.brushType.label"] = "笔刷种类";
+			d["item.brushType.desc"] = "记忆面板上「笔刷种类」这一行选的刷子：圆形、方形、柔边等，决定刷出来的边角形状。只有能刷涂的工具才有这一行，也就是摆件工具选到可刷涂资产的时候，以及九种地形改造工具。建筑与服务这一页没有这一行，所以这一项归功能页与道具页。";
+			d["item.brushType.ex.group"] = "比如刷涂时选了方形刷子，同一组里其它能刷的资产也是方形刷子，但换到另一组就不是了";
+			d["item.brushType.ex.menu"] = "同一个菜单里所有能刷涂的资产都用这把刷子，换到别的菜单就不是了";
+			d["item.brushType.ex.category"] = "切换到另一类道具就按它自己那份刷子（需单独设置），即使都能刷涂";
+			d["item.brushSize.label"] = "笔刷粗细";
+			d["item.brushSize.desc"] = "记忆面板上「笔刷粗细」这一行：一次刷过多大范围。只有能刷涂的工具才有这一行（摆件工具选到可刷涂资产时、以及九种地形改造工具），建筑与服务这一页不出现。地形改造工具的粗细与道具刷涂的粗细含义不同，两者各记各的。";
+			d["item.brushSize.ex.group"] = "比如把笔刷粗细调到30米，同一组里其它能刷的资产也是30米，但换到另一组就不是了";
+			d["item.brushSize.ex.menu"] = "同一个菜单里所有能刷涂的资产都是这个粗细，换到别的菜单就不是了";
+			d["item.brushSize.ex.category"] = "切换到另一类道具就按它自己那份粗细（需单独设置），即使都能刷涂";
+			d["item.brushStrength.label"] = "笔刷强度";
+			d["item.brushStrength.desc"] = "记忆面板上「笔刷强度」这一行：每一下刷动改变多少。只有能刷涂的工具才有这一行（摆件工具选到可刷涂资产时、以及九种地形改造工具），建筑与服务这一页不出现。地形改造工具的强度是每次抬降的幅度，道具刷涂的强度是摆放密度，两者各记各的。";
+			d["item.brushStrength.ex.group"] = "比如把笔刷强度调到一半，同一组里其它能刷的资产也是这个强度，但换到另一组就不是了";
+			d["item.brushStrength.ex.menu"] = "同一个菜单里所有能刷涂的资产都是这个强度，换到别的菜单就不是了";
+			d["item.brushStrength.ex.category"] = "切换到另一类道具就按它自己那份强度（需单独设置），即使都能刷涂";
 
 			// ---------- 颜色（v0.7.0 从「其它」独立；面板行名 ToolOptions.COLOR_TITLE = 颜色） ----------
 			// 说明与例子沿用旧「其它」那一份文案（内容本来就全是讲道路颜色），这里只把行名写实。
@@ -706,6 +750,22 @@ namespace ToolModeMemory
 			d["item.decoration.ex.group"] = "比如刷树时打开保留年代，同一组里的其它植被刷法同样是打开的，但换到另一组就不是了";
 			d["item.decoration.ex.menu"] = "点击植被菜单里面的所有资产，保留年代都是打开的，但切换到其它菜单就不是了";
 			d["item.decoration.ex.category"] = "切换到另一种树也是打开的，但这一行只在带树木数据的资产上有，刷贴花之类根本没有这一行（需单独设置）";
+			d["item.i.anarchy.label"] = "Anarchy";
+			d["item.brushHeight.label"] = "目标高度";
+			d["item.brushHeight.desc"] = "记忆面板上「目标高度」这一行的数值：地形工具要把地面削平或压成斜坡，最终停在多高。这一行只有地面平整工具与斜坡生成工具这两种地形资产上才有，其余七种地形改造工具面板上没有它，摆件刷涂更是没有，也就不记录、不改动。";
+			d["item.brushHeight.ex.group"] = "比如把平整的目标高度设成50米，同一组里的其它地形改造工具也按50米，但换到另一组就不是了";
+			d["item.brushHeight.ex.menu"] = "地形改造这一类里的工具都按这个目标高度，换到另一类功能就不是了";
+			d["item.brushHeight.ex.category"] = "切换到另一类功能就按它自己那份目标高度（需单独设置）；其余地形工具根本没有这一行";
+			d["item.distance.label"] = "距离";
+			d["item.distance.desc"] = "记忆面板上「距离」这一行的数值：用直线或曲线摆放时，相邻两个之间隔多远。这一行只在直线、曲线两种模式下出现（摆件工具与标记类工具），单个放置、连续放置、印章、刷涂模式下都没有它。";
+			d["item.distance.ex.group"] = "比如把距离调成10米，同一组里的其它道具也是10米，但换到另一组就不是了";
+			d["item.distance.ex.menu"] = "同一个菜单里所有能拉直线的都按这个距离，换到别的菜单就不是了";
+			d["item.distance.ex.category"] = "切换到另一类就按它自己那份距离（需单独设置），即使都能拉直线";
+			d["item.ageMask.label"] = "年龄";
+			d["item.ageMask.desc"] = "记忆面板上「年龄」这一行勾了哪几档：幼苗、幼树、成树、老树，可以同时勾多档。这一行只出现在树木类资产上（植被菜单里刷树或点放树的时候），其它道具面板上没有它，也就不记录、不改动。";
+			d["item.ageMask.ex.group"] = "比如刷树时只勾了成树，同一组里的其它树也按只生成成树，但换到另一组就不是了";
+			d["item.ageMask.ex.menu"] = "植被菜单里的所有树都按这几档年龄，换到别的菜单就不是了";
+			d["item.ageMask.ex.category"] = "切换到另一种树也是这几档，但这一行只在树木类资产上有，刷贴花之类根本没有这一行（需单独设置）";
 
 			// ---------- 功能页五项（f.*）：行名与资产页同名项完全一致，主语换成六类功能 ----------
 			// 需求 4：工具模式、对齐在三个页上各一套，互相独立；等高线/地下模式同样三页各一份，
@@ -726,12 +786,6 @@ namespace ToolModeMemory
 			d["item.f.underground.ex.group"] = "比如给住宅功能区打开地下模式，切换到商业、工业、办公功能区同样在地下";
 			d["item.f.underground.ex.menu"] = "同一类功能里的工具都在地下模式，换到另一类功能就不是了";
 			d["item.f.underground.ex.category"] = "切换到另一类功能就按它自己那份（需单独设置）；资产页的「地下模式」是另一份，不受这里影响";
-			d["item.f.brush.desc"] = "记忆功能面板上「笔刷粗细」和「笔刷强度」两行：笔刷粗细决定一次刷过多大范围，笔刷强度决定每一下改变多少。面板上有这两行的功能才起作用，也就是九种地形改造工具（海拔调整工具、地形平滑工具、地面平整工具、斜坡生成工具、纹理绘制工具 01～04、纹理橡皮擦）与功能区刷涂；没有这两行的功能既不记录也不会被改动。";
-			d["item.f.brush.ex.group"] = "比如把抬升的笔刷粗细调到30米，同一组里的其它地形改造工具也是30米，但换到另一组就不是了";
-			d["item.f.brush.ex.menu"] = "地形改造这一类里的所有工具，笔刷粗细和强度都是这一套，换到另一类功能就不是了";
-			d["item.f.brush.ex.category"] = "切换到另一类功能就按它自己那份笔刷（需单独设置），即使面板上都有这两行";
-
-			// ---------- 道具页五项（i.*）：城市美化八类道具 ----------
 			d["item.i.toolMode.desc"] = "记忆道具面板上「工具模式」一行的选择：放置单个、放置多个、直线、曲线、目标印戳工具、刷涂等（按工具不同）。资产页与功能页的工具模式各记各的，互不影响。";
 			d["item.i.toolMode.ex.group"] = "比如给某个自然类道具选了放置多个，切换到同一组的其它道具同样是放置多个，但换到另一组就不是了";
 			d["item.i.toolMode.ex.menu"] = "城市美化菜单里的所有道具都是这一套模式，换到别的菜单就不是了";
@@ -740,10 +794,6 @@ namespace ToolModeMemory
 			d["item.i.snap.ex.group"] = "比如给某个公园类道具关掉快速对齐建筑表面，切换到同一组的其它道具同样是关着的，但换到另一组就不是了";
 			d["item.i.snap.ex.menu"] = "城市美化菜单里的所有道具都是这一套开关，换到别的菜单就不是了";
 			d["item.i.snap.ex.category"] = "切换到另一类道具就恢复它自己的默认开关（需单独设置），即使都在城市美化菜单下";
-			d["item.i.brush.desc"] = "记忆道具面板上「笔刷粗细」和「笔刷强度」两行，也就是刷涂摆放道具时一次刷多大、每一下摆多少。面板上有这两行的道具才起作用；没有这两行的道具既不记录也不会被改动。";
-			d["item.i.brush.ex.group"] = "比如把刷涂的笔刷粗细调到20米，同一组里其它能刷的道具也是20米，但换到另一组就不是了";
-			d["item.i.brush.ex.menu"] = "城市美化菜单里所有能刷涂的道具都是这一套，换到别的菜单就不是了";
-			d["item.i.brush.ex.category"] = "切换到另一类道具就按它自己那份笔刷（需单独设置），即使都在城市美化菜单下";
 			d["item.i.topography.desc"] = "记忆道具面板上「等高线」一行的开与关。这一行按当前工具所在的那一页读写：道具页记的是道具这一份，资产页与功能页各有自己那一份，互不共用。";
 			d["item.i.topography.ex.group"] = "比如刷道具时勾上等高线，同一组里其它道具同样是勾着的";
 			d["item.i.topography.ex.menu"] = "城市美化菜单里的所有道具都是勾着的，换到别的菜单就不是了";
@@ -770,16 +820,16 @@ namespace ToolModeMemory
 			d["group.about"] = "資訊與連結";
 
 			d["enabled.label"] = "啟用模組";
-			d["enabled.desc"] = "預設開啟。開啟時下面所有設定都生效，所有工具項的數值都會即時記錄，回到存檔時就是你上次離開時的樣子；單獨關掉某一項只是不再恢復那一項，它的數值仍在記錄。關掉這個大開關則一切回到原版：停止記錄、不再恢復，資產、功能、道具三頁裡的所有設定同時失效（灰掉），每個工具都按原版自己的規矩走。下面三個分域開關全關時這裡自動跟著關；三個裡任何一個開啟，這裡自動開啟。";
-			d["domain.asset.label"] = "啟用資產的工具項記憶";
-			d["domain.asset.desc"] = "管「資產」頁裡所有工具項：記錄與讀檔恢復一起開關。關掉之後資產頁的設定全部灰掉不生效，工具回到原版行為，已記錄的資料仍保留在檔案裡，重新開啟照舊恢復。";
+			d["enabled.desc"] = "預設開啟。開啟時下面所有設定都生效，所有工具項的數值都會即時記錄，回到存檔時就是你上次離開時的樣子；單獨關掉某一項只是不再恢復那一項，它的數值仍在記錄。關掉這個大開關則一切回到原版：停止記錄、不再恢復，建築與服務、功能、道具三頁裡的所有設定同時失效（灰掉），每個工具都按原版自己的規矩走。下面三個分域開關全關時這裡自動跟著關；三個裡任何一個開啟，這裡自動開啟。";
+			d["domain.asset.label"] = "啟用建築與服務的工具項記憶";
+			d["domain.asset.desc"] = "管「建築與服務」頁裡所有工具項：記錄與讀檔恢復一起開關。這一頁收錄的是建築、服務設施與各類可建造的資產（道路、鐵路、軌道、電線、水管、橋樑、埠頭、交叉路口、停車場、學校、醫院、消防、警察、供電、供水、垃圾處理、公園、廣場等等，凡是放在工具欄選單裡買下來蓋下去的都在這一頁）。關掉之後本頁的設定全部灰掉不生效，工具回到原版行為，已記錄的資料仍保留在檔案裡，重新開啟照舊恢復。";
 			d["domain.function.label"] = "啟用功能的工具項記憶";
-			d["domain.function.desc"] = "管「功能」頁裡所有工具項：功能區、區域工具、路線工具、地形改造工具、空間與區域工具、標記與預製物件這六類。關掉之後功能頁的設定全部灰掉不生效，工具回到原版行為，已記錄的資料仍保留在檔案裡，重新開啟照舊恢復。";
+			d["domain.function.desc"] = "管「功能」頁裡所有工具項：記錄與讀檔恢復一起開關。這一頁按六個功能分類收錄工具：功能區（住宅、商業、工業、辦公四種功能區的規劃工具）、區域工具（市轄區建立工具、專門產業區工具、表面區域規劃工具）、路線工具（交通運輸選單裡的全部路線工具）、地形改造工具（海拔調整、地形平滑、地面平整、斜坡生成、紋理繪製 01～04、紋理橡皮擦共九種）、空間與區域（公園區域、徒步區域、閒逛區域、清空區域、裁剪地面）、標記與預製物件（動物生成工具等）。關掉之後本頁的設定全部灰掉不生效，工具回到原版行為，已記錄的資料仍保留在檔案裡，重新開啟照舊恢復。";
 			d["domain.item.label"] = "啟用道具的工具項記憶";
-			d["domain.item.desc"] = "管「道具」頁裡所有工具項：景觀美化選單裡的八類物品（自然、公園、住宅物品、商業物品、工業物品、殘骸、貼花、盆栽）。關掉之後道具頁的設定全部灰掉不生效，工具回到原版行為，已記錄的資料仍保留在檔案裡，重新開啟照舊恢復。";
+			d["domain.item.desc"] = "管「道具」頁裡所有工具項：記錄與讀檔恢復一起開關。這一頁按八類道具收錄景觀美化選單裡的道具：自然、公園、住宅道具、商業道具、工業道具、殘骸、貼花、盆栽。關掉之後本頁的設定全部灰掉不生效，工具回到原版行為，已記錄的資料仍保留在檔案裡，重新開啟照舊恢復。";
 			d["tab.mod"] = "工具模式記憶設定";
 			d["tab.master"] = "總開關";
-			d["tab.assets"] = "資產";
+			d["tab.assets"] = "建築與服務";
 			d["tab.functions"] = "功能";
 			d["tab.items"] = "道具";
 			d["group.domain"] = "分域開關";
@@ -787,17 +837,21 @@ namespace ToolModeMemory
 			d["scope.desc"] = "這一項的數值在多大範圍內共用，下拉框括號裡標出原版行為與推薦選擇。";
 			d[kScopeLineGroup] = "同組：{0}";
 			d[kScopeLineMenu] = "同選單：{0}";
-			d[kScopeLineCategory] = "同類資產：按資產實際服務誰歸類；車道數、寬窄、級別、大小與工具欄裡的分類都不算區別（小型停車場與大型停車場就同類），而橋樑、碼頭、交叉路口各自單獨成類：{0}";
-			d[kScopeLineCategory + ".function"] = "同類：按功能所屬的六個分類歸群——功能區（住宅、商業、工業、辦公）、區域工具（行政區創建工具、特殊工業功能區域工具、地面區域劃分工具）、路線工具（交通運輸選單裡的全部路線）、地形改造工具（地形變更、軟化地形、水平地形、斜坡地形、紋理繪製 01～04、紋理橡皮擦共九種）、空間與區域工具（公園區域、徒步區域、閒蕩區域、清空區域、裁剪地面）、標記與預製物件（動物生成工具等）：{0}";
-			d[kScopeLineCategory + ".item"] = "同類道具：按景觀美化選單的八類物品歸群（自然、公園、住宅物品、商業物品、工業物品、殘骸、貼花、盆栽）；同一類裡模型不同、大小不同都不算區別：{0}";
-			d[kScopeLineShared] = "全域共用：任何支援本項工具的資產/功能全部共用，但資產和功能之間不共用";
-			d[kScopeLineSharedSingle] = "全域共用：所有支援本項的工具共用一份";
-			d[kScopeLineUnique] = "全部不共用：所有支援本項工具的資產/功能完全獨立設定";
-			d[kScopeNote] = "注意，資產、功能、道具三頁各記各的，即使同名也互不相通；全域共用與全部不共用同樣只在本頁內成立。";
+			d[kScopeLineCategory] = "同類：按本頁工具服務的對象歸成群組，同一群共用一份：{0}";
+			d[kScopeLineCategory + ".function"] = "同類：按功能所屬的分類歸成群組，同一群共用一份：{0}";
+			d[kScopeLineCategory + ".item"] = "同類道具：按道具所屬的分類歸成群組，同一群共用一份：{0}";
+			d[kScopeLineShared] = "全域共用：本頁內所有支援這一項的建築與服務都共用一份";
+			d[kScopeLineSharedSingle] = "全域共用：本頁內所有支援這一項的工具都共用一份";
+			d[kScopeLineShared + ".function"] = "全域共用：本頁內所有支援這一項的功能工具都共用一份";
+			d[kScopeLineShared + ".item"] = "全域共用：本頁內所有支援這一項的道具都共用一份";
+			d[kScopeLineUnique] = "全部不共用：本頁內每一種建築與服務都各自獨立設定";
+			d[kScopeLineUnique + ".function"] = "全部不共用：本頁內每一個功能工具都各自獨立設定";
+			d[kScopeLineUnique + ".item"] = "全部不共用：本頁內每一種道具都各自獨立設定";
+			d[kScopeNote] = "上面每一檔都只在當前這一頁裡生效。";
 
 			d[kScopeGroup] = "同組";
 			d[kScopeMenu] = "同選單";
-			d[kScopeCategory] = "同類資產";
+			d[kScopeCategory] = "同類";
 			d[kScopeCategory + ".function"] = "同類";
 			d[kScopeCategory + ".item"] = "同類道具";
 			d[kScopeGlobalShared] = "全域共用";
@@ -894,6 +948,14 @@ namespace ToolModeMemory
 			d["item.general.ex.group"] = "例如給兩車道小型道路勾選隧道，切換到其他小型道路同樣是隧道，但切換到大型道路就不是了";
 			d["item.general.ex.menu"] = "點選道路選單裡面的所有資產，一般選項都是這一組，但切換到電力選單就不是了";
 			d["item.general.ex.category"] = "切換到六車道道路也是隧道，但切換到橋樑或雙線地鐵軌道就全部回到未勾選（需單獨設定），即使它們都在道路選單下";
+			// ---------- 物件高度（v0.8.0：Anarchy 注入在擺件工具面板上的一整排） ----------
+			// owner 2026-10-20 定：鎖定變換 / 高度 / 高度變化範圍 / 抬高降低的幅度 是同一排顯示的，
+			// 算同一項、一起記憶一起共用；「重設高度為 0」是瞬時按鈕，不列。
+			d["item.anarchyObjectElevation.label"] = "物件高度";
+			d["item.anarchyObjectElevation.desc"] = "記憶 Anarchy 在擺件工具面板上加的那一排高度控制項：鎖定變換、高度、高度變化範圍、抬高降低的幅度。這四項在同一排顯示，所以算作一項、一起記憶。只有擺件工具在放置、刷塗、印章、直線、曲線這幾種模式下才有這一排，升級與移動模式沒有。「重設高度為 0」是按下即生效的按鈕、沒有可以記住的狀態，所以不列。";
+			d["item.anarchyObjectElevation.ex.group"] = "例如把高度設成15公尺、變化範圍設為2公尺，同一組裡的其他擺件也按這一套，但換到另一組就不是了";
+			d["item.anarchyObjectElevation.ex.menu"] = "同一個選單裡的擺件都是這一套高度，換到別的選單就不是了";
+			d["item.anarchyObjectElevation.ex.category"] = "切換到另一類擺件就按它自己那一份高度（需單獨設定）";
 
 			// ---------- 地下模式 ----------
 			d["item.underground.label"] = "地下模式";
@@ -909,12 +971,6 @@ namespace ToolModeMemory
 			d["item.other.ex.menu"] = "點選道路選單裡面的所有資產，顏色都是這一組設定，但切換到電力選單就不是了";
 			d["item.other.ex.category"] = "切換到六車道道路也是藍色，但切換到橋樑或雙軌鐵路就按它自己那一類另記一份（需單獨設定），即使它們都在道路選單下";
 
-			// 行名取官方語言包：Toolbar.BRUSH_SIZE = 筆刷大小，Toolbar.BRUSH_STRENGTH = 筆刷硬度
-			d["item.brush.label"] = "筆刷";
-			d["item.brush.desc"] = "記憶「筆刷大小」和「筆刷硬度」兩行：筆刷大小決定一次刷過多大範圍，筆刷硬度決定每一下改變多少。本項只管資產頁這邊的刷塗，也就是植被選單裡可以刷著擺放的樹木等資產；地形改造工具的筆刷歸功能頁那一項，八類物品的筆刷歸道具頁那一項，三頁各記各的。面板上沒有這兩行的工具既不記錄也不會被改動。";
-			d["item.brush.ex.group"] = "例如把刷樹的筆刷大小調成30公尺，同一組裡面的其他可刷資產也是30公尺，但換到另一組就不是了";
-			d["item.brush.ex.menu"] = "點選植被選單裡面的所有資產，筆刷大小和硬度都是這一組設定，但切換到其他選單就不是了";
-			d["item.brush.ex.category"] = "切換到另一種樹也是這一組，但這一檔按資產服務的對象歸群，地形改造工具和物品各在另兩頁另記一份（需單獨設定）";
 
 			// ---------- 顏色（v0.7.0 從「其他」獨立；面板行名 ToolOptions.COLOR_TITLE = 顏色） ----------
 			d["item.color.label"] = "顏色";
@@ -925,6 +981,42 @@ namespace ToolModeMemory
 			d["item.decoration.ex.group"] = "例如刷樹時打開保留年代，同一組裡面的其他植被刷法同样是打開的，但換到另一組就不是了";
 			d["item.decoration.ex.menu"] = "點選植被選單裡面的所有資產，保留年代都是打開的，但切換到其他選單就不是了";
 			d["item.decoration.ex.category"] = "切換到另一種樹也是打開的，但這一行只在帶樹木資料的資產上有，刷貼花之類根本没有這一行（需單獨設定）";
+			d["item.i.anarchy.label"] = "Anarchy";
+			d["item.brushType.label"] = "筆刷種類";
+			d["item.brushType.desc"] = "記憶面板上「筆刷種類」這一行選的刷子：圓形、方形、柔邊等，決定刷出來的邊角形狀。這一行只出現在能刷塗的工具上——九種地形改造工具，以及擺件工具選到可刷塗資產的時候；建築、區域、功能區、路線、拆除這些面板上都沒有它，也就不記錄、不改動。";
+			d["item.brushType.ex.group"] = "例如刷塗時選了方形刷子，同一組裡其他能刷的資產也是方形刷子，但換到另一組就不是了";
+			d["item.brushType.ex.menu"] = "同一個選單裡所有能刷塗的資產都用這把刷子，換到別的選單就不是了";
+			d["item.brushType.ex.category"] = "切換到另一類就按它自己那一份刷子（需單獨設定），即使都能刷塗";
+			d["item.brushSize.label"] = "筆刷大小";
+			d["item.brushSize.desc"] = "記憶面板上「筆刷大小」這一行：一次刷過多大範圍。這一行只出現在能刷塗的工具上——九種地形改造工具，以及擺件工具選到可刷塗資產的時候。兩處含義不同：地形工具是每次抬降覆蓋的地面範圍，擺件刷塗是一次擺放的覆蓋範圍，所以功能頁與道具頁各記各的。";
+			d["item.brushSize.ex.group"] = "例如把筆刷大小調成30公尺，同一組裡其他能刷的資產也是30公尺，但換到另一組就不是了";
+			d["item.brushSize.ex.menu"] = "同一個選單裡所有能刷塗的資產都是這個大小，換到別的選單就不是了";
+			d["item.brushSize.ex.category"] = "切換到另一類就按它自己那一份大小（需單獨設定），即使都能刷塗";
+			d["item.brushStrength.label"] = "筆刷硬度";
+			d["item.brushStrength.desc"] = "記憶面板上「筆刷硬度」這一行：每一下刷動改變多少。這一行只出現在能刷塗的工具上——九種地形改造工具，以及擺件工具選到可刷塗資產的時候。兩處含義不同：地形工具是每次抬降的幅度，擺件刷塗是擺放密度，所以功能頁與道具頁各記各的。";
+			d["item.brushStrength.ex.group"] = "例如把筆刷硬度調成一半，同一組裡其他能刷的資產也是這個硬度，但換到另一組就不是了";
+			d["item.brushStrength.ex.menu"] = "同一個選單裡所有能刷塗的資產都是這個硬度，換到別的選單就不是了";
+			d["item.brushStrength.ex.category"] = "切換到另一類就按它自己那一份硬度（需單獨設定），即使都能刷塗";
+			d["item.brushHeight.label"] = "目標高度";
+			d["item.brushHeight.desc"] = "記憶面板上「目標高度」這一行的數值：地形工具要把地面削平或壓成斜坡，最後停在哪個高度。這一行只有地面平整工具與斜坡生成工具這兩種地形資產上才有，其餘七種地形改造工具面板上沒有它，擺件刷塗更是沒有，也就不記錄、不改動。";
+			d["item.brushHeight.ex.group"] = "例如把平整的目標高度設成50公尺，同一組裡的其他地形改造工具也按50公尺，但換到另一組就不是了";
+			d["item.brushHeight.ex.menu"] = "地形改造這一類裡的工具都按這個目標高度，換到另一類功能就不是了";
+			d["item.brushHeight.ex.category"] = "切換到另一類功能就按它自己那一份目標高度（需單獨設定）；其餘地形工具根本沒有這一行";
+			d["item.distance.label"] = "距離";
+			d["item.distance.desc"] = "記憶面板上「距離」這一行的數值：用直線或曲線擺放時，相鄰兩個之間隔多遠。這一行只在直線、曲線兩種模式下出現（擺件工具與標記類工具），單個放置、連續放置、印章、刷塗模式下都沒有它。";
+			d["item.distance.ex.group"] = "例如把距離調成10公尺，同一組裡的其他道具也是10公尺，但換到另一組就不是了";
+			d["item.distance.ex.menu"] = "同一個選單裡所有能拉直線的都按這個距離，換到別的選單就不是了";
+			d["item.distance.ex.category"] = "切換到另一類就按它自己那一份距離（需單獨設定），即使都能拉直線";
+			d["item.ageMask.label"] = "年齡";
+			d["item.ageMask.desc"] = "記憶面板上「年齡」這一行勾了哪幾檔：幼苗、幼樹、成樹、老樹，可以同時勾多檔。這一行只出現在樹木類資產上（植被選單裡刷樹或點放樹的時候），其他道具面板上沒有它，也就不記錄、不改動。";
+			d["item.ageMask.ex.group"] = "例如刷樹時只勾了成樹，同一組裡的其他樹也按只產生長成樹，但換到另一組就不是了";
+			d["item.ageMask.ex.menu"] = "植被選單裡的樹都按這幾檔年齡，換到別的選單就不是了";
+			d["item.ageMask.ex.category"] = "切換到另一種樹也是這幾檔，但這一行只在樹木類資產上有，刷貼花之類根本沒有這一行（需單獨設定）";
+			d["item.anarchyObjectElevation.label"] = "物件高度";
+			d["item.anarchyObjectElevation.desc"] = "記憶 Anarchy 在擺件工具面板上加的那一排高度控制項：鎖定變換、高度、高度變化範圍、抬高降低的幅度。這四項在同一排顯示，所以算作一項、一起記憶一起共用；「重設高度為 0」是按下即生效的按鈕、沒有可記住的狀態，所以不列。只有擺件工具在放置、刷塗、印章、直線、曲線這幾種模式下才有這一排，升級與移動模式沒有。建築與服務頁與道具頁各有一份，互不共用。";
+			d["item.anarchyObjectElevation.ex.group"] = "例如把高度設成15公尺、變化範圍設為2公尺，同一組裡的其他擺件也按這一套，但換到另一組就不是了";
+			d["item.anarchyObjectElevation.ex.menu"] = "同一個選單裡的擺件都是這一套高度，換到別的選單就不是了";
+			d["item.anarchyObjectElevation.ex.category"] = "切換到另一類擺件就按它自己那一份高度（需單獨設定）";
 
 			// ---------- 功能頁五項（f.*）----------
 			d["item.f.toolMode.desc"] = "記憶功能面板上「工具模式」一行的選擇：功能區為填充、框選、刷塗；區域工具（行政區創建工具、特殊工業功能區域工具、地面區域劃分工具）為編輯、產生地圖網格；地形改造工具按工具各有模式；拆除工具為僅拆除主要元素、連同子元素、拆除一切。資產頁與道具頁的工具模式各記各的，互不影響。";
@@ -943,12 +1035,6 @@ namespace ToolModeMemory
 			d["item.f.underground.ex.group"] = "例如給住宅功能區打開地下模式，切換到商業、工業、辦公功能區同样在地下";
 			d["item.f.underground.ex.menu"] = "同一類功能裡面的工具都在地下模式，換到另一類功能就不是了";
 			d["item.f.underground.ex.category"] = "切換到另一類功能就按它自己那一份（需單獨設定）；資產頁的「地下模式」是另一份，不受這裡影響";
-			d["item.f.brush.desc"] = "記憶功能面板上「筆刷大小」和「筆刷硬度」兩行：筆刷大小決定一次刷過多大範圍，筆刷硬度決定每一下改變多少。面板上有這兩行的功能才起作用，也就是九種地形改造工具（地形變更工具、軟化地形工具、水平地形工具、斜坡地形工具、紋理繪製工具 01～04、紋理橡皮擦）與功能區刷塗；沒有這兩行的功能既不記錄也不會被改動。";
-			d["item.f.brush.ex.group"] = "例如把地形變更的筆刷大小調成30公尺，同一組裡面的其他地形改造工具也是30公尺，但換到另一組就不是了";
-			d["item.f.brush.ex.menu"] = "地形改造這一類裡面的所有工具，筆刷大小和硬度都是這一組設定，換到另一類功能就不是了";
-			d["item.f.brush.ex.category"] = "切換到另一類功能就按它自己那一份筆刷（需單獨設定），即使面板上都有這兩行";
-
-			// ---------- 道具頁五項（i.*）：景觀美化選單八類物品 ----------
 			d["item.i.toolMode.desc"] = "記憶道具面板上「工具模式」一行的選擇：放置單一、放置多個、直線、曲線、目標圖戳工具、刷塗等（按工具而不同）。資產頁與功能頁的工具模式各記各的，互不影響。";
 			d["item.i.toolMode.ex.group"] = "例如給某個自然類道具選了放置多個，切換到同一組的其他道具同样是放置多個，但換到另一組就不是了";
 			d["item.i.toolMode.ex.menu"] = "景觀美化選單裡面的所有道具都是這一組模式，換到別的選單就不是了";
@@ -957,10 +1043,6 @@ namespace ToolModeMemory
 			d["item.i.snap.ex.group"] = "例如給某個公園類道具关掉快速對齊建築表面，切換到同一組的其他道具同样是關掉的，但換到另一組就不是了";
 			d["item.i.snap.ex.menu"] = "景觀美化選單裡面的所有道具都是這一組開關，換到別的選單就不是了";
 			d["item.i.snap.ex.category"] = "切換到另一類道具就恢復它自己的預設開關（需單獨設定），即使都在景觀美化選單下";
-			d["item.i.brush.desc"] = "記憶道具面板上「筆刷大小」和「筆刷硬度」兩行，也就是刷擺道具時一次刷多大、每一下擺多少。面板上有這兩行的道具才起作用；沒有這兩行的道具既不記錄也不會被改動。";
-			d["item.i.brush.ex.group"] = "例如把刷塗的筆刷大小調成20公尺，同一組裡其他可刷的道具也是20公尺，但換到另一組就不是了";
-			d["item.i.brush.ex.menu"] = "景觀美化選單裡所有能刷塗的道具都是這一組，換到別的選單就不是了";
-			d["item.i.brush.ex.category"] = "切換到另一類道具就按它自己那一份筆刷（需單獨設定），即使都在景觀美化選單下";
 			d["item.i.topography.desc"] = "記憶道具面板上「等高線」一行的開與關。這一行按目前工具所在的那一頁讀寫：道具頁記的是道具那一份，資產頁與功能頁各有自己那一份，互不共用。";
 			d["item.i.topography.ex.group"] = "例如刷道具時勾上等高線，同一組裡其他道具同样是勾著的";
 			d["item.i.topography.ex.menu"] = "景觀美化選單裡面的所有道具都是勾著的，換到別的選單就不是了";
@@ -981,7 +1063,7 @@ namespace ToolModeMemory
 			// v0.7.0 requirement 3: five tabs (master switch / assets / functions / items / about).
 			d["tab.mod"] = "Tool Mode Memory Settings";
 			d["tab.master"] = "Master Switch";
-			d["tab.assets"] = "Assets";
+			d["tab.assets"] = "Buildings & Services";
 			d["tab.functions"] = "Functions";
 			d["tab.items"] = "Items";
 			d["tab.about"] = "About";
@@ -993,30 +1075,37 @@ namespace ToolModeMemory
 			d["group.about"] = "Information and links";
 
 			d["enabled.label"] = "Enable Mod";
-			d["enabled.desc"] = "On by default. While it is on every setting below takes effect and every item's value is recorded as you work, so returning to a save puts the panels back exactly as you left them; turning one item off only stops that item from being restored - its values are still recorded. Switching this master switch off returns everything to vanilla: recording stops, nothing is restored, and all settings on the Assets, Functions and Items pages are greyed out at once, so every tool behaves the way the game does on its own. It turns itself off when all three per-page switches below are off, and back on as soon as any one of them is on.";
-			d["domain.asset.label"] = "Remember asset tool items";
-			d["domain.asset.desc"] = "Covers every item on the Assets page: recording and restoring on load switch together. While it is off the whole Assets page is greyed out, tools behave like vanilla, and values already recorded stay in the file untouched, so switching it back on restores them.";
-			d["domain.function.label"] = "Remember function tool items";
-			d["domain.function.desc"] = "Covers every item on the Functions page - the six function groups: zone types, the area tools, all route tools, the terrain tools, spaces and areas, and markers and object prefabs. While it is off the whole Functions page is greyed out, tools behave like vanilla, and values already recorded stay in the file untouched, so switching it back on restores them.";
-			d["domain.item.label"] = "Remember item tool items";
-			d["domain.item.desc"] = "Covers every item on the Items page - the eight prop categories of the Landscaping menu: Nature, Park, Residential Props, Commercial Props, Industrial Props, Debris, Decals and Potted plants. While it is off the whole Items page is greyed out, tools behave like vanilla, and values already recorded stay in the file untouched, so switching it back on restores them.";
+			d["enabled.desc"] = "On by default. While it is on every setting below takes effect and every item's value is recorded as you work, so returning to a save puts the panels back exactly as you left them; turning one item off only stops that item from being restored - its values are still recorded. Switching this master switch off returns everything to vanilla: recording stops, nothing is restored, and all settings on the Buildings & Services, Functions and Items pages are greyed out at once, so every tool behaves the way the game does on its own. It turns itself off when all three per-page switches below are off, and back on as soon as any one of them is on.";
+			// v0.8.0 requirement 3: "Assets" renamed to "Buildings & Services" (props are assets too,
+			// so the old page name was ambiguous). Requirement 5: the taxonomy now lives in the
+			// per-page switch description, not in the sharing-scope lines below.
+			d["domain.asset.label"] = "Remember Buildings & Services tool items";
+			d["domain.asset.desc"] = "Covers every item on the Buildings & Services page: recording and restoring on load switch together. This page holds buildings, city services and every other placeable asset - roads, rails, tracks, cables, water pipes, bridges, quays, intersections, parking lots, schools, hospitals, fire, police, power, water, waste, parks, plazas and the rest of anything you buy from the toolbar menus and place on the map. While it is off the whole page is greyed out, tools behave like vanilla, and values already recorded stay in the file untouched, so switching it back on restores them.";
+			d["domain.function.label"] = "Remember Function tool items";
+			d["domain.function.desc"] = "Covers every item on the Functions page: recording and restoring on load switch together. This page groups its tools into six function categories: the zone types (the residential, commercial, industrial and office zoning tools), the area tools (District Creation Tool, Specialized Industry Area Tool and Surface Area Tool), the route tools (every route tool in the Transportation menu), the nine terrain tools (Raise Terrain, Smooth Terrain, Level Terrain, Slope Terrain, Paint Texture 01-04 and Erase Texture), spaces and areas (Park Area, Walking Area, Hangaround Area, Clear Area and Clip Surface), and markers and object prefabs (the animal spawn tool and its like). While it is off the whole page is greyed out, tools behave like vanilla, and values already recorded stay in the file untouched, so switching it back on restores them.";
+			d["domain.item.label"] = "Remember Prop tool items";
+			d["domain.item.desc"] = "Covers every item on the Items page: recording and restoring on load switch together. This page groups props by the eight prop categories of the Landscaping menu: Nature, Park, Residential Props, Commercial Props, Industrial Props, Debris, Decals and Potted Plants. While it is off the whole page is greyed out, tools behave like vanilla, and values already recorded stay in the file untouched, so switching it back on restores them.";
 			d["scope.label"] = "Sharing scope";
 			d["scope.desc"] = "How widely this item's value is shared. The brackets in the drop-down show what vanilla does and what we recommend.";
 			d[kScopeLineGroup] = "Same group: {0}";
 			d[kScopeLineMenu] = "Same menu: {0}";
-			d[kScopeLineCategory] = "Same asset type: grouped by what the asset actually serves, so lane count, size, level and the toolbar category make no difference (a small parking lot and a large one are the same type), while bridges, quays and intersections each form their own type: {0}";
-			// Requirement 2: on the Functions and Items pages "same asset type" is not about assets,
-			// so it reads "Same group type" / "Same prop type" and groups by the page's own taxonomy.
-			d[kScopeLineCategory + ".function"] = "Same type: grouped by which of the six function groups the tool belongs to - zone types (residential, commercial, industrial, office), the area tools (District Creation Tool, Specialized Industry tool, Surface Area tool), the route tools (every route in the Transportation menu), the nine terrain tools (Raise Terrain, Smooth Terrain, Level Terrain, Slope Terrain, Paint Texture 01-04, Erase Texture), spaces and areas (Park Area, Walking Area, Hangaround Area, Clear Area, Clip Surface) and markers and object prefabs (the animal spawn tool and its like): {0}";
-			d[kScopeLineCategory + ".item"] = "Same prop type: grouped by which of the eight prop categories of the Landscaping menu the item is in (Nature, Park, Residential Props, Commercial Props, Industrial Props, Debris, Decals, Potted Plants); a different model or a different size inside one category is not a different type: {0}";
-			d[kScopeLineShared] = "Shared globally: every asset or function that supports this item shares it, but assets and functions do not share with each other";
+			d[kScopeLineCategory] = "Same type: the tools on this page are put into groups by what each one actually serves, and one group shares one value: {0}";
+			d[kScopeLineCategory + ".function"] = "Same type: tools are put into groups by which function category they belong to, and one group shares one value: {0}";
+			d[kScopeLineCategory + ".item"] = "Same prop type: props are put into groups by which prop category they belong to, and one group shares one value: {0}";
+			d[kScopeLineShared] = "Shared globally: every building or service on this page that supports this item uses one value";
 			d[kScopeLineSharedSingle] = "Shared globally: every tool on this page that supports this item uses one value";
-			d[kScopeLineUnique] = "Not shared at all: every asset and function that supports this item is set independently";
-			d[kScopeNote] = "Note: the Assets, Functions and Items pages each keep their own memory even when a row has the same name on several pages; Shared globally and Not shared at all only reach inside the page you are looking at.";
+			// v0.8.0 requirement 4: the sharing lines name the page you are on and nothing else.
+			// Function/Item pages look up their own key; missing ones fall back to the line above.
+			d[kScopeLineShared + ".function"] = "Shared globally: every function tool on this page that supports this item uses one value";
+			d[kScopeLineShared + ".item"] = "Shared globally: every prop on this page that supports this item uses one value";
+			d[kScopeLineUnique] = "Not shared at all: every building or service on this page is set independently";
+			d[kScopeLineUnique + ".function"] = "Not shared at all: every function tool on this page is set independently";
+			d[kScopeLineUnique + ".item"] = "Not shared at all: every prop on this page is set independently";
+			d[kScopeNote] = "Note: every level above only applies inside this page.";
 
 			d[kScopeGroup] = "Same group";
 			d[kScopeMenu] = "Same menu";
-			d[kScopeCategory] = "Same asset type";
+			d[kScopeCategory] = "Same type";
 			d[kScopeCategory + ".function"] = "Same type";
 			d[kScopeCategory + ".item"] = "Same prop type";
 			d[kScopeGlobalShared] = "Shared globally";
@@ -1113,6 +1202,15 @@ namespace ToolModeMemory
 			d["item.general.ex.group"] = "for example, pick Tunnel for a two-lane small road and the other small roads are forced into tunnels too, while a large road is not";
 			d["item.general.ex.menu"] = "every asset you click in the Roads menu uses this same set of General switches, but moving to the Electricity menu it does not";
 			d["item.general.ex.category"] = "switching to a six-lane road still gives Tunnel, but a bridge or a double subway track goes back to nothing ticked and needs its own setting, even though they are all in the Roads menu";
+			// ---------- Object elevation (v0.8.0: the row Anarchy injects into the object tool panel) ----------
+			// The owner decided on 2026-10-20 that transform lock / elevation / elevation variance /
+			// raise-lower step are one row on screen, so they are one item, remembered and shared together.
+			// "Reset elevation to 0" is an instantaneous button, so it is not listed.
+			d["item.anarchyObjectElevation.label"] = "Object Elevation";
+			d["item.anarchyObjectElevation.desc"] = "Remembers the row of height controls that Anarchy adds to the object tool panel: transform lock, elevation, elevation variance and the raise/lower step. All four sit on one row, so they count as one item and are remembered together. The row only exists while the object tool is in place, paint, stamp, line or curve mode; upgrade and move modes do not have it. Reset elevation to 0 is an instantaneous button with no state worth remembering, so it is not listed.";
+			d["item.anarchyObjectElevation.ex.group"] = "for example, set the height to 15 m with a 2 m variance and the other props in the same group use the same values, while another group does not";
+			d["item.anarchyObjectElevation.ex.menu"] = "every prop in one menu uses this same height, but moving to another menu it does not";
+			d["item.anarchyObjectElevation.ex.category"] = "switching to another prop category uses that category's own height (needs its own setting)";
 
 			// ---------- Underground Mode ----------
 			d["item.underground.label"] = "Underground Mode";
@@ -1128,13 +1226,6 @@ namespace ToolModeMemory
 			d["item.other.ex.menu"] = "every asset you click in the Roads menu uses this same color, but moving to the Electricity menu it does not";
 			d["item.other.ex.category"] = "switching to a six-lane road is still blue, but a bridge or a double train track keeps its own copy and needs its own setting, even though they are all in the Roads menu";
 
-			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行。
-			// v0.7.0：地形改造工具归到功能页，笔刷于是分三页各一项，本项只管资产页的刷涂。
-			d["item.brush.label"] = "Brush";
-			d["item.brush.desc"] = "Remembers the Brush Size and Brush Strength rows: Brush Size sets how wide one stroke reaches, Brush Strength sets how much each stroke changes. This one only covers brushing on the Assets page, that is placing assets such as trees from the Vegetation menu with the Paint mode; the nine terrain tools have their own brush item on the Functions page and the prop categories have theirs on the Items page, and the three pages never share. Tools whose panel has no such rows are neither recorded nor changed.";
-			d["item.brush.ex.group"] = "for example, set a 30 m brush while brushing trees and the other brushable assets in the same group are 30 m too, while a tool in another group is not";
-			d["item.brush.ex.menu"] = "every asset you brush in the Vegetation menu uses this same brush size and strength, but moving to another menu it does not";
-			d["item.brush.ex.category"] = "switching to another kind of tree keeps this same brush, but the terrain tools and the props each keep their own copy on another page (needs its own setting)";
 
 			// ---------- Colour (v0.7.0: split out of "Other"; panel row = ToolOptions.COLOR_TITLE) ----------
 			d["item.color.label"] = "Color";
@@ -1145,6 +1236,42 @@ namespace ToolModeMemory
 			d["item.decoration.ex.group"] = "for example, switch Preserve Age on while brushing trees and the other ways of brushing vegetation in the same group are on too, while another group is not";
 			d["item.decoration.ex.menu"] = "every asset in the Vegetation menu keeps it on, but moving to another menu it does not";
 			d["item.decoration.ex.category"] = "switching to another kind of tree keeps it on, but the row only exists on assets with tree data, so brushing a decal has no such row at all (needs its own setting)";
+			d["item.i.anarchy.label"] = "Anarchy";
+			d["item.brushType.label"] = "Brush Type";
+			d["item.brushType.desc"] = "Remembers which brush the Brush Type row has selected: circle, square, soft edge and so on, which sets the shape of the edge you paint. The row only exists on tools that can paint - the nine terrain tools, and the object tool when the selected asset is brushable. Building, area, zone, route and bulldoze panels do not have it, so nothing is recorded or changed there.";
+			d["item.brushType.ex.group"] = "for example, pick a square brush while painting and the other paint-capable assets in the same group use the square brush too, while another group does not";
+			d["item.brushType.ex.menu"] = "every paint-capable asset in one menu uses this same brush, but moving to another menu it does not";
+			d["item.brushType.ex.category"] = "switching to another category uses that category own brush (needs its own setting), even when both can be painted";
+			d["item.brushSize.label"] = "Brush Size";
+			d["item.brushSize.desc"] = "Remembers the Brush Size row: how wide one stroke reaches. The row only exists on tools that can paint - the nine terrain tools, and the object tool when the selected asset is brushable. The two mean different things: on terrain tools it is the area of ground one raise or lower covers, on brushed props it is the area one placement covers, so the Functions page and the Items page each keep their own copy.";
+			d["item.brushSize.ex.group"] = "for example, set a 30 m brush and the other paint-capable assets in the same group are 30 m too, while another group is not";
+			d["item.brushSize.ex.menu"] = "every paint-capable asset in one menu uses this same brush size, but moving to another menu it does not";
+			d["item.brushSize.ex.category"] = "switching to another category uses that category own brush size (needs its own setting), even when both can be painted";
+			d["item.brushStrength.label"] = "Brush Strength";
+			d["item.brushStrength.desc"] = "Remembers the Brush Strength row: how much one stroke changes. The row only exists on tools that can paint - the nine terrain tools, and the object tool when the selected asset is brushable. The two mean different things: on terrain tools it is how far one raise or lower moves, on brushed props it is the placement density, so the Functions page and the Items page each keep their own copy.";
+			d["item.brushStrength.ex.group"] = "for example, set the brush strength to half and the other paint-capable assets in the same group are at half too, while another group is not";
+			d["item.brushStrength.ex.menu"] = "every paint-capable asset in one menu uses this same brush strength, but moving to another menu it does not";
+			d["item.brushStrength.ex.category"] = "switching to another category uses that category own brush strength (needs its own setting), even when both can be painted";
+			d["item.brushHeight.label"] = "Target Height";
+			d["item.brushHeight.desc"] = "Remembers the value of the Target Height row: how high the ground ends up after a terrain tool flattens it or presses it into a slope. The row only exists on the level and slope terrain assets; the other terrain tools do not have it, and brushed props never do, so nothing is recorded or changed there.";
+			d["item.brushHeight.ex.group"] = "for example, set target height 50 m while levelling and the other terrain tools in the same group use 50 m too, while another group does not";
+			d["item.brushHeight.ex.menu"] = "every tool in the terrain group uses this same target height, while another function group does not";
+			d["item.brushHeight.ex.category"] = "switching to another function group uses that group own target height (needs its own setting); the other terrain tools do not have the row at all";
+			d["item.distance.label"] = "Distance";
+			d["item.distance.desc"] = "Remembers the value of the Distance row: how far apart consecutive objects are when you place them along a line or a curve. The row only appears in the line and curve modes (object tool and marker tools); single placement, continuous placement, stamp and brush modes do not have it.";
+			d["item.distance.ex.group"] = "for example, set the distance to 10 m and the other props in the same group are 10 m apart too, while another group is not";
+			d["item.distance.ex.menu"] = "every asset that can be placed along a line in one menu uses this same distance, but moving to another menu it does not";
+			d["item.distance.ex.category"] = "switching to another category uses that category own distance (needs its own setting), even when both can be placed along a line";
+			d["item.ageMask.label"] = "Age";
+			d["item.ageMask.desc"] = "Remembers which age stages the Age row has ticked: sapling, young, mature and elderly, and several can be ticked at once. The row only exists on tree assets (brushing or placing trees in the Vegetation menu), so other props do not have it and nothing is recorded or changed there.";
+			d["item.ageMask.ex.group"] = "for example, tick only mature while brushing trees and the other trees in the same group only spawn mature too, while another group does not";
+			d["item.ageMask.ex.menu"] = "every tree in the Vegetation menu uses these same age stages, but moving to another menu it does not";
+			d["item.ageMask.ex.category"] = "switching to another kind of tree keeps these stages, but the row only exists on tree assets, so brushing decals and the like do not have it at all (needs its own setting)";
+			d["item.anarchyObjectElevation.label"] = "Object Elevation";
+			d["item.anarchyObjectElevation.desc"] = "Remembers the row of height controls that Anarchy adds to the object tool panel: transform lock, elevation, elevation variance and the raise/lower step. All four sit on one row, so they count as one item and are remembered and shared together; Reset elevation to 0 is an instantaneous button with no state worth remembering, so it is not listed. The row only exists while the object tool is in place, paint, stamp, line or curve mode; upgrade and move modes do not have it. The Buildings and Services page and the Items page each keep their own copy, and neither overwrites the other.";
+			d["item.anarchyObjectElevation.ex.group"] = "for example, set the height to 15 m with a 2 m variance and the other props in the same group use the same values, while another group does not";
+			d["item.anarchyObjectElevation.ex.menu"] = "every prop in one menu uses this same height, but moving to another menu it does not";
+			d["item.anarchyObjectElevation.ex.category"] = "switching to another category uses that category own height (needs its own setting)";
 
 			// ---------- Functions page (f.*): same panel rows, but grouped by the six function types ----------
 			d["item.f.toolMode.desc"] = "Remembers the Tool Mode row on function panels. The options differ per tool: zone types offer Fill, Marquee and Paint; the area tools (District Creation Tool, Specialized Industry Area Tool, Surface area tool) offer Edit and Generate Map Grid; each terrain tool has its own modes; the bulldozer offers Main Elements, Sub Elements and Everything. The tool mode on the Assets page and on the Items page is remembered separately and none of them affects the others.";
@@ -1163,12 +1290,6 @@ namespace ToolModeMemory
 			d["item.f.underground.ex.group"] = "for example, switch underground mode on for the residential zone and commercial, industrial and office zones are underground too";
 			d["item.f.underground.ex.menu"] = "every tool inside one function group stays underground, while another function group does not";
 			d["item.f.underground.ex.category"] = "switching to another function group uses that group's own copy (needs its own setting); the Underground Mode row on the Assets page is a separate copy and is not affected";
-			d["item.f.brush.desc"] = "Remembers the Brush Size and Brush Strength rows on function panels: Brush Size sets how wide one stroke reaches, Brush Strength sets how much each stroke changes. Only functions whose panel really has these rows are affected, that is the nine terrain tools (Shift Terrain, Soften Terrain, Level Terrain, Slope Terrain, Texture Paint 01-04 and Texture Eraser) and painting zones; functions without those rows are neither recorded nor changed.";
-			d["item.f.brush.ex.group"] = "for example, set a 30 m brush on one terrain tool and the other terrain tools in the same group are 30 m too, while another group is not";
-			d["item.f.brush.ex.menu"] = "every tool in the terrain group uses this same brush size and strength, while another function group does not";
-			d["item.f.brush.ex.category"] = "switching to another function group uses that group's own brush (needs its own setting), even when both panels have these two rows";
-
-			// ---------- Items page (i.*): the eight prop categories of the Landscaping menu ----------
 			d["item.i.toolMode.desc"] = "Remembers the Tool Mode row on prop panels: Place single, Place multiple, Line, Curve, Object stamp tool, Paint and so on, depending on the tool. The tool mode on the Assets page and on the Functions page is remembered separately and none of them affects the others.";
 			d["item.i.toolMode.ex.group"] = "for example, pick Place multiple for a Nature prop and the other props in the same group use Place multiple too, while another group does not";
 			d["item.i.toolMode.ex.menu"] = "every prop in the Landscaping menu is on this mode, but moving to another menu it is not";
@@ -1177,10 +1298,6 @@ namespace ToolModeMemory
 			d["item.i.snap.ex.group"] = "for example, turn quick align to building surface off for a Park prop and the other props in the same group have it off too, while another group does not";
 			d["item.i.snap.ex.menu"] = "every prop in the Landscaping menu uses this same set of switches, but moving to another menu it does not";
 			d["item.i.snap.ex.category"] = "switching to another prop category goes back to that category's defaults (needs its own setting), even though both are in the Landscaping menu";
-			d["item.i.brush.desc"] = "Remembers the Brush Size and Brush Strength rows on prop panels, that is how wide a brush stroke reaches and how many props one stroke drops. Only props whose panel really has these rows are affected; props without them are neither recorded nor changed.";
-			d["item.i.brush.ex.group"] = "for example, set a 20 m brush and the other brushable props in the same group are 20 m too, while another group is not";
-			d["item.i.brush.ex.menu"] = "every brushable prop in the Landscaping menu uses this same brush, but moving to another menu it does not";
-			d["item.i.brush.ex.category"] = "switching to another prop category uses that category's own brush (needs its own setting), even though both are in the Landscaping menu";
 			d["item.i.topography.desc"] = "Remembers the Contour Lines row on prop panels. This row is read and written per page: the Items page keeps the prop copy, the Assets and Functions pages each keep their own, and none of them is shared.";
 			d["item.i.topography.ex.group"] = "for example, tick contour lines while placing props and the other props in the same group are ticked too";
 			d["item.i.topography.ex.menu"] = "every prop in the Landscaping menu keeps them ticked, but moving to another menu it does not";
