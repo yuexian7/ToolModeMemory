@@ -3,17 +3,18 @@
 """
 选项页结构与默认值的静态检查（离线，纯源码解析）。
 
-对着源码形状断言的硬要求：
-  1. 共用范围的五行定义不单列板块，而是并进每一个工具项的「共用范围」说明；
-  2. 总开关出厂默认打开（兼容开关 v0.6.0 已取消，不允许复活）；
-  3. 板块结构：总开关一块（不显示标题）/ 官方一块 / Anarchy 一块，行数 = 目录项数×2，
-     行数与变灰条件条数一律从目录条数推，不写死常数；
-  4. v0.6.2：Anarchy 三项「没装就整块隐藏」用 HideByCondition ——
-     DisableByCondition 只在建页那一刻求值一次（Widget.UpdateBase），会把装了的人冻灰；
-     hidden 由 OptionsUISystem.OnUpdate 每帧重算，只有它能跟随安装状态。
-  5. v0.6.2：笔刷（brush）独立成行，官方板块因此多两行、目录多一项。
-  6. v0.6.2 需求：「其它」永远官方板块最后 —— 目录里的结构断言在 StoreHarness；
-     这里把「属性声明顺序 == 目录顺序」钉死（设置页行序 = 属性声明顺序）。
+对着源码形状断言的硬要求（v0.7.0）：
+  1. 五个标签页：总开关 / 资产 / 功能 / 道具 / 关于（owner 需求 3）；
+  2. 总开关叫「启用模组」，管住**所有**共用设置：大开关关闭时三页里的每一项都变灰；
+  3. 总开关页有三块分域开关（启用资产/功能/道具的工具项记忆），
+     大开关的自动反映规则：三块全关 → 大开关关；任一打开 → 大开关开；
+  4. 每一页：官方工具项设置在前，第三方模组（目前只有 Anarchy）在后，一块一模组；
+  5. 行数 = 目录项数×2（每项一个开关 + 一个共用范围），行数与变灰条件条数
+     一律从目录条数推，不写死常数；
+  6. Anarchy 三项「没装就整块隐藏」用 HideByCondition —— DisableByCondition 只在建页
+     那一刻求值一次（Widget.UpdateBase），会把装了的人冻灰；hidden 由
+     OptionsUISystem.OnUpdate 每帧重算，只有它能跟随安装状态；
+  7. 属性声明顺序 == 目录顺序（设置页行序 = 属性声明顺序），且每页内编号从 1 连续。
 
 运行： python tests\\option_panel_check.py
 """
@@ -71,61 +72,114 @@ def main():
     check(re.search(r"(?m)^\s*\[SettingsUIMultilineText\]\s*$", s) is None,
           "没有任何属性真的挂上 [SettingsUIMultilineText]")
 
-    # ---- 2. v0.2.2 板块结构：总开关单独一块且不显示标题；官方一块；每个模组一块 ----
+    # ---- 2. v0.7.0 板块结构：五个标签页、八个板块 ----
+    tabs = re.search(r"\[SettingsUITabOrder\(([^\)]*)\)\]", s)
     order = re.search(r"\[SettingsUIGroupOrder\(([^\)]*)\)\]", s)
     show = re.search(r"\[SettingsUIShowGroupName\(([^\)]*)\)\]", s)
-    check(order is not None and "kGroupMaster" in order.group(1) and "kGroupOfficial" in order.group(1)
-          and "kGroupAnarchy" in order.group(1),
-          "GroupOrder 依次是 总开关 / 官方工具项 / Anarchy工具项 / 关于页各块")
-    check(show is not None and "kGroupOfficial" in show.group(1) and "kGroupAnarchy" in show.group(1),
-          "显示标题的板块包含官方与 Anarchy 两块")
+    check(tabs is not None and [t.strip() for t in tabs.group(1).split(",")] ==
+          ["kTabMaster", "kTabAssets", "kTabFunctions", "kTabItems", "kTabAbout"],
+          "标签页依次是 总开关 / 资产 / 功能 / 道具 / 关于（需求 3）")
+    check(order is not None and "kGroupDomain" in order.group(1),
+          "GroupOrder 里有分域开关板块（总开关页三块「启用 X 的工具项记忆」）")
+    check(show is not None and "kGroupDomain" in show.group(1),
+          "分域开关板块显示标题")
     check(show is not None and "kGroupMaster" not in show.group(1),
-          "总开关板块不显示标题（用户要求）")
-    check(re.search(r"\[SettingsUISection\(kTabMod, kGroupMaster\)\]\s*public bool Enabled", s) is not None,
-          "总开关自己在一块里")
+          "大开关板块不显示标题（用户要求）")
+    check(re.search(r"\[SettingsUISection\(kTabMaster, kGroupMaster\)\]\s*public bool Enabled", s)
+          is not None, "「启用模组」大开关在总开关页第一块里")
 
-    off_rows = len(re.findall(r"\[SettingsUISection\(kTabMod, kGroupOfficial\)\]", s))
-    an_rows = len(re.findall(r"\[SettingsUISection\(kTabMod, kGroupAnarchy\)\]", s))
+    # 每个标签页的官方 / 第三方板块都必须真的挂在该页上（三页各自一套，不许串页）
+    for tab, grp in (("kTabAssets", "kGroupAssetOfficial"), ("kTabAssets", "kGroupAssetAnarchy"),
+                     ("kTabFunctions", "kGroupFunctionOfficial"), ("kTabItems", "kGroupItemOfficial")):
+        n = len(re.findall(r"\[SettingsUISection\(%s, %s\)\]" % (tab, grp), s))
+        check(n > 0, "%s 页有 %s 板块（%d 行）" % (tab, grp, n))
+
     items = re.findall(r"new ToolItemDef\((\w+),", cat)
-    src_official = len(re.findall(r"ItemSource\.(Vanilla|Toolbar)", cat))
-    src_anarchy = len(re.findall(r"ItemSource\.AnarchyMod", cat))
-    check(off_rows == src_official * 2,
-          "官方板块行数 = 官方项数×2（%d 行 / %d 项）" % (off_rows, src_official))
-    check(an_rows == src_anarchy * 2,
-          "Anarchy 板块行数 = Anarchy 项数×2（%d 行 / %d 项）" % (an_rows, src_anarchy))
-    check(len(items) == 13, "目录 13 项（地区主题/数据包/工具模式/高度/并列/对齐/地形/地下/笔刷/其它 + Anarchy 三项）")
-    # 行数断言一律从目录条数推，不手写常数：0.6.2 加「笔刷」时第三轮审查点名「设置页 12 项」
-    # 这类硬编码会跟着漂，而漂了的数字比没有数字更坏（它看着像通过）。
     n_items = len(items)
-    # 关闭总开关后，下面每一项都要变灰：每个 *Enabled 行都必须挂 IsMasterOff。
-    # 按行扫（属性三行一组：Section / DisableByCondition / 属性声明）。只认「Enabled {」的
-    # 属性形态，不会把 IsItemEnabled(string) 这类方法名误认成属性行；每条记录板块归属，供 2c 用。
+    # 数「目录里定义的项」必须只数构造调用，不能数到 OfficialCount/AnarchyCount 里
+    # 那些 `ItemSource.AnarchyMod` 比较表达式（v0.7.0 加了这两个辅助方法，
+    # 老写法 `re.findall(r"ItemSource\.(Vanilla|Toolbar)", cat)` 会把它们算成项）。
+    id_consts = dict(re.findall(r'const string (\w+)\s*=\s*"([^"]*)"', cat))
+    cat_items = [(id_consts.get(m, m), int(num), src) for m, num, src in
+                 re.findall(r"new ToolItemDef\((\w+),\s*(\d+),\s*ItemSource\.(\w+)", cat)]
+    src_official = len([1 for _i, _n, s in cat_items if s in ("Vanilla", "Toolbar")])
+    src_anarchy = len([1 for _i, _n, s in cat_items if s == "AnarchyMod"])
+    check(n_items == src_official + src_anarchy,
+          "目录 %d 项 = 官方 %d + 第三方 %d" % (n_items, src_official, src_anarchy))
+    # 三页行数之和 = 项数×2（每项一个开关 + 一个共用范围），全部从目录推
+    per_tab = {}
+    for grp in ("kGroupAssetOfficial", "kGroupAssetAnarchy", "kGroupFunctionOfficial",
+                "kGroupItemOfficial"):
+        per_tab[grp] = len(re.findall(r"\[SettingsUISection\(\w+, %s\)\]" % grp, s))
+    check(sum(per_tab.values()) == n_items * 2,
+          "三页板块行数合计 = 项数×2（%d 行 / %d 项）" % (sum(per_tab.values()), n_items))
+    check(per_tab["kGroupAssetAnarchy"] == src_anarchy * 2,
+          "Anarchy 板块行数 = Anarchy 项数×2（%d 行 / %d 项）"
+          % (per_tab["kGroupAssetAnarchy"], src_anarchy))
+    # 关闭大开关后，三页里的每一项都要变灰：每个 *Enabled 行都必须挂本页的变灰条件。
+    # 按行扫，**往前找最近的一条 [SettingsUISection( 前缀定义专属**，
+    # 因为页与页交界处前 6 行的窗口会带进上一页的板块名（v0.7.0 拆页后必须这样才不串页）。
     slines = s.split("\n")
+    page_groups = ("kGroupAssetOfficial", "kGroupAssetAnarchy",
+                   "kGroupFunctionOfficial", "kGroupItemOfficial")
+    cur_section = None
     enabled_rows = []
     for i, ln in enumerate(slines):
-        m = re.search(r"public bool (\w+)Enabled\s*\{", ln)
-        if not m:
+        sm = re.search(r"\[SettingsUISection\((\w+), (\w+)\)\]", ln)
+        if sm:
+            cur_section = (sm.group(1), sm.group(2))
             continue
-        window = "\n".join(slines[max(0, i - 6):i])
-        if "kGroupOfficial" in window or "kGroupAnarchy" in window:
-            # 属性行的顺序不作承诺（Anarchy 那六行在 Disable 之后还挂了 Hide），
-            # 所以往上找最近的一条 SettingsUIDisableByCondition，而不是要求紧邻。
-            cond = ""
-            for wl in reversed(slines[max(0, i - 6):i]):
-                dm = re.search(r"\[SettingsUIDisableByCondition\(typeof\(ToolModeMemorySettings\), "
-                               r"nameof\((\w+)\)\)\]", wl)
-                if dm:
-                    cond = dm.group(1)
-                    break
-            grp = "kGroupAnarchy" if "kGroupAnarchy" in window else "kGroupOfficial"
-            enabled_rows.append((m.group(1), cond, grp))
-    check(len(enabled_rows) == n_items and all(g[1] == "IsMasterOff" for g in enabled_rows),
-          "全部 %d 项的是否恢复开关都挂 IsMasterOff（总开关关闭即整块变灰）：%s"
-          % (n_items, [(n, c) for n, c, g in enabled_rows if c != "IsMasterOff"] or "无遗漏"))
+        em = re.search(r"public bool (\w+)Enabled\s*\{", ln)
+        if not em or cur_section is None:
+            continue
+        tab, grp = cur_section
+        if grp not in page_groups:
+            continue
+        cond = ""
+        for wl in reversed(slines[max(0, i - 4):i]):
+            dm = re.search(r"\[SettingsUIDisableByCondition\(typeof\(ToolModeMemorySettings\), "
+                           r"nameof\((\w+)\)\)\]", wl)
+            if dm:
+                cond = dm.group(1)
+                break
+        enabled_rows.append((em.group(1), cond, grp))
+    check(len(enabled_rows) == n_items, "全部 %d 项的是否恢复开关都已变成属性行" % n_items)
+    # 变灰条件：大开关 或 该页域开关。**一个条件就够**，因为三个 IsXxxSectionOff()
+    # 本身已经写成 `IsMasterOff() || !GetDomain(...)`（见下面 2a 的形状断言），
+    # 再要求每条都挂 IsMasterOff 是重复求值，写两条只会让修的时候改漏一处。
+    sec_off = ("IsAssetSectionOff", "IsFunctionSectionOff", "IsItemSectionOff")
+    check(all(g[1] in sec_off for g in enabled_rows),
+          "全部 %d 项的是否恢复开关都挂 IsAssetSectionOff / IsFunctionSectionOff / IsItemSectionOff"
+          "（大开关或域开关关闭即整页变灰）：%s"
+          % (n_items, [(n, c) for n, c, g in enabled_rows if c not in sec_off] or "无遗漏"))
+
+    # ---- 2a. 三个 IsXxxSectionOff 必须真的把大开关与域开关都算进去 ----
+    # 需求 3：大开关管住所有共用设置；域开关管住这一页所有行。少任何一半，
+    # 表现就是「关了大开关、资产页还能恢复」这种半死不活的状态。
+    sec = body_of(s, "public bool IsAssetSectionOff()")
+    check(sec is not None and "IsMasterOff()" in sec and "GetDomain(ItemDomain.Asset)" in sec,
+          "IsAssetSectionOff = 大开关关 或 资产域开关关")
+    for name, dom in (("IsFunctionSectionOff", "ItemDomain.Function"),
+                      ("IsItemSectionOff", "ItemDomain.Item")):
+        b = body_of(s, "public bool %s()" % name)
+        check(b is not None and "IsMasterOff()" in b and "GetDomain(%s)" % dom in b,
+              "%s = 大开关关 或 %s 域开关关" % (name, dom))
+    # 大开关的自动反映：Ready 之下，SetDomain 调 ReflectMaster
+    check(re.search(r"SetDomain\(ItemDomain\.\w+, value\)", s) is not None,
+          "域开关的 setter 走 SetDomain()（自动反映只允许一处实现）")
+    check(re.search(r"if \(Ready\)\s*\{?\s*m_Enabled = ReflectMaster\(\)", s) is not None,
+          "域开关的 setter 会同步大开关（Ready 之后自动反映，需求 3）")
     scope_rows = re.findall(r"nameof\((Is\w+ScopeDisabled)\)\)\]", s)
     check(len(scope_rows) == n_items, "%d 个共用范围行都有各自的变灰条件" % n_items)
-    helpers = re.findall(r"public bool (Is\w+ScopeDisabled)\(\) \{ return IsMasterOff\(\) \|\| !GetEnabled", s)
-    check(len(helpers) == n_items, "%d 个变灰判定都是「总开关关 或 本项没开」" % n_items)
+    helpers = re.findall(r"public bool (Is\w+ScopeDisabled)\(\) \{ return Is(?:Asset|Function|Item)"
+                         r"SectionOff\(\) \|\| !GetEnabled", s)
+    check(len(helpers) == n_items,
+          "%d 个变灰判定都是「本域/本页没开 或 本项没开」" % n_items)
+    # 需求 3：域开关关掉时，该页所有行也要变灰 —— IsItemEnabled 必须查 GetDomain
+    check(re.search(r"GetDomain\(def\.Domain\)", s) is not None,
+          "IsItemEnabled 里查了 GetDomain（域开关关闭时该页整页变灰）")
+    check(re.search(r"bool IsDomainEnabled\(ItemDomain", s) is not None,
+          "IsDomainEnabled(ItemDomain) 判定方法存在（记录与恢复共用同一判据）")
 
     # ---- 2b. Anarchy 三项：没装该**整块隐藏**，不是变灰 ----
     # 为什么不能用 DisableByCondition（0.6.2 反编译 AutomaticSettings/Widget 得到的结论）：
@@ -143,32 +197,47 @@ def main():
           "隐藏判据复用 ToolMemoryBridge.AnarchyConfirmedAbsent()（判据只允许一处）")
     check(not re.search(r"DisableByCondition[^=\n]*IsAnarchyMissing", s),
           "没装 Anarchy 不走变灰（DisableByCondition 建页时冻结，装了也会一直灰着）")
-    # 官方板块的 20 行不得被这条判据牵连：非 Anarchy 行不许出现隐藏属性
-    off_block = re.findall(r"\[SettingsUISection\(kTabMod, kGroupOfficial\)\](?:(?!\[SettingsUISection)[\s\S])*", s)
-    check(not any("SettingsUIHideByCondition" in b for b in off_block),
-          "官方板块没有任何行被隐藏（只有 Anarchy 三项会消失）")
+    # 官方板块的行不得被这条判据牵连：非 Anarchy 行不许出现隐藏属性
+    for grp in ("kGroupAssetOfficial", "kGroupFunctionOfficial", "kGroupItemOfficial"):
+        blocks = re.findall(r"\[SettingsUISection\(\w+, %s\)\](?:(?!\[SettingsUISection)[\s\S])*" % grp, s)
+        check(not any("SettingsUIHideByCondition" in b for b in blocks),
+              "%s 板块没有任何行被隐藏（只有 Anarchy 项会消失）" % grp)
 
-    # ---- 2c. 需求（v0.6.2）：属性声明顺序与目录顺序锁死；「其它」永远官方板块最后 ----
+    # ---- 2c. 属性声明顺序与目录顺序锁死（每页各一段）----
     # 设置页行序 = 属性声明顺序（反编译 AutomaticSettings.BuildTab：按声明顺序逐个建 widget），
     # 「哪些项 / 什么编号 / 进哪个板块」由 ToolItemCatalog 定义。两边一旦不同步，玩家看到的是
     # 「第 9 项印着别的行」这类错位，编译和其余检查都发现不了。
     id_consts = dict(re.findall(r'const string (\w+)\s*=\s*"([^"]*)"', cat))
     cat_items = [(id_consts.get(m, m), int(num), src) for m, num, src in
                  re.findall(r"new ToolItemDef\((\w+),\s*(\d+),\s*ItemSource\.(\w+)", cat)]
-    official_ids = [i for i, num, src in cat_items if src in ("Vanilla", "Toolbar")]
+    cat_official_all = [i for i, num, src in cat_items if src in ("Vanilla", "Toolbar")]
     anarchy_ids = [i for i, num, src in cat_items if src == "AnarchyMod"]
 
     def pascal_to_id(name):
+        """属性名 → 目录 id。v0.7.0 的 FToolMode / IBrush 要还原成 f.toolMode / i.brush。"""
+        if len(name) > 1 and name[0] in "FI" and name[1].isupper():
+            return name[0].lower() + "." + name[1].lower() + name[2:]
         return name[0].lower() + name[1:]
 
-    page_official = [pascal_to_id(n) for n, c, g in enabled_rows if g == "kGroupOfficial"]
-    page_anarchy = [pascal_to_id(n) for n, c, g in enabled_rows if g == "kGroupAnarchy"]
-    check(page_official == official_ids,
-          "官方板块属性声明顺序 == 目录顺序（%s）" % "->".join(official_ids))
-    check(page_anarchy == anarchy_ids,
-          "Anarchy 板块属性声明顺序 == 目录顺序（%s）" % "->".join(anarchy_ids))
-    check(len(official_ids) > 0 and official_ids[-1] == "other",
-          "「其它」永远是官方板块最后一项（需求）：目录里「其它」之后不许再出现官方项")
+    page_asset_official = [pascal_to_id(n) for n, c, g in enabled_rows if g == "kGroupAssetOfficial"]
+    page_asset_anarchy = [pascal_to_id(n) for n, c, g in enabled_rows if g == "kGroupAssetAnarchy"]
+    page_function = [pascal_to_id(n) for n, c, g in enabled_rows if g == "kGroupFunctionOfficial"]
+    page_item = [pascal_to_id(n) for n, c, g in enabled_rows if g == "kGroupItemOfficial"]
+    # 目录里各项归属哪个板块，不靠「顺序猜」：资产页官方 = 不带 f. / i. 前缀的官方项
+    # （11 项），功能页 / 道具页各 5 项。f. / i. 前缀是 v0.7.0 的域约定。
+    official_ids = [i for i in cat_official_all if not i.startswith(("f.", "i."))]
+    func_ids = [i for i in cat_official_all if i.startswith("f.")]
+    item_ids = [i for i in cat_official_all if i.startswith("i.")]
+    check(page_asset_official == official_ids,
+          "资产页官方板块属性顺序 == 目录顺序（%s）" % "->".join(official_ids))
+    check(page_asset_anarchy == anarchy_ids,
+          "资产页 Anarchy 板块属性顺序 == 目录顺序（%s）" % "->".join(anarchy_ids))
+    check(page_function == func_ids,
+          "功能页属性顺序 == 目录里的 f.* 顺序（%s）" % "->".join(func_ids))
+    check(page_item == item_ids,
+          "道具页属性顺序 == 目录里的 i.* 顺序（%s）" % "->".join(item_ids))
+    check("other" not in official_ids,
+          "「其它」已从目录里彻底删除（需求 4：去掉其它、列出全部）")
 
     # ---- 3. 出厂默认：总开关打开，兼容开关（v0.6.0 已取消）不允许再出现 ----
     defaults = body_of(s, "public override void SetDefaults()")

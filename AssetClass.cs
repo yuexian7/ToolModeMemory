@@ -95,6 +95,11 @@ namespace ToolModeMemory
 		/// </summary>
 		public bool Parking;
 
+		// 注：区域资产（Park / District / Surface / Extractor 四个 archetype 标记）在**资产**域
+		// 里不参与同类判定 —— 它们是「放下来之后自动进入的那个区域工具」的事，归 FuncClass
+		// （3 个区域工具之一）。资产域只按「这件资产服务谁」归类，所以这里没有对应字段。
+		// 0.6.x 曾留过 4 个 bool 字段，从来没人写也没人读，v0.7.0 清理时删除。
+
 		/// <summary>
 		/// 全空的事实。字段刻意设计成「默认值 = 什么都不知道」（服务用 HasService 标记而不是用
 		/// 序号 -1 当哨兵），这样漏填字段的后果是退化成不分类，而不是退化成某个真的类。

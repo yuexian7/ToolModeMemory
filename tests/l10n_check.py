@@ -33,22 +33,47 @@ LANGS = {
 FRAMES_KEYS = {"frame.locale", "item.anarchy.label", "scope.group.none"}
 
 # 设置页跨板块连续编号的 13 项（v0.6.2 起「笔刷」独立成行，编号 9；「其它」永远官方板块最后，
-# 编号 10；Anarchy 三项顺次 11..13）
-# elevationStep 已并入 elevation 的 Subs，brush 用 Subs 但不需要额外键。
+# v0.7.0：设置页拆成三个标签页，同名行按域各一套，项 id 带域前缀 f. / i.。
+# 顺序 = 目录顺序 = 设置页顺序（资产页 1..14，功能页 1..5，道具页 1..5；编号在每个页内各自从 1 数）。
+# 这份表**只是文档**：真正的一致性由下面对着 ToolItemCatalog.cs 解析出来的目录核对，
+# 手抄错了会被 "目录与 ITEM_IDS 不一致" 直接拦下。
 ITEM_IDS = ["themes", "packs", "toolMode", "elevation", "parallel", "snap", "topography",
-            "underground", "brush", "other", "anarchy", "leftRight", "general"]
-# 已取消的独立项：它们的键再出现就是漏删
+            "underground", "brush", "color", "decoration", "anarchy", "leftRight", "general",
+            "f.toolMode", "f.snap", "f.topography", "f.underground", "f.brush",
+            "i.toolMode", "i.snap", "i.brush", "i.topography", "i.underground"]
+# 已取消的独立项：它们的键再出现就是漏删。
+# 已取消的独立项：它们的键再出现就是漏删。
+#   elevationStep：0.2.2 并入 elevation 的 Subs。
+# 注意 0.7.0 的「其它」不列在这里：它作为**项**已经取消（目录里没有了，上面那条
+# 「目录与 ITEM_IDS 一致」就是钉子），但 item.other.desc / .ex.* 三句**必须留着** ——
+# 「颜色」这一项换了名字，12 种语言的文案靠 ToolItemDef.LocaleAlias 沿用旧的那份，
+# 删掉就等于把 12 种语言已经写对的句子清空。
 RETIRED = ["elevationStep"]
 
+# 换了名字的项：id → 文案沿用哪一份旧 id（对应 ToolItemDef.LocaleAlias）。
+# 「颜色」就是 0.6.2 的「其它」，12 种语言的 desc/ex.* 内容本来就全是讲道路颜色。
+TEXT_ALIAS = {"color": "other"}
+
+# 三个标签页与每项归属（v0.7.0）：不手抄，全部从 ToolItemCatalog.cs 里解析，见 parse_catalog。
+DOMAIN_LABEL = {"Asset": "资产", "Function": "功能", "Item": "道具"}
+
 SCALAR_KEYS = [
-    "mod.name", "tab.mod", "tab.about",
-    "group.master", "group.official", "group.anarchy",
+    "mod.name",
+    # v0.7.0 五个标签页 + 分域开关板块
+    "tab.mod", "tab.master", "tab.assets", "tab.functions", "tab.items", "tab.about",
+    "group.master", "group.domain", "group.official", "group.anarchy",
     "group.reset", "group.about",
     "enabled.label", "enabled.desc",
+    "domain.asset.label", "domain.asset.desc",
+    "domain.function.label", "domain.function.desc",
+    "domain.item.label", "domain.item.desc",
     "scope.label", "scope.desc",
     "scope.line.group", "scope.line.menu", "scope.line.category",
+    "scope.line.category.function", "scope.line.category.item",
     "scope.line.shared", "scope.line.sharedSingle", "scope.line.unique", "scope.note",
-    "scope.group", "scope.menu", "scope.category", "scope.globalShared", "scope.globalUnique",
+    "scope.group", "scope.menu", "scope.category",
+    "scope.category.function", "scope.category.item",
+    "scope.globalShared", "scope.globalUnique",
     "tag.vanilla", "tag.recommended", "tag.recVanilla",
     "reset.label", "reset.desc", "reset.warn", "reset.confirm",
     "resetall.label", "resetall.desc", "resetall.warn", "resetall.confirm",
@@ -70,11 +95,32 @@ ZH_LANGS = ("zh-HANS", "zh-HANT")
 NO_CJK_LANGS = ("en-US", "de-DE", "es-ES", "fr-FR", "it-IT", "pl-PL", "pt-BR", "ru-RU")
 CJK = re.compile(u'[ぁ-ヿ㐀-䶿一-鿿가-힣豈-﫿]')
 
-TEMPLATE_KEYS = ["scope.line.group", "scope.line.menu", "scope.line.category"]
+TEMPLATE_KEYS = ["scope.line.group", "scope.line.menu", "scope.line.category",
+                 "scope.line.category.function", "scope.line.category.item"]
 
-ASSIGN = re.compile(r'^\s*d\[(?P<key>"[^"]*"|[A-Za-z_][A-Za-z0-9_]*)\]\s*=\s*"(?P<val>.*)"\s*;\s*$')
+# 赋值行：d[<键表达式>] = "值";
+# 键表达式允许三种写法（v0.7.0 起了第三种）："字面量" / 常量名 / 常量名 + "后缀"
+# —— 例如 d[kScopeCategory + ".function"]，三页各一份的标签键就是这么写的。
+ASSIGN = re.compile(r'^\s*d\[(?P<key>[^\]]+)\]\s*=\s*"(?P<val>.*)"\s*;\s*$')
+KEY_PART = re.compile(r'"[^"]*"|[A-Za-z_][A-Za-z0-9_.]*')
 CONST = re.compile(r'const string\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"(?P<val>[^"]*)"')
 FUNC = re.compile(r'private static Dictionary<string, string> (?P<name>\w+)\(\)')
+
+
+def resolve_key(expr, const_map):
+    """`kScopeCategory + ".item"` → "scope.category.item"；解析不了返回 None。"""
+    parts = KEY_PART.findall(expr)
+    if not parts or "".join(parts) != expr.replace(" ", "").replace("+", ""):
+        return None
+    out = []
+    for p in parts:
+        if p.startswith('"'):
+            out.append(p[1:-1])
+            continue
+        if p not in const_map:
+            return None
+        out.append(const_map[p])
+    return "".join(out)
 
 
 def load():
@@ -120,14 +166,10 @@ def parse(text, const_map):
             depth += line.count("{") - line.count("}")
             am = ASSIGN.match(line)
             if am:
-                key = am.group("key")
-                if key.startswith('"'):
-                    key = key[1:-1]
-                else:
-                    key = const_map.get(key, key)
-                    if key is None:
-                        print("!! %s: 未知常量键 %s" % (fname, am.group("key")))
-                        continue
+                key = resolve_key(am.group("key").strip(), const_map)
+                if key is None:
+                    print("!! %s: 无法解析键 %s" % (fname, am.group("key")))
+                    continue
                 tables[cur][key] = am.group("val")
             if started and depth <= 0:
                 cur = None
@@ -164,14 +206,138 @@ def check_shape(text):
     return bad
 
 
+def split_args(s):
+    """按顶层逗号切参数（忽略字符串与括号内部）。"""
+    out, depth, cur, instr = [], 0, [], False
+    i = 0
+    while i < len(s):
+        c = s[i]
+        if instr:
+            cur.append(c)
+            if c == "\\":
+                if i + 1 < len(s):
+                    cur.append(s[i + 1])
+                i += 2
+                continue
+            if c == '"':
+                instr = False
+            i += 1
+            continue
+        if c == '"':
+            instr = True
+            cur.append(c)
+        elif c in "([{":
+            depth += 1
+            cur.append(c)
+        elif c in ")]}":
+            depth -= 1
+            cur.append(c)
+        elif c == "," and depth == 0:
+            out.append("".join(cur).strip())
+            cur = []
+        else:
+            cur.append(c)
+        i += 1
+    if "".join(cur).strip():
+        out.append("".join(cur).strip())
+    return out
+
+
+def catalog_calls(src):
+    """所有 new ToolItemDef(...) 的参数列表（允许跨行，靠括号配平取）。"""
+    calls = []
+    token = "new ToolItemDef("
+    pos = 0
+    while True:
+        k = src.find(token, pos)
+        if k < 0:
+            return calls
+        depth, j, instr = 0, k + len(token) - 1, False
+        while j < len(src):
+            c = src[j]
+            if instr:
+                if c == "\\":
+                    j += 2
+                    continue
+                if c == '"':
+                    instr = False
+            elif c == '"':
+                instr = True
+            elif c == "(":
+                depth += 1
+            elif c == ")":
+                depth -= 1
+                if depth == 0:
+                    break
+            j += 1
+        calls.append(split_args(src[k + len(token):j]))
+        pos = j + 1
+
+
+def parse_catalog():
+    """从 ToolItemCatalog.cs 解析出 [(number, item_id, domain, source, locale_alias)]。
+
+    不手抄：v0.6.2 加「笔刷」时手抄的表漏了一项，设置页出现「有这行、说明是空的」，
+    所以目录本身就是唯一事实来源，这里只做形状校验（编号、分域、别名）。
+    构造函数签名（见 ToolItemDef..ctor）：
+      id, number, source, vanillaScope, recommendedScope, defaultEnabled,
+      subs = null, familyFreeScope = false, domain = Asset, localeAlias = null
+    """
+    src = io.open(os.path.join(ROOT, "ToolItemCatalog.cs"), encoding="utf-8-sig").read()
+    consts = dict(re.findall(r'const string\s+(\w+)\s*=\s*"([^"]*)"', src))
+    rows = []
+    for args in catalog_calls(src):
+        if len(args) < 3:
+            continue
+        item_id = consts.get(args[0], args[0].strip('"'))
+        number = int(args[1])
+        source = args[2].split(".")[-1]
+        domain = "Asset"
+        alias = None
+        for idx, a in enumerate(args[3:], start=3):
+            m = re.match(r"^ItemDomain\.(\w+)$", a)
+            if m:
+                domain = m.group(1)
+            elif idx == 9 and re.match(r"^k\w+$", a):
+                # 第 10 个形参才是 localeAlias（见 ToolItemDef..ctor），别的位置上是
+                # MemoryScope / s_*Subs 之类，不能当别名
+                alias = consts.get(a, a)
+        rows.append((number, item_id, domain, source, alias))
+    return rows
+
+
+def check_catalog_shape(rows):
+    """目录形状：每个标签页内编号 1..n 连续；Anarchy 项在资产页最后；别名指向存在的旧 id。"""
+    bad = []
+    by_domain = {}
+    for row in rows:
+        by_domain.setdefault(row[2], []).append(row)
+    for domain, items in sorted(by_domain.items()):
+        nums = [n for n, _i, _d, _s, _a in items]
+        want = sorted(nums)
+        if nums != want or want != list(range(1, len(items) + 1)):
+            bad.append("%s 页编号不是 1..%d 连续：%s" % (DOMAIN_LABEL.get(domain, domain), len(items), nums))
+        seq = [s for _n, _i, _d, s, _a in items]
+        if "AnarchyMod" in seq and seq.index("AnarchyMod") != len(seq) - seq.count("AnarchyMod"):
+            bad.append("%s 页的第三方（Anarchy）项没有排在最后：%s"
+                       % (DOMAIN_LABEL.get(domain, domain), seq))
+    for num, item_id, domain, source, alias in rows:
+        # 别名指向的旧 id 本来就不在目录里（它是被改名/合并掉的项），
+        # 所以这里对的是「检查表里登记的别名」，两边不一致说明有一边漏改。
+        if alias and TEXT_ALIAS.get(item_id) != alias:
+            bad.append("%d.%s 目录里的 LocaleAlias=%r 与检查表 TEXT_ALIAS=%r 不一致"
+                       % (num, item_id, alias, TEXT_ALIAS.get(item_id)))
+        if alias is None and item_id in TEXT_ALIAS:
+            bad.append("%d.%s 检查表登记了文案别名 %r，但目录里没有 LocaleAlias（运行时会查错键）"
+                       % (num, item_id, TEXT_ALIAS[item_id]))
+    return bad
+
+
 def main():
     text = load()
     if not text:
         print("找不到 LocaleTable*.cs")
         return 1
-    const_map = consts(text)
-    const_map = {k: v for k, v in const_map.items() if k.startswith("k") or k.startswith("KEY")}
-    # 直接把 public const string kScopeGroup = "scope.group"; 这类映射建全
     all_consts = {}
     for lines in text.values():
         for line in lines:
@@ -180,34 +346,48 @@ def main():
                 all_consts[m.group("name")] = m.group("val")
     tables = parse(text, all_consts)
 
-    # 目录与文案必须一一对应：ITEM_IDS 是手抄的，加一项忘了抄就会出现
-    # 「设置页有这行、说明是空的」——0.6.2 加「笔刷」时正是这个风险，所以直接对着源码核对。
-    # 而且 ITEM_IDS 是「成员 + 顺序」双重钉子，不只是集合：目录顺序 = 设置页顺序，
-    # 「其它」永远官方板块最后（需求，v0.6.2）；新项插到「其它」后面同样要被拦住。
-    cat = io.open(os.path.join(ROOT, "ToolItemCatalog.cs"), encoding="utf-8-sig").read()
-    id_consts = dict(CONST.findall(cat))
-    catalog_ids = [id_consts.get(m, m) for m in re.findall(r"new ToolItemDef\((\w+),", cat)]
-    missing_in_check = sorted(set(catalog_ids) - set(ITEM_IDS))
-    stale_in_check = sorted(set(ITEM_IDS) - set(catalog_ids))
-    order_wrong = ITEM_IDS != catalog_ids
-    if missing_in_check or stale_in_check or order_wrong:
-        print("FAIL 目录与 ITEM_IDS 不一致：文案未覆盖 %s / 已不存在的项 %s / 顺序%s"
-              % (missing_in_check or "无", stale_in_check or "无",
-                 "一致" if not order_wrong else
-                 "不一致（目录 %s ≠ 检查表 %s；「其它」必须永远在官方板块最后）"
-                 % ("/".join(catalog_ids), "/".join(ITEM_IDS))))
+    rows = parse_catalog()
+    if not rows:
+        print("FAIL 没从 ToolItemCatalog.cs 解析到任何项（构造调用格式变了，检查器要跟着改）")
         return 1
-    print("OK   目录 %d 项与 ITEM_IDS 完全对应（含顺序：「其它」永远官方板块最后）" % len(catalog_ids))
+    catalog_ids = [i for _n, i, _d, _s, _a in rows]
+    stale = sorted(set(ITEM_IDS) - set(catalog_ids))
+    new = sorted(set(catalog_ids) - set(ITEM_IDS))
+    if stale or new:
+        print("FAIL 目录与 ITEM_IDS 不一致：文案未覆盖 %s / 已不存在的项 %s"
+              % (new or "无", stale or "无"))
+        return 1
+    bad_shape = check_catalog_shape(rows)
+    if bad_shape:
+        for msg in bad_shape:
+            print("FAIL 目录形状 %s" % msg)
+        return 1
+    print("OK   目录 %d 项：%s（每页内编号连续、Anarchy 在资产页最后）"
+          % (len(rows), " / ".join("%s%d项" % (DOMAIN_LABEL[d], sum(1 for r in rows if r[2] == d))
+                                   for d in ("Asset", "Function", "Item"))))
 
     fails = 0
     print("解析到语言：%s" % ", ".join(sorted(tables)))
     required = list(SCALAR_KEYS)
+    # 每一项需要哪些键，必须和 LocaleTable.ItemText() 的三级回退**完全一致**，
+    # 否则要么误报（回退本来就合法），要么漏报（设置页出现空说明）。
+    #   1) item.<id>.<slot>                 —— 本项自己写过
+    #   2) item.<LocaleAlias>.<slot>        —— 改名的项（color ← other）
+    #   3) item.<去掉 f./i. 前缀>.<slot>    —— 功能页 / 道具页的同名行沿用资产页那份
+    # 有 2)/3) 可依赖的键组成「可选组」：本项键与回退键至少有一个存在即可，
+    # 两个都没有才算缺（漏写的表现正是设置页上那一项说明空白）。
+    groups = []
     for item in ITEM_IDS:
-        required.append("item.%s.label" % item)
-        required.append("item.%s.desc" % item)
-        for slot in ("group", "menu", "category"):
-            required.append("item.%s.ex.%s" % (item, slot))
-
+        alias = TEXT_ALIAS.get(item)
+        base = item.split(".", 1)[1] if item.startswith(("f.", "i.")) else None
+        for sfx in ("label", "desc", "ex.group", "ex.menu", "ex.category"):
+            own = "item.%s.%s" % (item, sfx)
+            fb = ("item.%s.%s" % (alias, sfx)) if alias else (
+                ("item.%s.%s" % (base, sfx)) if base else None)
+            if fb is None:
+                required.append(own)
+            else:
+                groups.append((own, fb))
     for lang in sorted(LANGS.values()):
         d = tables.get(lang)
         if d is None:
@@ -215,6 +395,10 @@ def main():
             fails += 1
             continue
         missing = [k for k in required if k not in d and k not in FRAMES_KEYS]
+        # 可选组：本项键与回退键都没有才算缺
+        for own, fb in groups:
+            if own not in d and fb not in d:
+                missing.append("%s（也找不到回退键 %s）" % (own, fb))
         banned = [k for k in FORBIDDEN if k in d]
         empty = [k for k, v in d.items() if not v.strip()]
         no_slot = [k for k in TEMPLATE_KEYS if "{0}" not in d.get(k, "")]

@@ -88,6 +88,10 @@ namespace ToolModeMemory.Systems
 			base.OnCreate();
 			m_ToolSystem = World.GetOrCreateSystemManaged<ToolSystem>();
 			m_PrefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
+			// 域判定（资产/功能/道具）发生在算键之前，而它要读 ECS 组件：
+			// 必须在第一次捕获之前就把手上的系统引用交给桥，不能等 ResolveLevelKey 顺手填。
+			// 理由见 ToolMemoryBridge.SetSystems（早期帧没就位会把道路工具钉在错误的域上）。
+			ToolMemoryBridge.SetSystems(m_PrefabSystem, base.EntityManager);
 			// 由 ToolModeMemorySettings 决定；默认关 = 完全不参与
 			base.Enabled = false;
 		}
@@ -95,6 +99,7 @@ namespace ToolModeMemory.Systems
 		protected override void OnStartRunning()
 		{
 			base.OnStartRunning();
+			ToolMemoryBridge.SetSystems(m_PrefabSystem, base.EntityManager);
 			HookEvents();
 		}
 
@@ -290,17 +295,24 @@ namespace ToolModeMemory.Systems
 
 		public bool MasterEnabled { get { return base.Enabled; } }
 
-		private string KeyFor(ToolItemDef def, PrefabBase prefab, ToolBaseSystem tool, MemoryScope scope)
+		private string KeyFor(ToolItemDef def, PrefabBase prefab, ToolBaseSystem tool, MemoryScope scope,
+			ItemDomain domain)
 		{
 			// 「游戏里只有一份值」的项在「全局共用」下必须只有一把键，否则这一档会碎成
 			// A|S$net / A|S$obj / F|S$area… 每组各一份，玩家看到的正是「设了全局共用
 			// 还是各工具组单独记忆」。详见 ToolItemCatalog.UsesFamilyFreeKey。
-			if (ToolItemCatalog.UsesFamilyFreeKey(def, scope)) return LevelKeyCached(scope, false, prefab, tool);
+			// 域前缀**保留**：owner 2026-10-19 明确选「三页各一份，按当前工具所属页读写」，
+			// 所以这一档只在**同一标签页内**共用一份，不跨页（0.6.2 那种连域都省掉的写法作废）。
+			if (ToolItemCatalog.UsesFamilyFreeKey(def, scope))
+			{
+				return MemoryKeys.WithDomain(LevelKeyCached(scope, false, prefab, tool), domain);
+			}
 
 			int slot = (int)scope;
 			if (slot < 0 || slot >= m_Keys.Length) slot = 0;
 			if (m_Keys[slot] != null && m_KeyPasses[slot] == m_KeyEpoch) return m_Keys[slot];
-			string key = ToolMemoryBridge.ResolveKey(scope, prefab, tool, m_PrefabSystem, base.EntityManager);
+			string key = ToolMemoryBridge.ResolveKey(scope, prefab, tool, m_PrefabSystem,
+				base.EntityManager, domain);
 			m_Keys[slot] = key;
 			m_KeyPasses[slot] = m_KeyEpoch;
 			return key;
@@ -383,6 +395,9 @@ namespace ToolModeMemory.Systems
 		private void RestoreFilters(ToolModeMemorySettings setting, MemoryStore store,
 			PrefabBase prefab, ToolBaseSystem tool)
 		{
+			// 这两行属于「资产」页（工具栏筛选面板），所以跟着资产域开关走；
+			// 当前工具是功能区还是道具并不影响面板上的那两行勾选。
+			if (!setting.IsDomainEnabled(ItemDomain.Asset)) return;
 			if (ReferenceEquals(tool, m_FilterRestoredTool)
 				&& ReferenceEquals(prefab, m_FilterRestoredPrefab))
 			{
@@ -543,34 +558,51 @@ namespace ToolModeMemory.Systems
 			RefreshKeyCache(tool, prefab);
 
 			ToolItemDef[] items = ToolItemCatalog.Items;
-			for (int i = 0; i < items.Length; i++)
+			// 当前 (工具, 资产) 落在哪个标签页。三域的同名项共用桶名（保住老玩家已记的值），
+			// 所以只允许**本域**那几项写桶：否则道路工具会把它的 mode 顺手记进功能页与道具页的
+			// 键里（那两页各自成键，玩家看不见，但桶里攒下一堆不属于该域的脏值）。
+			ItemDomain domain = ToolMemoryBridge.DomainOf(tool, prefab);
+			// 「启用资产/功能/道具的工具项记忆」三块之一关掉 = 这一整个标签页不再记录。
+			// 这里必须连记录一起拦（与单项开关不同）：页开关的名字就是「启用…的记忆」，
+			// 只拦恢复不拦记录的话，玩家关掉「道具」页之后道具的值还在往文件里写，
+			// 那与开关的字面承诺相反。
+			if (setting.IsDomainEnabled(domain))
 			{
-				ToolItemDef def = items[i];
-				// 只受总开关限制：工具项「是否恢复」的开关不拦记录，
-				// 否则关掉一项就等于丢掉它的历史，再打开时是空的。
-				// 一项可能覆盖多个游戏字段（Subs），每个字段一个独立记忆桶，
-				// 共用同一范围与同一个键（键每趟最多解析一次，所以放懒求值）。
-				string[] subs = def.Subs;
-				int count = subs == null ? 1 : subs.Length;
-				string key = null;
-				for (int j = 0; j < count; j++)
+				for (int i = 0; i < items.Length; i++)
 				{
-					string fieldId = subs == null ? def.Id : subs[j];
-					int value;
-					if (!ToolMemoryBridge.TryCapture(fieldId, tool, out value)) continue;
-					if (key == null) key = KeyFor(def, prefab, tool, setting.GetItemScope(def.Id));
-					// 资产自带取值限制的项（现在只有高度）要先问一句：这个值是本资产够得着的吗？
-					// 从道路切到水管时工具里还留着道路的 0m，而水管上限 -10m —— 那是上一件资产的值，
-					// 记下去要么污染共用桶（把道路一起拽走），要么变成水管永远用不了的死值。
-					if (ToolMemoryBridge.HasValueLimit(fieldId)
-						&& !ToolMemoryBridge.AcceptsCapture(fieldId, tool, value)) continue;
-					store.Set(fieldId, key, value);
+					ToolItemDef def = items[i];
+					if (def.Domain != domain) continue;
+					// 单项「是否恢复」的开关不拦记录，
+					// 否则关掉一项就等于丢掉它的历史，再打开时是空的。
+					// 一项可能覆盖多个游戏字段（Subs），每个字段一个独立记忆桶，
+					// 共用同一范围与同一个键（键每趟最多解析一次，所以放懒求值）。
+					string[] subs = def.Subs;
+					int count = subs == null ? 1 : subs.Length;
+					string key = null;
+					for (int j = 0; j < count; j++)
+					{
+						string fieldId = subs == null ? def.Id : subs[j];
+						int value;
+						if (!ToolMemoryBridge.TryCapture(fieldId, tool, out value)) continue;
+						if (key == null) key = KeyFor(def, prefab, tool, setting.GetItemScope(def.Id), domain);
+						// 资产自带取值限制的项（现在只有高度）要先问一句：这个值是本资产够得着的吗？
+						// 从道路切到水管时工具里还留着道路的 0m，而水管上限 -10m —— 那是上一件资产的值，
+						// 记下去要么污染共用桶（把道路一起拽走），要么变成水管永远用不了的死值。
+						if (ToolMemoryBridge.HasValueLimit(fieldId)
+							&& !ToolMemoryBridge.AcceptsCapture(fieldId, tool, value)) continue;
+						store.Set(fieldId, key, value);
+					}
 				}
 			}
 
 			// 工具栏筛选项（地区主题 / 数据包）不在这条循环里：它们不住在 ToolBaseSystem 上，
-			//  TryCapture 对这两个 id 恒返回 false，值由下面这趟按「一组勾选」单独处理。
-			CaptureFilters(setting, store, prefab, tool);
+			// TryCapture 对这两个 id 恒返回 false，值由下面这趟按「一组勾选」单独处理。
+			// 它们属于**资产页**，但那份勾选是工具栏面板的状态、与当前工具是不是资产无关
+			// （选功能区时筛选面板照样在），所以这里按资产域开关判，而不是按 domain 判。
+			if (setting.IsDomainEnabled(ItemDomain.Asset))
+			{
+				CaptureFilters(setting, store, prefab, tool);
+			}
 		}
 
 		public void ApplyNow()
@@ -587,12 +619,23 @@ namespace ToolModeMemory.Systems
 			RefreshKeyCache(tool, prefab);
 
 			ToolItemDef[] items = ToolItemCatalog.Items;
+			ItemDomain domain = ToolMemoryBridge.DomainOf(tool, prefab);
+			if (!setting.IsDomainEnabled(domain))
+			{
+				// 本域整页关着：工具项什么都不写回，但工具栏筛选是资产页的两行、
+				// 住在面板上而不是这个工具上，照旧补一次（RestoreFilters 自己按资产域开关判）。
+				RestoreFilters(setting, store, prefab, tool);
+				return;
+			}
 			for (int i = 0; i < items.Length; i++)
 			{
 				ToolItemDef def = items[i];
+				// 只恢复**本域**那几项：三域同名项共用桶名，写回也必须按域过滤，
+				// 否则「道具」页的一项会去改道路工具面板上的同一个字段。
+				if (def.Domain != domain) continue;
 				if (!setting.IsItemEnabled(def.Id)) continue;
 				MemoryScope scope = setting.GetItemScope(def.Id);
-				string key = KeyFor(def, prefab, tool, scope);
+				string key = KeyFor(def, prefab, tool, scope, domain);
 
 				string[] subs = def.Subs;
 				int count = subs == null ? 1 : subs.Length;
@@ -666,6 +709,9 @@ namespace ToolModeMemory.Systems
 				ok = false;
 			}
 			ToolMemoryBridge.ForgetNames();
+			// ForgetNames 把 s_HaveSystems 也清了（换档时 EntityManager 重建，旧引用作废），
+			// 这里立刻用新世界的引用重新登记，否则进档后的第一次域判定会拿不到组件。
+			ToolMemoryBridge.SetSystems(m_PrefabSystem, base.EntityManager);
 			ForgetKeysAndCache();
 			m_LastPrefab = null;
 			// 写盘退避是按「这台机器此刻写不写得进去」累积出来的，换档（甚至换台机器）不该带着走

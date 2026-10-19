@@ -24,7 +24,7 @@
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
 	<ModId Value="160529" />
-	<ModVersion Value="0.6.2" />
+	<ModVersion Value="0.7.0" />
 	<GameVersion Value="1.6.*" />
 	<!--Private = 不公开（用户要求）。若平台拒绝此值再改 Unlisted。-->
 	<AccessLevel Value="Private" />
@@ -38,20 +38,22 @@
 	<ExternalLink Type="kofi" Url="https://ko-fi.com/yuexian7" />
 	<ExternalLink Type="x" Url="https://x.com/yuexian777/status/2101942150447702427?s=20" />
 	<ChangeLog>
-v0.6.2
+v0.7.0
 
-*   New tool item: Brush. Brush Size and Brush Strength now have a row of their own, so you can have the brush remembered without also switching on the road colours. It ships switched off, and nothing changes until you turn it on.
-*   The three ANARCHY tool items no longer show up when ANARCHY is not installed. They come back by themselves once it is.
-*   Save As now brings the settings you just made into the new save right away, instead of waiting for the next automatic write.
-*   Fixed: a renamed save no longer starts from scratch. It now finds the memory file it already had.
-*   Fixed: a save whose name Windows keeps for itself, such as CON or COM1, now gets a memory file like any other save.
+*   The settings are now split into five tabs: a Master tab, then Assets, Functions and Items (each page lists only the tools of that page), plus the About tab. The master switch is renamed Enable Mod: turning it off returns every tool to plain vanilla and greys out all the other tabs at once.
+*   Three per-page switches (remember asset / function / item tool items) gate their whole page; turning one off stops both recording and restoring on that page. The master switch follows them automatically: off only when all three are off, on as soon as any one is on.
+*   Every tool item is now classified into Assets / Functions / Items, with nothing lumped into an "Other" catch-all. New items: Colour (road colours, its own row) and Preserve Age (the tree brush row that vanilla only shows for tree assets).
+*   The same row appearing on several pages (Tool Mode, Snapping, Contour Lines, Underground Mode, Brush) now has its own toggle and its own sharing scope on each page, and the pages never share values with each other.
+*   The sharing level formerly called "Same asset type" is renamed to "Same type": on the Assets page it groups by what an asset serves, on the Functions page by the six function groups (zones, area tools, route tools, terrain tools, spaces & areas, markers & prefabs), on the Items page by the eight prop categories.
+*   Corrected several in-game notes about how vanilla shares a value, and rewrote every sharing-scope example so it matches what the tool actually does. Item help rewritten in all twelve languages.
 
 中文
 
-*   新增工具项「笔刷」：笔刷粗细、笔刷强度单独成行，想让笔刷被记住不用再连带打开道路配色。出厂默认关闭，不打开就没有任何变化。
-*   没安装 ANARCHY 时，ANARCHY 的三个工具项不再出现在列表里干占一行；装上之后它们自己会回来。
-*   另存为现在会把你刚刚调好的设置立刻带进新存档，不再等下一次自动写入。
-*   修复：改过名字的存档不再从头开始，它现在能认回自己原本那份记忆文件。
-*   修复：名字撞上 Windows 保留名（例如 CON、COM1）的存档，现在也能正常写出记忆文件。
+*   设置页拆成五个标签页：总开关、资产、功能、道具（每页只列属于这一页的工具项）、关于。总开关改名为「启用模组」：关掉它所有工具回到原版行为，其余四页同时整页变灰。
+*   三个分域开关（启用资产／功能／道具的工具项记忆）各自管住一整页：关掉就同时停止记录与恢复。大开关跟着三块自动反映：三块全关才关，任一块打开就打开。
+*   所有工具项都归入资产／功能／道具三类，不再有「其它」这种兜底项。新增两项：颜色（道路配色，独立成行）、保留年代（原版只在带树木数据的资产上出现的那一行）。
+*   同一个面板行出现在多页时（工具模式、对齐、等高线、地下模式、笔刷），每一页各有一套开关与共用范围，三页之间绝不互相共用数值。
+*   原「同类资产」这一档改叫「同类」：资产页按资产服务谁归类，功能页按六个功能分类（功能区、区域工具、路线工具、地形改造工具、空间与区域、标记与预制对象）归类，道具页按八类道具归类。
+*   修正了若干处对原版共用规律的错误标注，并把每一项的共用范围例子改写成与该工具实际行为一致；十二种语言的条目文案全部重写。
 </ChangeLog>
 </PublishConfiguration>

@@ -59,18 +59,45 @@ namespace ToolModeMemory.Memory
 		}
 
 		/// <summary>
-		/// 资产 / 功能分隔前缀。二者的可选项集合完全不同（功能区只有填充/滚动/刷涂，
+		/// 资产 / 功能 / 道具三域分隔前缀。三者的可选项集合完全不同（功能区只有填充/滚动/刷涂，
 		/// 道路有直线/曲线/网格/替换…），所以任何范围下都不允许跨这一界共用，
-		/// 「全局共用」的定义也因此是「所有支持该项的**资产**共用一份、**功能**共用另一份」。
+		/// 「全局共用」的定义也因此是「所有支持该项的**资产**共用一份、**功能**共用另一份、
+		/// **道具**再用第三份」。
+		///
+		/// v0.7.0 前「摆件/道具」混在资产域里（ObjectToolSystem 的刷涂就走 A|），
+		/// 三城 8 类道具与道路共用一个桶。v0.7.0 拆出第三域：
+		///   I| = 摆件（ObjectToolSystem 选中的道具资产）
+		/// 旧 v3 文件里的 A| 摆件值读回来后按新域重新落盘（见 MemoryStore 的域迁移）。
 		/// </summary>
 		public const string DOMAIN_ASSET = "A|";
 		public const string DOMAIN_FUNCTION = "F|";
+		public const string DOMAIN_ITEM = "I|";
 
-		/// <summary>给任何键加资产/功能域；null 键原样返回。</summary>
-		public static string WithDomain(string key, bool isFunction)
+		/// <summary>给任何键加域前缀；null 键原样返回。</summary>
+		public static string WithDomain(string key, ItemDomain domain)
 		{
 			if (string.IsNullOrEmpty(key)) return key;
-			return (isFunction ? DOMAIN_FUNCTION : DOMAIN_ASSET) + key;
+			return DomainPrefix(domain) + key;
+		}
+
+		/// <summary>域 → 前缀。</summary>
+		public static string DomainPrefix(ItemDomain domain)
+		{
+			switch (domain)
+			{
+				case ItemDomain.Function: return DOMAIN_FUNCTION;
+				case ItemDomain.Item: return DOMAIN_ITEM;
+				default: return DOMAIN_ASSET;
+			}
+		}
+
+		/// <summary>
+		/// 旧的两域写法（true=功能）。保留它是为了让离线回归与历史调用点不改语义：
+		/// 摆件域必须走上面的 ItemDomain 版本才拿得到 I| 前缀。
+		/// </summary>
+		public static string WithDomain(string key, bool isFunction)
+		{
+			return WithDomain(key, isFunction ? ItemDomain.Function : ItemDomain.Asset);
 		}
 
 		/// <summary>从完整键里剥掉域前缀，得到层级部分（日志/测试/旧数据判用）。</summary>
@@ -79,7 +106,19 @@ namespace ToolModeMemory.Memory
 			if (key == null) return null;
 			if (key.StartsWith(DOMAIN_ASSET, StringComparison.Ordinal)) return key.Substring(DOMAIN_ASSET.Length);
 			if (key.StartsWith(DOMAIN_FUNCTION, StringComparison.Ordinal)) return key.Substring(DOMAIN_FUNCTION.Length);
+			if (key.StartsWith(DOMAIN_ITEM, StringComparison.Ordinal)) return key.Substring(DOMAIN_ITEM.Length);
 			return key;
+		}
+
+		/// <summary>从完整键读出它属于哪个域；剥不出前缀的算资产域（旧 v2 键没前缀）。</summary>
+		public static ItemDomain DomainOf(string key)
+		{
+			if (key != null)
+			{
+				if (key.StartsWith(DOMAIN_FUNCTION, StringComparison.Ordinal)) return ItemDomain.Function;
+				if (key.StartsWith(DOMAIN_ITEM, StringComparison.Ordinal)) return ItemDomain.Item;
+			}
+			return ItemDomain.Asset;
 		}
 
 		/// <summary>把范围翻成键前缀，供日志与测试用。</summary>

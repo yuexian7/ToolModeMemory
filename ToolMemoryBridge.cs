@@ -74,6 +74,17 @@ namespace ToolModeMemory
 		private const string F_LR_LEFT = "leftRight.left";
 		private const string F_LR_RIGHT = "leftRight.right";
 		private const string F_GENERAL = "general";
+		/// <summary>
+		/// 「保留年代」（ObjectToolSystem.decorationMode，ToolOptions.DECORATION_MODE_TITLE）。
+		/// 原版只在选中带 TreeData 的资产时给出这一行（ObjectToolSystem L2418 的 allowAge），
+		/// 所以只在 allowAge 为真时读写 —— 与「笔刷只在 brushing 为真时读写」同一条规矩。
+		/// </summary>
+		private const string F_DECORATION = "decoration";
+		// 功能域 / 道具域的每一项**复用上面这些桶名**（"toolMode" / "snap" / "topography" /
+		// "underground" / "other.brushSize"…）：三域之间靠记忆键的 A| / F| / I| 前缀隔开，
+		// 捕获与写回再按当前工具的所属域过滤（ToolMemorySystem.CaptureNow / ApplyNow）。
+		// 好处是老玩家 0.6.2 之前记下的地形笔刷不用搬家；代价是这里不需要为 f. / i. 各写一份
+		// TryCapture 分支，两个域共用同一批捕获函数。
 		// 这两项不是「一个整数」而是「一组可选项」，所以不走 TryCapture / TryApply 那条路，
 		// 由下面的工具栏筛选段单独处理（目录里 id 逐字一致）。
 		private const string F_THEMES = "themes";
@@ -85,6 +96,11 @@ namespace ToolModeMemory
 		private const string FAM_AREA = "area";
 		private const string FAM_WATER = "water";
 		private const string FAM_OTHER = "other";
+		// v0.7.0 功能型工具各自的家族标签（理由见 ComputeFamily）。
+		private const string FAM_TERRAIN = "terrain";
+		private const string FAM_ROUTE = "route";
+		private const string FAM_BULLDOZE = "bulldoze";
+		private const string FAM_SELECTION = "selection";
 
 		/// <summary>键里域与家族的分隔符（'$' 不会出现在 prefab 名 / PrefabID 里）。</summary>
 		private const char kFamilySep = '$';
@@ -240,6 +256,12 @@ namespace ToolModeMemory
 		private static readonly Dictionary<PrefabBase, string> s_ClassCache =
 			new Dictionary<PrefabBase, string>();
 
+		/// <summary>道具域判定结果，按工具类型 × prefab 引用组合记忆（v0.7.0）。</summary>
+		private static readonly Dictionary<int, bool> s_PropCache = new Dictionary<int, bool>();
+
+		/// <summary>「标记与预制对象」判定结果，按 prefab 引用记忆（v0.7.0）。</summary>
+		private static readonly Dictionary<PrefabBase, bool> s_MarkerCache = new Dictionary<PrefabBase, bool>();
+
 		// ResolveKey 每帧都会带进系统引用，缓存下来供只有 (tool, prefab) 的公开判据复用
 		private static PrefabSystem s_CachedPrefabSystem;
 		private static EntityManager s_Em;
@@ -263,6 +285,8 @@ namespace ToolModeMemory
 			s_NameCache.Clear();
 			s_LimitCache.Clear();
 			s_FnCache.Clear();
+			s_PropCache.Clear();
+			s_MarkerCache.Clear();
 			s_ClassCache.Clear();
 			s_FamilyCache.Clear();
 			s_HasColorCache.Clear();
@@ -294,17 +318,45 @@ namespace ToolModeMemory
 		}
 
 		/// <summary>
+		/// 指定域的重载：功能域 / 道具域的「同类」与资产域判据不同（见 ResolveLevelKey
+		/// 的 Category 分支）。调用方在已经知道这一项属于哪个域时必须走这条，
+		/// 否则「同类」会退化成按单个资产/功能发键，把 6 大类与 8 类道具全都拆散。
+		/// </summary>
+		public static string ResolveKey(MemoryScope scope, PrefabBase prefab, ToolBaseSystem tool,
+			PrefabSystem prefabSystem, EntityManager em, ItemDomain domain,
+			FuncFacts funcFacts, bool categoryByUiHierarchy = false)
+		{
+			string levelKey = ResolveLevelKey(scope, prefab, tool, prefabSystem, em,
+				categoryByUiHierarchy, domain, funcFacts);
+			if (levelKey == null) levelKey = ToolIdentity(tool);
+			return MemoryKeys.WithDomain(levelKey, domain) + kFamilySep + Family(tool);
+		}
+
+		/// <summary>
 		/// 只要层级键，不加域和家族。工具栏筛选项（地区主题 / 数据包）用得上：
 		/// 那份选择是 ToolbarUISystem 的**界面全局状态**，不属于某个资产/功能，也不属于
 		/// 某个枚举家族（原版切菜单、换工具都不重置它，只有读档重置，见 T:624-631），
 		/// 套上域/家族就等于把「全局共用」偷偷变成「每个家族各一份」。
 		/// 顺带把 prefabSystem / em 缓存下来，供筛选项的 ECS 读用。永不返回 null。
 		///
-		/// categoryByUiHierarchy：「同类资产」这一档要不要仍按工具栏的（菜单+分类）发键。
+		/// categoryByUiHierarchy：「同类」这一档要不要仍按工具栏的（菜单+分类）发键。
 		/// 只有地区主题 / 数据包两行用 true，理由见下面 Category 分支的注释。
 		/// </summary>
 		public static string ResolveLevelKey(MemoryScope scope, PrefabBase prefab, ToolBaseSystem tool,
 			PrefabSystem prefabSystem, EntityManager em, bool categoryByUiHierarchy = false)
+		{
+			return ResolveLevelKey(scope, prefab, tool, prefabSystem, em, categoryByUiHierarchy,
+				ItemDomain.Asset, FuncFacts.Empty());
+		}
+
+		/// <summary>
+		/// 带域的重载。资产域仍按 AssetClass 归「同类」；功能域按 FuncClass 判 6 大类；
+		/// 道具域按城市美化下的 8 类道具归组。其余四档（同组/同菜单/全局共用/全局不共用）
+		/// 三个域规则相同，只是全局共用被 domain 前缀切成三份互不相通的桶。
+		/// </summary>
+		public static string ResolveLevelKey(MemoryScope scope, PrefabBase prefab, ToolBaseSystem tool,
+			PrefabSystem prefabSystem, EntityManager em, bool categoryByUiHierarchy,
+			ItemDomain domain, FuncFacts funcFacts)
 		{
 			string levelKey;
 			try
@@ -349,6 +401,28 @@ namespace ToolModeMemory
 							levelKey = MemoryKeys.Category(uiCategory);
 							break;
 						}
+						if (domain == ItemDomain.Function)
+						{
+							// 功能域「同类」= 6 大类（owner 定案）。AssetFacts 拿不到功能分类，
+							// 判据是 FuncFacts.CollectFuncFacts 抽出的那套组件事实。
+							string tok = FuncClass.Key(funcFacts);
+							levelKey = tok != null
+								? MemoryKeys.Category(tok)
+								: MemoryKeys.Tool(tool != null ? tool.toolID : null);
+							break;
+						}
+						if (domain == ItemDomain.Item)
+						{
+							// 道具域「同类」= 城市美化下的 8 类道具（owner 定案）。
+							string uiMenu;
+							string uiCategory;
+							ResolveHierarchy(prefab, prefabSystem, em, out uiMenu, out uiCategory);
+							string tok = PropClass.CategoryToken(uiMenu, uiCategory);
+							levelKey = tok != null
+								? MemoryKeys.Category(tok)
+								: MemoryKeys.Tool(tool != null ? tool.toolID : null);
+							break;
+						}
 						string cls = AssetClassOf(prefab, prefabSystem, em);
 						levelKey = cls != null
 							? MemoryKeys.Category(cls)
@@ -388,8 +462,221 @@ namespace ToolModeMemory
 		}
 
 		/// <summary>
+		/// 按（工具, 资产, 当前域）解析完整键。三域的「同类」判据不同，所以调用方必须先
+		/// 定好 <see cref="ItemDomain"/>；资产页传 ItemDomain.Asset（与旧 IsFunction 等价），
+		/// 功能页传 ItemDomain.Function，道具页传 ItemDomain.Item。永不返回 null。
+		/// </summary>
+		public static string ResolveKey(MemoryScope scope, PrefabBase prefab, ToolBaseSystem tool,
+			PrefabSystem prefabSystem, EntityManager em, ItemDomain domain, bool categoryByUiHierarchy = false)
+		{
+			FuncFacts facts = domain == ItemDomain.Function
+				? CollectFuncFacts(tool, prefab, prefabSystem, em)
+				: FuncFacts.Empty();
+			return ResolveKey(scope, prefab, tool, prefabSystem, em, domain, facts, categoryByUiHierarchy);
+		}
+
+		// ============================ 域判定 ============================
+		//
+		// v0.7.0 起不再是「资产 / 功能」两分，而是三域：
+		//   Asset    工具栏里的**资产**干活（NetToolSystem 的道路/轨道/管线/电线、
+		//            ObjectToolSystem 的普通建筑/摆件、UpgradeToolSystem 的升级件）
+		//   Function 功能型工具（区划 / 区域 / 地形 / 水体 / 推土 / 选择 / 路线）
+		//   Item     城市美化菜单下的 8 类道具（SubServices 的 Props* 分类）
+		// 「道具」其实是 ObjectToolSystem 的一种，但它有自己的工具项语义（保留年代笔刷等），
+		// owner 要求三域互不相通，所以单独成一个域，前缀 I|。
+		// 判据只看实时数据（工具类型 + patch 后的 UI 层级 + 资产组件），
+		// 第三方模组加的工具/资产认不出就退化成「按原版行为、不记忆」（owner 2026-10-19）。
+
+		/// <summary>
+		/// 道具域判定：当前选中的是否是城市美化菜单下的 8 类道具之一。
+		/// 判据是实时 UI 层级（菜单名 == "Landscaping" 且分类是 Props* 八类）。
+		/// 不在工具栏层级里、或分类不认识，一律返回 false（走资产/功能域，按原版行为）。
+		/// 结果按 (工具类型, prefab) 缓存。永不抛。
+		/// </summary>
+		public static bool IsProp(ToolBaseSystem tool, PrefabBase prefab)
+		{
+			try
+			{
+				if (tool == null || prefab == null) return false;
+				PrefabSystem ps = s_CachedPrefabSystem;
+				if (ps == null || !s_HaveSystems) return false;
+				int hash = (tool != null ? tool.GetHashCode() : 0) ^ (prefab != null ? prefab.GetHashCode() : 0);
+				bool hit;
+				if (s_PropCache.TryGetValue(hash, out hit)) return hit;
+				bool r = ComputeIsProp(tool, prefab, ps);
+				if (s_PropCache.Count < kCacheCap) s_PropCache[hash] = r;
+				return r;
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		private static bool ComputeIsProp(ToolBaseSystem tool, PrefabBase prefab, PrefabSystem ps)
+		{
+			// 工具必须是摆件工具（它才有 mode / 笔刷 / 保留年代这些行）；升级工具不是道具工具。
+			if (!(tool is ObjectToolSystem)) return false;
+			string menu;
+			string category;
+			ResolveHierarchy(prefab, ps, s_Em, out menu, out category);
+			if (!PropClass.IsPropMenu(menu)) return false;
+			return PropClass.CategoryToken(menu, category) != null;
+		}
+
+		/// <summary>
+		/// 显式登记 ECS 引用，供只有 (tool, prefab) 的判据使用。
+		/// **必须由系统在 OnCreate 就调用**：DomainOf 要在算键之前先定域，
+		/// 而 s_HaveSystems 以前只在 ResolveLevelKey 里被顺手填上 —— 那样头几帧
+		/// 它还是 false，ComputeIsFunction 会一律答「是功能」，于是道路工具的值
+		/// 被记进 F| 前缀的桶里（玩家看得见的是「资产页设了没用、功能页冒出道路的设置」）。
+		/// 每次调用都覆盖，因为换档时 EntityManager 会重建（系统在 OnEnteredGame 里重调）。
+		/// </summary>
+		public static void SetSystems(PrefabSystem prefabSystem, EntityManager em)
+		{
+			if (prefabSystem != null) s_CachedPrefabSystem = prefabSystem;
+			s_Em = em;
+			// 与 ResolveLevelKey 原本的写法一致：拿到引用就算就位。EntityManager 是结构体，
+			// 没有公开的 IsCreated 可问，而调用方（ToolMemorySystem）给的必然是自己所在世界的 manager。
+			s_HaveSystems = prefabSystem != null;
+		}
+
+		/// <summary>
+		/// 当前 (工具, 资产) 属于哪个标签页。**捕获与写回都必须按这个过滤**：
+		/// 三域的同名项共用同一个桶名（"toolMode" / "snap" / "other.brushSize"…，为了保住
+		/// 老玩家已记下的值），如果不按域过滤，道路工具（资产域）这一帧会把它的 mode
+		/// 同时写进「功能」页与「道具」页的桶里（那两页的键各自存在，谁都没被真正读回来，
+		/// 但桶里会攒下一堆不属于那个域的值，玩家下次在功能区恢复时就被这些脏值带偏）。
+		///
+		/// 判据顺序就是优先级：
+		///   1) 标记与预制对象 → **功能**域。owner 2026-10-19 定的功能 6 大类里就有
+		///      「所有标记与预制对象（比如动物生成工具）」。这类东西虽然由摆件工具放置、
+		///      也在工具栏层级里挂着 UIObjectData，但它不是玩家买下来经营城市的资产，
+		///      留在资产域就与 owner 的分类冲突；
+		///   2) 城市美化的 8 类道具 → 道具域；
+		///   3) 功能型工具（区划 / 区域 / 地形 / 水体 / 路线 / 推土 / 选择）或没选中工具栏资产 → 功能域；
+		///   4) 其余 → 资产域。
+		/// </summary>
+		public static ItemDomain DomainOf(ToolBaseSystem tool, PrefabBase prefab)
+		{
+			if (IsMarker(tool, prefab)) return ItemDomain.Function;
+			if (IsProp(tool, prefab)) return ItemDomain.Item;
+			if (IsFunction(tool, prefab)) return ItemDomain.Function;
+			return ItemDomain.Asset;
+		}
+
+		/// <summary>
+		/// 是否「标记与预制对象」（动物生成工具、生成位置、车辆生成器…）。
+		/// 只有摆件工具会放这类东西，所以先用工具类型挡掉绝大多数帧，再查组件；
+		/// 结果按 prefab 引用缓存，一个存档期内一件资产只算一次。永不抛。
+		/// </summary>
+		public static bool IsMarker(ToolBaseSystem tool, PrefabBase prefab)
+		{
+			try
+			{
+				if (prefab == null) return false;
+				if (!(tool is ObjectToolSystem)) return false;
+				bool hit;
+				if (s_MarkerCache.TryGetValue(prefab, out hit)) return hit;
+				PrefabSystem ps = s_CachedPrefabSystem;
+				if (ps == null || !s_HaveSystems) return false;
+				Entity e = ps.GetEntity(prefab);
+				bool r = e != Entity.Null && s_Em.Exists(e) && IsMarkerPrefab(prefab, e, s_Em);
+				if (s_MarkerCache.Count < kCacheCap) s_MarkerCache[prefab] = r;
+				return r;
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// 功能域的事实采集：把组件事实抽成 FuncFacts（纯判定用），
+		/// 由 ResolveLevelKey 的功能域 Category 分支使用。失败返回 Empty（= 判不出，按工具隔离）。
+		/// </summary>
+		public static FuncFacts CollectFuncFacts(ToolBaseSystem tool, PrefabBase prefab,
+			PrefabSystem prefabSystem, EntityManager em)
+		{
+			FuncFacts f = FuncFacts.Empty();
+			try
+			{
+				if (tool != null)
+				{
+					f.ZoneTool = tool is ZoneToolSystem;
+					f.AreaTool = tool is AreaToolSystem;
+					f.TerrainTool = tool is TerrainToolSystem;
+					f.RouteTool = tool is RouteToolSystem;
+					f.SelectionTool = tool is SelectionToolSystem;
+					f.BulldozeTool = tool is BulldozeToolSystem;
+				}
+				if (prefab != null && prefabSystem != null)
+				{
+					Entity e = prefabSystem.GetEntity(prefab);
+					if (e != Entity.Null && em.Exists(e))
+					{
+						ZoneData zone;
+						if (em.TryGetComponent(e, out zone))
+						{
+							f.ZoneAreaType = (int)zone.m_AreaType;
+							f.ZoneOffice = (zone.m_ZoneFlags & Game.Prefabs.ZoneFlags.Office) != 0;
+						}
+						AreaGeometryData geom;
+						if (em.TryGetComponent(e, out geom))
+						{
+							f.AreaKind = (int)geom.m_Type;
+						}
+						f.Extractor = em.HasComponent<ExtractorAreaData>(e);
+						f.ParkArea = em.HasComponent<ParkData>(e);
+						f.Marker = IsMarkerPrefab(prefab, e, em);
+						TerraformingData terra;
+						if (em.TryGetComponent(e, out terra))
+						{
+							f.TerraformType = (int)terra.m_Type;
+							f.TerraformTarget = (int)terra.m_Target;
+						}
+						RouteData route;
+						if (em.TryGetComponent(e, out route)) f.RouteLine = true;
+						f.TransportType = ReadTransportType(e, em);
+					}
+				}
+			}
+			catch
+			{
+				return FuncFacts.Empty();
+			}
+			return f;
+		}
+
+		/// <summary>
+		/// 标记与预制对象：MarkerObjectPrefab 家族（生成位置、动物生成工具、车辆生成器…）。
+		/// 三条判据都要，因为 MarkerObjectPrefab 只是**基类**，官方资产在它上面再挂组件：
+		///   1) prefab 本身是 MarkerObjectPrefab（MarkerObjectPrefab.GetPrefabComponents 加
+		///      ObjectGeometryData / SubMesh；它自己不带可判的 prefab 组件，所以走类型判断）；
+		///   2) 实体挂着 SpawnLocationData（Game.Prefabs.SpawnLocation 的 GetPrefabComponents）；
+		///   3) 实体挂着 CreatureSpawnData（Game.Prefabs.CreatureSpawner 的 GetPrefabComponents）。
+		/// 注意 **不能**判 Game.Objects.Marker：那是 MarkerObjectPrefab.GetArchetypeComponents
+		/// 加的，属于**生成出来的实例实体**的 archetype，prefab 实体上没有，判它永远为假。
+		/// 反编译来源：ilspycmd -t Game.Prefabs.MarkerObjectPrefab / SpawnLocation / CreatureSpawner。
+		/// </summary>
+		private static bool IsMarkerPrefab(PrefabBase prefab, Entity e, EntityManager em)
+		{
+			if (prefab is MarkerObjectPrefab) return true;
+			if (em.HasComponent<SpawnLocationData>(e)) return true;
+			return em.HasComponent<CreatureSpawnData>(e);
+		}
+
+		/// <summary>路线种类：TransportLinePrefab 带的 TransportLineData.m_TransportType；读不到 -1。</summary>
+		private static int ReadTransportType(Entity e, EntityManager em)
+		{
+			TransportLineData transport;
+			if (em.TryGetComponent(e, out transport)) return (int)transport.m_TransportType;
+			return -1;
+		}
+
+		/// <summary>
 		/// 是否「功能区」面板。两条判据（取并集）：
-		/// 1) 功能型工具（区划 / 区域 / 水体 / 地形 / 推土 / 选择）永远是功能——它们的
+		/// 1) 功能型工具（区划 / 区域 / 水体 / 地形 / 推土 / 选择 / 路线）永远是功能——它们的
 		///    选项集合（填充-框选-刷涂、生成/编辑…）和工具栏资产完全不同，即使区划与
 		///    区域样式在工具栏里也占一个菜单位置（prefab 同样挂着 UIObjectData），
 		///    也绝不与建筑/道路这类资产共用同一个桶；
@@ -401,6 +688,10 @@ namespace ToolModeMemory
 		{
 			if (prefab == null) return true;
 			if (FunctionByToolType(tool)) return true;
+			// 系统引用还没就位（OnCreate 之前的极早期帧）时**不缓存**：
+			// 那时 ComputeIsFunction 只会答「是功能」，把这个临时答案记进缓存
+			// 就等于把这件资产这辈子都钉死在错误的域里。
+			if (!s_HaveSystems) return true;
 			bool cached;
 			if (s_FnCache.TryGetValue(prefab, out cached)) return cached;
 			bool r = ComputeIsFunction(prefab);
@@ -610,7 +901,12 @@ namespace ToolModeMemory
 			return kind;
 		}
 
-		/// <summary>判据 1：按工具类型直接定为功能的面板。</summary>
+		/// <summary>
+		/// 判据 1：按工具类型直接定为功能的面板。
+		/// v0.7.0 加上 RouteToolSystem：owner 需求 1 明确「交通运输菜单栏里的所有路线工具」
+		/// 属于功能的 6 大类之一。路线资产（TransportLinePrefab）在工具栏里确实挂着
+		/// UIObjectData，光看数据会被判成资产，所以按工具类型这一条必须写全。
+		/// </summary>
 		private static bool FunctionByToolType(ToolBaseSystem tool)
 		{
 			if (tool == null) return true;
@@ -620,6 +916,7 @@ namespace ToolModeMemory
 			if (tool is TerrainToolSystem) return true;
 			if (tool is BulldozeToolSystem) return true;
 			if (tool is SelectionToolSystem) return true;
+			if (tool is RouteToolSystem) return true;
 			return false;
 		}
 
@@ -647,6 +944,13 @@ namespace ToolModeMemory
 			if (tool is ZoneToolSystem) return FAM_ZONE;
 			if (tool is AreaToolSystem) return FAM_AREA;
 			if (tool is WaterToolSystem) return FAM_WATER;
+			// v0.7.0：功能型工具不再共用 other。它们各自的「对齐」可选项差别很大
+			//（地形工具与推土工具能吸附的东西完全不是一回事），挤在同一把键下
+			// 会让「地形工具关掉某项对齐」把推土工具的同一项也关掉 —— 那是玩家看不懂的串档。
+			if (tool is TerrainToolSystem) return FAM_TERRAIN;
+			if (tool is RouteToolSystem) return FAM_ROUTE;
+			if (tool is BulldozeToolSystem) return FAM_BULLDOZE;
+			if (tool is SelectionToolSystem) return FAM_SELECTION;
 			return FAM_OTHER;
 		}
 
@@ -757,6 +1061,8 @@ namespace ToolModeMemory
 				// NetToolSystem.OnCreate(): elevationStep = 10f（写 0 会让 ElevationUp/Down 除零）
 				case F_ELEVATION_STEP: return 1000;
 				case F_UNDERGROUND: return 0;
+				// 「保留年代」出厂 = 关（ObjectToolSystem.ResetToolPreferences L2643 decorationMode = false）
+				case F_DECORATION: return 0;
 				// 配色没有全局出厂值（每个资产的默认色在自己的 NetCustomColorData 里），
 				// 0 是「无默认」哨兵，ApplyColor 见 0 直接不写。
 				case F_COLOR0:
@@ -806,6 +1112,7 @@ namespace ToolModeMemory
 					case F_COLOR3: return CaptureColor(tool, 3, out value);
 					case F_BRUSH_SIZE: return CaptureBrush(tool, true, out value);
 					case F_BRUSH_STRENGTH: return CaptureBrush(tool, false, out value);
+					case F_DECORATION: return CaptureDecoration(tool, out value);
 					case F_ANARCHY: return CaptureAnarchyEnabled(out value);
 					case F_LR_LEFT: return CaptureAnarchySide(tool, true, out value);
 					case F_LR_RIGHT: return CaptureAnarchySide(tool, false, out value);
@@ -822,9 +1129,22 @@ namespace ToolModeMemory
 		}
 
 		/// <summary>
-		/// 工具模式：各家族各自的枚举。推土工具按需求不参与记忆；
+		/// 工具模式：各家族各自的枚举。
 		/// TerrainToolSystem / UpgradeToolSystem 没有 mode 属性（反编译确认，
 		/// 它们的「模式」就是选中的资产本身），所以这两个工具自然返回 false。
+		///
+		/// v0.7.0 补上推土工具：BulldozeToolSystem 有 public Mode（MainElements / SubElements /
+		/// Everything，就是面板上的「主要元素 / 附属元素 / 全部」），并且它自己
+		/// override 了 GetUIModes（反编译 Game.Tools/BulldozeToolSystem.cs L1298），
+		/// 所以这一行是玩家看得见、摸得着的，记它安全。
+		///
+		/// **路线工具与选择工具不参与本项**：两者的类里都没有 GetUIModes 覆写
+		/// （ilspycmd -t Game.Tools.RouteToolSystem / SelectionToolSystem 核实），
+		/// 也就是面板上根本没有「工具模式」这一行。它们内部虽有 RouteToolSystem.m_State
+		/// 与 SelectionToolSystem.selectionType，那是**输入流程的临时状态**
+		/// （选中一段路线才进 Modify、点空白处回 Default；selectionType 由 DistrictsSection
+		/// 在玩家点选市辖区时写），把它当玩家设置记下来再写回，等于凭空造一行看不见的设置、
+		/// 还可能把玩家正在进行的选线打断 —— 这是安全红线，不做。
 		/// </summary>
 		private static bool CaptureToolMode(ToolBaseSystem tool, out int value)
 		{
@@ -839,6 +1159,8 @@ namespace ToolModeMemory
 			if (area != null) { value = (int)area.mode; return true; }
 			WaterToolSystem water = tool as WaterToolSystem;
 			if (water != null) { value = (int)water.mode; return true; }
+			BulldozeToolSystem bulldoze = tool as BulldozeToolSystem;
+			if (bulldoze != null) { value = (int)bulldoze.mode; return true; }
 			return false;
 		}
 
@@ -977,6 +1299,25 @@ namespace ToolModeMemory
 		}
 
 		/// <summary>
+		/// 保留年代（ObjectToolSystem.decorationMode，面板行名 ToolOptions.DECORATION_MODE_TITLE，
+		/// zh-HANS 官方译名「保留年代」，en「Preserve Age」，说明是「关闭增长与收割」）。
+		/// 只在 allowAge 为真时读写 —— 原版 L2418
+		/// <c>allowAge = actionMode.IsGame() &amp;&amp; HasComponent&lt;TreeData&gt;(m_SelectedPrefab)</c>，
+		/// 也就是**只有带 TreeData 的资产（树木那一类）面板上才有这一行**。
+		/// 与「笔刷只在 brushing 为真时读写」是同一条规矩：面板上没有的行绝不记、绝不写，
+		/// 否则会把上一件资产的开关状态灌给根本没有这一行的资产。
+		/// </summary>
+		private static bool CaptureDecoration(ToolBaseSystem tool, out int value)
+		{
+			value = 0;
+			ObjectToolSystem obj = tool as ObjectToolSystem;
+			if (obj == null) return false;
+			if (!obj.allowAge) return false;
+			value = obj.decorationMode ? 1 : 0;
+			return true;
+		}
+
+		/// <summary>
 		/// Anarchy 总开关：读公开属性 AnarchyEnabled（就是私有 m_AnarchyEnabled）。
 		/// 它是 Anarchy 的**会话全局**状态、不属于任何工具，所以不按工具设门槛——
 		/// anarchy 这一项对 Anarchy 支持的所有工具都成立（道路、建筑、区划…）。
@@ -1065,6 +1406,7 @@ namespace ToolModeMemory
 					case F_COLOR3: return ApplyColor(tool, 3, value);
 					case F_BRUSH_SIZE: return ApplyBrush(tool, true, value);
 					case F_BRUSH_STRENGTH: return ApplyBrush(tool, false, value);
+					case F_DECORATION: return ApplyDecoration(tool, value);
 					case F_ANARCHY: return ApplyAnarchyEnabled(value);
 					case F_LR_LEFT: return ApplySideUpgrade(tool, true, value);
 					case F_LR_RIGHT: return ApplySideUpgrade(tool, false, value);
@@ -1125,6 +1467,17 @@ namespace ToolModeMemory
 				water.mode = (WaterToolSystem.Mode)value;
 				return true;
 			}
+			BulldozeToolSystem bulldoze = tool as BulldozeToolSystem;
+			if (bulldoze != null)
+			{
+				// enum Mode { MainElements, SubElements, Everything }
+				if (value < 0 || value > 2) return false;
+				bulldoze.mode = (BulldozeToolSystem.Mode)value;
+				return true;
+			}
+			// 路线工具 / 选择工具**不在这里**：两者都没有 GetUIModes 覆写，面板上没有
+			// 「工具模式」这一行（判据与理由见 CaptureToolMode 的注释），
+			// 写回它们内部的 m_State / selectionType 等于改一个玩家看不见的状态。
 			return false;
 		}
 
@@ -1286,6 +1639,21 @@ namespace ToolModeMemory
 			object ui = AnarchyUi();
 			if (ui == null || h == null || h.EnabledField == null) return false;
 			h.EnabledField.SetValue(ui, value != 0);
+			return true;
+		}
+
+		/// <summary>
+		/// 写回「保留年代」。门槛与捕获完全一致：必须是摆件工具，而且当前选中的资产
+		/// 面板上真的有这一行（allowAge）。给一件没有这一行的资产硬写 decorationMode
+		/// 不会影响面板，却会悄悄改变它生成物体的方式（树木不再成长/收割），
+		/// 那是玩家看不见的副作用，绝不写。
+		/// </summary>
+		private static bool ApplyDecoration(ToolBaseSystem tool, int value)
+		{
+			ObjectToolSystem obj = tool as ObjectToolSystem;
+			if (obj == null) return false;
+			if (!obj.allowAge) return false;
+			obj.decorationMode = value != 0;
 			return true;
 		}
 

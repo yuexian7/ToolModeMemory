@@ -26,17 +26,13 @@ namespace ToolModeMemory
 			d["group.reset"] = "Zarządzanie pamięcią";
 			d["group.about"] = "Informacje i linki";
 
-			d["enabled.label"] = "Włącz pamięć trybu narzędzia";
-			d["enabled.desc"] = "Domyślnie włączone. Dopóki to włączone, każda wartość jest zapisywana na bieżąco, więc po powrocie do zapisu panele wyglądają tak, jak je zostawiłeś. Wyłączenie pojedynczej pozycji tylko ją wyłącza z przywracania - jej wartości nadal są zapisywane. Dopiero wyłączenie tego głównego przełącznika zatrzymuje zapisowanie i każde narzędzie wraca do zachowania z gry.";
 			d["scope.label"] = "Zakres współdzielenia";
 			d["scope.desc"] = "Jak szeroko współdzielona jest wartość tej pozycji. Nawiasy na liście rozwijanej pokazują, co robi gra oryginalna i co polecamy.";
 			d["scope.line.group"] = "Ta sama grupa: {0}";
 			d["scope.line.menu"] = "To samo menu: {0}";
 			d[kScopeLineCategory] = "Ten sam typ zasobu: zasoby grupujemy według tego, komu faktycznie służą, więc liczba pasów, szerokość, poziom, rozmiar i kategoria na pasku narzędzi nie mają znaczenia (mały parking i duży parking to ten sam typ), za to mosty, nabrzeża i węzły drogowe tworzą osobne typy, inne niż drogi, czyli {0}";
 			d["scope.line.shared"] = "Globalnie: każdy zasób i każda funkcja obsługujące tę pozycję współdzielą jedną wartość, ale zasoby i funkcje nie współdzielą jej między sobą";
-			d["scope.line.sharedSingle"] = "Globalnie: każdy zasób i każda funkcja obsługujące tę pozycję współdzielą jedną wartość, a zasoby i funkcje też współdzielą ją między sobą";
 			d["scope.line.unique"] = "Bez współdzielenia: każdy zasób i każda funkcja obsługujące tę pozycję są ustawiane zupełnie niezależnie";
-			d["scope.note"] = "Uwaga: przez funkcje rozumie się tu Strefy, Przestrzenie i obszary, Terraformowanie, Znacznik i prefaby obiektów, czyli narzędzia, które nie są zasobami";
 
 			d[kScopeGroup] = "Ta sama grupa";
 			d[kScopeMenu] = "To samo menu";
@@ -129,10 +125,77 @@ namespace ToolModeMemory
 
 			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
 			d["item.brush.label"] = "Pędzel";
-			d["item.brush.desc"] = "Zapamiętuje wiersze Rozmiar pędzla i Nacisk pędzla: rozmiar określa, jaki obszar obejmuje jedno pociągnięcie, a nacisk, ile zmienia każde pociągnięcie. Działa tylko dla narzędzi, które mają te dwa wiersze, czyli narzędzi kształtowania krajobrazu (Narzędzie do podnoszenia lub obniżania terenu, Narzędzie do wygładzania terenu, Narzędzie do wyrównania terenu, Narzędzie do tworzenia spadków terenu, Narzędzie do malowania tekstury i pozostałych) oraz trybu pędzla przy stawianiu obiektów; narzędzia bez tych wierszy nie są ani zapisywane, ani zmieniane.";
-			d["item.brush.ex.group"] = "na przykład ustawisz Podnieś na rozmiar pędzla 30 m i inne narzędzia krajobrazu w tej samej grupie też mają 30 m, a narzędzie z innej grupy nie";
-			d["item.brush.ex.menu"] = "każde narzędzie krajobrazu kliknięte w menu Kształtowanie krajobrazu używa tego samego rozmiaru i nacisku pędzla, ale po przejściu do menu Elektryczność nie";
-			d["item.brush.ex.category"] = "ten poziom grupuje zasoby według tego, czemu służą, a narzędzia krajobrazu niczemu nie służą, więc każde ma własny zapis: przejście z Podnieś na Maluj teksturę używa pędzla tego narzędzia (wymaga własnego ustawienia)";
+
+		// ==================== v0.7.0 新增 / 重写（pl-PL）====================
+		d["domain.asset.label"] = "Włącz pamięć pozycji narzędzi zasobów";
+		d["domain.asset.desc"] = "Obejmuje wszystkie pozycje na stronie Zasoby: zapisywanie i przywracanie przy wczytaniu to jeden przełącznik. Po wyłączeniu cała strona Zasoby jest wyszarzona, narzędzia zachowują się jak w grze oryginalnej, a już zapisane wartości pozostają nienaruszone w pliku, więc ponowne włączenie je przywraca.";
+		d["domain.function.label"] = "Włącz pamięć pozycji narzędzi funkcji";
+		d["domain.function.desc"] = "Obejmuje wszystkie pozycje na stronie Funkcje, czyli sześć grup funkcji: Strefy, narzędzia obszarów, wszystkie narzędzia tras, Terraformowanie, Przestrzenie i obszary oraz Znacznik i prefaby obiektów. Po wyłączeniu cała strona Funkcje jest wyszarzona, narzędzia zachowują się jak w grze oryginalnej, a już zapisane wartości pozostają nienaruszone w pliku, więc ponowne włączenie je przywraca.";
+		d["domain.item.label"] = "Włącz pamięć pozycji narzędzi rekwizytów";
+		d["domain.item.desc"] = "Obejmuje wszystkie pozycje na stronie Rekwizyty, czyli osiem kategorii rekwizytów menu Kształtowanie krajobrazu: Natura, Park, Rekwizyty (strefa mieszkalna), Rekwizyty (strefa komercyjna), Rekwizyty (strefa przemysłowa), Gruz, Naklejki i Rośliny doniczkowe. Po wyłączeniu cała strona Rekwizyty jest wyszarzona, narzędzia zachowują się jak w grze oryginalnej, a już zapisane wartości pozostają nienaruszone w pliku, więc ponowne włączenie je przywraca.";
+		d["group.domain"] = "Przełączniki stron";
+		d["item.color.label"] = "Kolor";
+		d["item.decoration.label"] = "Zachowaj wiek";
+		d["item.decoration.desc"] = "Zapamiętuje przełącznik «Zachowaj wiek»: gdy jest włączony, drzewa, które zamalujesz pędzlem albo postawisz, przestają rosnąć i przestają umierać ze starości, czyli ich wiek zostaje zamrożony na obecnym poziomie. Wiersz pojawia się tylko na zasobach przenoszących dane drzew (malowanie drzew z menu Roślinność); zasoby, których panel nie ma takiego wiersza, nie są ani zapisywane, ani zmieniane.";
+		d["item.decoration.ex.category"] = "przełączenie na inny rodzaj drzewa nadal daje włączone «Zachowaj wiek», ale ten wiersz istnieje tylko na zasobach z danymi drzew, więc malowanie naklejki nie ma wcale takiego wiersza (wymaga własnego ustawienia)";
+		d["item.decoration.ex.group"] = "na przykład włączysz «Zachowaj wiek» przy malowaniu drzew i inne sposoby malowania roślinności w tej samej grupie też są włączone, a inna grupa nie";
+		d["item.decoration.ex.menu"] = "każdy zasób w menu Roślinność ma włączone «Zachowaj wiek», ale po przejściu do innego menu już nie";
+		d["item.f.brush.desc"] = "Zapamiętuje wiersze «Rozmiar pędzla» i «Nacisk pędzla» w panelach funkcji: rozmiar określa, jaki obszar obejmuje jedno pociągnięcie, a nacisk, ile zmienia każde pociągnięcie. Działają tylko te funkcje, których panel naprawdę ma te wiersze, czyli dziewięć narzędzi terraformowania (Narzędzie do podnoszenia lub obniżania terenu, Narzędzie do wygładzania terenu, Narzędzie do wyrównania terenu, Narzędzie do tworzenia spadków terenu, Narzędzie do malowania tekstury 01-04 i Gumka tekstury) oraz malowanie stref; funkcje bez tych wierszy nie są ani zapisywane, ani zmieniane.";
+		d["item.f.brush.ex.category"] = "przełączenie na inną grupę funkcji używa własnego pędzla tej grupy (wymaga własnego ustawienia), nawet gdy oba panele mają te dwa wiersze";
+		d["item.f.brush.ex.group"] = "na przykład ustawisz rozmiar pędzla na 30 m na jednym narzędziu terraformowania i inne narzędzia terraformowania w tej samej grupie też mają 30 m, a inna grupa nie";
+		d["item.f.brush.ex.menu"] = "każde narzędzie w grupie Terraformowanie używa tego samego rozmiaru i nacisku pędzla, a inna grupa funkcji nie";
+		d["item.f.snap.desc"] = "Zapamiętuje każdy przełącznik wiersza «Przyciąganie» w panelach funkcji: Przyciągaj do kątów prostych, Przyciągaj do siatki w strefie, Przyciągaj do dróg, Przyciągaj do strony właściciela, Pokaż linie konturów i tak dalej — to, które przełączniki się pojawią, zależy od narzędzia. Pochodzący z gry przełącznik «Wł./wył. przyciąganie» to przełącznik zbiorczy i nie jest zapamiętywany. Wiersz przyciągania na stronie Zasoby i na stronie Rekwizyty jest zapamiętywany osobno i żaden nie wpływa na pozostałe.";
+		d["item.f.snap.ex.category"] = "przełączenie na inną grupę funkcji wraca do ustawień domyślnych tej grupy (wymaga własnego ustawienia), nawet gdy obie są dostępne z tego samego menu paska narzędzi";
+		d["item.f.snap.ex.group"] = "na przykład wyłączysz «Przyciągaj do siatki w strefie» dla strefy mieszkalnej i strefy komercyjne, przemysłowe i biurowe też mają to wyłączone, a narzędzia obszarów nie";
+		d["item.f.snap.ex.menu"] = "każde narzędzie wewnątrz jednej grupy funkcji używa tego samego zestawu przełączników, a inna grupa funkcji nie";
+		d["item.f.toolMode.desc"] = "Zapamiętuje wybrany tryb narzędzia w panelach funkcji. Opcje różnią się między narzędziami: Strefy oferują Wypełnienie, Zaznaczanie obszarowe i Pędzel; narzędzia obszarów (Narzędzie do tworzenia dzielnicy, Narzędzie do wyznaczania terenu pod przemysł specjalistyczny, Narzędzie do tworzenia powierzchni) oferują Edytuj i Generuj siatkę mapy; każde narzędzie terraformowania ma własne tryby; buldożer oferuje Główne elementy, Elementy podrzędne i Wszystko. Tryb narzędzia na stronie Zasoby i na stronie Rekwizyty jest zapamiętywany osobno i żaden nie wpływa na pozostałe.";
+		d["item.f.toolMode.ex.category"] = "przełączenie na inną grupę funkcji wraca do własnego trybu tej grupy (wymaga własnego ustawienia), nawet gdy obie są dostępne z tego samego menu paska narzędzi";
+		d["item.f.toolMode.ex.group"] = "na przykład wybierzesz Pędzel dla strefy mieszkalnej i strefy komercyjne, przemysłowe i biurowe też są na Pędzelu, a narzędzia obszarów nie";
+		d["item.f.toolMode.ex.menu"] = "każde narzędzie wewnątrz jednej grupy funkcji używa tego samego trybu, a inna grupa funkcji nie";
+		d["item.f.topography.desc"] = "Zapamiętuje stan wiersza «Linie konturów» w panelach funkcji, czyli czy podczas rysowania stref widać kontury terenu. Ten wiersz jest odczytywany i zapisywany osobno dla każdej strony: strona Funkcje trzyma swoją kopię dla stref, strona Zasoby ma własną i jedna nigdy nie nadpisuje drugiej.";
+		d["item.f.topography.ex.category"] = "przełączenie na inną grupę funkcji używa własnej kopii tej grupy (wymaga własnego ustawienia); wiersz «Linie konturów» na stronie Zasoby to osobna kopia i nie jest nią objęty";
+		d["item.f.topography.ex.group"] = "na przykład zaznaczysz linie konturów dla strefy mieszkalnej i strefy komercyjne, przemysłowe i biurowe też mają je zaznaczone";
+		d["item.f.topography.ex.menu"] = "każde narzędzie wewnątrz jednej grupy funkcji utrzymuje je zaznaczone, a inna grupa funkcji nie";
+		d["item.f.underground.desc"] = "Zapamiętuje stan wiersza «Tryb podziemny» w panelach funkcji. Ten wiersz jest odczytywany i zapisywany osobno dla każdej strony: strona Funkcje trzyma swoją kopię dla stref, a strony Zasoby i Rekwizyty mają każdą własną i żadna nie jest współdzielona.";
+		d["item.f.underground.ex.category"] = "przełączenie na inną grupę funkcji używa własnej kopii tej grupy (wymaga własnego ustawienia); wiersz «Tryb podziemny» na stronie Zasoby to osobna kopia i nie jest nią objęty";
+		d["item.f.underground.ex.group"] = "na przykład włączysz tryb podziemny dla strefy mieszkalnej i strefy komercyjne, przemysłowe i biurowe też są pod ziemią";
+		d["item.f.underground.ex.menu"] = "każde narzędzie wewnątrz jednej grupy funkcji pozostaje w trybie podziemnym, a inna grupa funkcji nie";
+		d["item.i.brush.desc"] = "Zapamiętuje wiersze «Rozmiar pędzla» i «Nacisk pędzla» w panelach rekwizytów, czyli jak szeroko sięga jedno pociągnięcie pędzla i ile rekwizytów jedno pociągnięcie stawia. Działają tylko te rekwizyty, których panel naprawdę ma te wiersze; rekwizyty bez nich nie są ani zapisywane, ani zmieniane.";
+		d["item.i.brush.ex.category"] = "przełączenie na inną kategorię rekwizytów używa własnego pędzla tej kategorii (wymaga własnego ustawienia), choć obie są w menu Kształtowanie krajobrazu";
+		d["item.i.brush.ex.group"] = "na przykład ustawisz rozmiar pędzla na 20 m i inne rekwizyty tej samej grupy nadające się do malowania też mają 20 m, a inna grupa nie";
+		d["item.i.brush.ex.menu"] = "każdy rekwizyt nadający się do malowania w menu Kształtowanie krajobrazu używa tego samego pędzla, ale po przejściu do innego menu już nie";
+		d["item.i.snap.desc"] = "Zapamiętuje każdy przełącznik wiersza «Przyciąganie» w panelach rekwizytów: Przyciągaj do powierzchni obiektu, Przyciągaj do pobliskich kształtów, Przyciągaj do dróg, Usuń tylko pasujący typ i tak dalej, w zależności od rekwizytu. Wiersz przyciągania na stronie Zasoby i na stronie Funkcje jest zapamiętywany osobno i żaden nie wpływa na pozostałe.";
+		d["item.i.snap.ex.category"] = "przełączenie na inną kategorię rekwizytów wraca do ustawień domyślnych tej kategorii (wymaga własnego ustawienia), choć obie są w menu Kształtowanie krajobrazu";
+		d["item.i.snap.ex.group"] = "na przykład wyłączysz «Przyciągaj do powierzchni obiektu» dla rekwizytu z kategorii Park i inne rekwizyty w tej samej grupie też mają to wyłączone, a inna grupa nie";
+		d["item.i.snap.ex.menu"] = "każdy rekwizyt w menu Kształtowanie krajobrazu używa tego samego zestawu przełączników, ale po przejściu do innego menu już nie";
+		d["item.i.toolMode.desc"] = "Zapamiętuje wybór wiersza «Tryb narzędzia» w panelach rekwizytów: Umieść jeden, Umieść wiele, Linia, Krzywa, Stempel obiektu, Pędzel i tak dalej, w zależności od narzędzia. Tryb narzędzia na stronie Zasoby i na stronie Funkcje jest zapamiętywany osobno i żaden nie wpływa na pozostałe.";
+		d["item.i.toolMode.ex.category"] = "przełączenie na inną kategorię rekwizytów, na przykład z Natura na Naklejki, wraca do własnego trybu tej kategorii (wymaga własnego ustawienia), choć obie są w menu Kształtowanie krajobrazu";
+		d["item.i.toolMode.ex.group"] = "na przykład wybierzesz Umieść wiele dla rekwizytu z kategorii Natura i inne rekwizyty w tej samej grupie też używają Umieść wiele, a inna grupa nie";
+		d["item.i.toolMode.ex.menu"] = "każdy rekwizyt w menu Kształtowanie krajobrazu jest na tym trybie, ale po przejściu do innego menu nie jest";
+		d["item.i.topography.desc"] = "Zapamiętuje stan wiersza «Linie konturów» w panelach rekwizytów. Ten wiersz jest odczytywany i zapisywany osobno dla każdej strony: strona Rekwizyty trzyma własną kopię, a strony Zasoby i Funkcje mają każdą swoją i żadna nie jest współdzielona.";
+		d["item.i.topography.ex.category"] = "przełączenie na inną kategorię rekwizytów używa własnej kopii tej kategorii (wymaga własnego ustawienia); wiersze «Linie konturów» na stronach Zasoby i Funkcje to osobne kopie i nie są nimi objęte";
+		d["item.i.topography.ex.group"] = "na przykład zaznaczysz linie konturów podczas stawiania rekwizytów i inne rekwizyty w tej samej grupie też mają je zaznaczone";
+		d["item.i.topography.ex.menu"] = "każdy rekwizyt w menu Kształtowanie krajobrazu utrzymuje je zaznaczone, ale po przejściu do innego menu już nie";
+		d["item.i.underground.desc"] = "Zapamiętuje stan wiersza «Tryb podziemny» w panelach rekwizytów, czyli czy rekwizyty stawiasz pod ziemią, czy nad nią. Ten wiersz jest odczytywany i zapisywany osobno dla każdej strony: strona Rekwizyty trzyma własną kopię, a strony Zasoby i Funkcje mają każdą swoją i żadna nie jest współdzielona.";
+		d["item.i.underground.ex.category"] = "przełączenie na inną kategorię rekwizytów używa własnej kopii tej kategorii (wymaga własnego ustawienia); wiersze «Tryb podziemny» na stronach Zasoby i Funkcje to osobne kopie i nie są nimi objęte";
+		d["item.i.underground.ex.group"] = "na przykład włączysz tryb podziemny dla jakiegoś rekwizytu i inne rekwizyty w tej samej grupie też schodzą pod ziemię";
+		d["item.i.underground.ex.menu"] = "każdy rekwizyt w menu Kształtowanie krajobrazu schodzi pod ziemię, ale po przejściu do innego menu nie";
+		d["scope.category.function"] = "Ten sam typ";
+		d["scope.category.item"] = "Ten sam typ rekwizytu";
+		d["scope.line.category.function"] = "Ten sam typ: grupujemy według jednej z sześciu grup funkcji, do której należy narzędzie — Strefy (mieszkalne, komercyjne, przemysłowe, biurowe), narzędzia obszarów (Narzędzie do tworzenia dzielnicy, Narzędzie do wyznaczania terenu pod przemysł specjalistyczny, Narzędzie do tworzenia powierzchni), narzędzia tras (każda trasa w menu Transport), dziewięć narzędzi terraformowania (Narzędzie do podnoszenia lub obniżania terenu, Narzędzie do wygładzania terenu, Narzędzie do wyrównania terenu, Narzędzie do tworzenia spadków terenu, Narzędzie do malowania tekstury 01-04, Gumka tekstury), Przestrzenie i obszary (Teren parkowy, Teren spacerowy, Teren rekreacyjny, Czysty teren, Prześwietlony teren) oraz Znacznik i prefaby obiektów (narzędzie do umieszczania zwierząt i im podobne): {0}";
+		d["scope.line.category.item"] = "Ten sam typ rekwizytu: grupujemy według jednej z ośmiu kategorii rekwizytów menu Kształtowanie krajobrazu, do której należy element (Natura, Park, Rekwizyty (strefa mieszkalna), Rekwizyty (strefa komercyjna), Rekwizyty (strefa przemysłowa), Gruz, Naklejki, Rośliny doniczkowe); inny model albo inny rozmiar wewnątrz jednej kategorii nie tworzy innego typu: {0}";
+		d["tab.assets"] = "Zasoby";
+		d["tab.functions"] = "Funkcje";
+		d["tab.items"] = "Rekwizyty";
+		d["tab.master"] = "Główny przełącznik";
+		d["enabled.label"] = "Włącz mod";
+		d["enabled.desc"] = "Domyślnie włączone. Dopóki jest włączone, każde ustawienie poniżej działa, a wartość każdej pozycji jest zapisywana na bieżąco, więc powrót do zapisu stawia panele dokładnie tak, jak je zostawiłeś; wyłączenie pojedynczej pozycji tylko powstrzymuje jej przywracanie — jej wartości nadal są zapisywane. Wyłączenie tego głównego przełącznika cofa wszystko do oryginału: zapisywanie się zatrzymuje, nic nie jest przywracane, a wszystkie ustawienia na stronach Zasoby, Funkcje i Rekwizyty są od razu wyszarzane, więc każde narzędzie zachowuje się tak, jak robi to gra sama. Przełącznik ten wyłącza się sam, gdy wszystkie trzy przełączniki stron poniżej są wyłączone, i włącza się z powrotem, gdy tylko jeden z nich jest włączony.";
+		d["scope.line.sharedSingle"] = "Współdzielone globalnie: każde narzędzie tej strony obsługujące tę pozycję używa jednej wartości";
+		d["scope.note"] = "Uwaga: strony Zasoby, Funkcje i Rekwizyty mają każdą własną pamięć, nawet gdy wiersz nazywa się tak samo na kilku stronach; «Współdzielone globalnie» i «Bez współdzielenia» obowiązują tylko na stronie, którą aktualnie oglądasz.";
+		d["item.brush.desc"] = "Zapamiętuje wiersze «Rozmiar pędzla» i «Nacisk pędzla»: rozmiar określa, jaki obszar obejmuje jedno pociągnięcie, a nacisk, ile zmienia każde pociągnięcie. Ta pozycja obejmuje tylko malowanie na stronie Zasoby, czyli stawianie zasobów takich jak drzewa z menu Roślinność w trybie pędzla; dziewięć narzędzi terraformowania ma własną pozycję pędzla na stronie Funkcje, a kategorie rekwizytów własną na stronie Rekwizyty i trzy strony nigdy nie współdzielą. Narzędzia, których panel nie ma takich wierszy, nie są ani zapisywane, ani zmieniane.";
+		d["item.brush.ex.group"] = "na przykład ustawisz rozmiar pędzla na 30 m przy malowaniu drzew i inne zasoby nadające się do malowania w tej samej grupie też mają 30 m, a narzędzie z innej grupy nie";
+		d["item.brush.ex.menu"] = "każdy zasób malowany w menu Roślinność używa tego samego rozmiaru i nacisku pędzla, ale po przejściu do innego menu już nie";
+		d["item.brush.ex.category"] = "przełączenie na inny rodzaj drzewa zachowuje ten sam pędzel, ale ten poziom grupuje zasoby według tego, komu służą, a narzędzia terraformowania i rekwizyty trzymają każdą własną kopię na innej stronie (wymagają własnego ustawienia)";
 			return d;
 		}
 
@@ -150,17 +213,13 @@ namespace ToolModeMemory
 			d["group.reset"] = "Gestão de memória";
 			d["group.about"] = "Informações e links";
 
-			d["enabled.label"] = "Ativar Memória do modo de ferramenta";
-			d["enabled.desc"] = "Ligado por padrão. Enquanto estiver ligado, todos os valores ficam sendo gravados sem parar, então ao voltar a um jogo os painéis estão exatamente como você deixou. Desligar um item só impede que ele seja restaurado; os valores dele continuam sendo gravados. Só desligando este interruptor geral a gravação para e cada ferramenta volta ao comportamento original.";
 			d["scope.label"] = "Âmbito de partilha";
 			d["scope.desc"] = "Até que ponto o valor deste item é partilhado. Os parênteses na lista suspensa mostram o que o jogo original faz e o que recomendamos.";
 			d["scope.line.group"] = "Mesmo grupo: {0}";
 			d["scope.line.menu"] = "Mesmo menu: {0}";
 			d[kScopeLineCategory] = "Mesmo tipo de ativo: agrupado por aquilo que o ativo realmente atende, então número de faixas, largura, nível, tamanho e a categoria da barra de ferramentas não fazem diferença (um estacionamento pequeno e um estacionamento grande são o mesmo tipo), mas pontes, cais e interseções são tipos próprios, separados das vias, ou seja, {0}";
 			d["scope.line.shared"] = "Global: cada ativo e cada função que suportam este item partilham um valor, mas ativos e funções não partilham entre si";
-			d["scope.line.sharedSingle"] = "Global: cada ativo e cada função que suportam este item partilham um valor, e ativos e funções também partilham entre si";
 			d["scope.line.unique"] = "Sem partilhar: cada ativo e cada função que suportam este item são definidos de forma totalmente independente";
-			d["scope.note"] = "Nota: por funções entende-se Zonas, Espaços e Áreas, Terraformação, Marcador e objetos pré-fabricados, isto é, as ferramentas que não são ativos";
 
 			d[kScopeGroup] = "Mesmo grupo";
 			d[kScopeMenu] = "Mesmo menu";
@@ -253,10 +312,77 @@ namespace ToolModeMemory
 
 			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
 			d["item.brush.label"] = "Pincel";
-			d["item.brush.desc"] = "Lembra as linhas Tamanho do pincel e Força do pincel: o tamanho define até onde uma passada alcança e a força define quanto cada passada muda. Afeta só as ferramentas que têm essas duas linhas, ou seja, as ferramentas de Paisagismo (Ferramenta de modificação de terreno, Ferramenta de suavização de terreno, Ferramenta de nivelamento de terreno, Ferramenta de declive, Ferramenta de pintura de textura e as demais) e o modo Pincel ao colocar objetos; ferramentas sem essas linhas não são registradas nem alteradas.";
-			d["item.brush.ex.group"] = "por exemplo, você põe Elevar com tamanho de pincel de 30 m e as outras ferramentas de paisagismo do mesmo grupo ficam em 30 m, mas uma de outro grupo não";
-			d["item.brush.ex.menu"] = "toda ferramenta de paisagismo que você clica no menu Paisagismo usa este mesmo tamanho e força de pincel, mas ao mudar para o menu Eletricidade não";
-			d["item.brush.ex.category"] = "este nível agrupa os ativos pelo que eles atendem; as ferramentas de paisagismo não atendem nada, então cada uma guarda a própria cópia: mudar de Elevar para Pintar textura usa o pincel daquela ferramenta (precisa do próprio ajuste)";
+
+		// ==================== v0.7.0 新增 / 重写（pt-BR）====================
+		d["enabled.label"] = "Ativar o mod";
+		d["enabled.desc"] = "Ligado por padrão. Enquanto ele estiver ligado, todas as configurações abaixo têm efeito e o valor de cada item é gravado enquanto você trabalha, então, ao voltar para um jogo salvo, os painéis estão exatamente como você os deixou; desligar um item apenas impede que ele seja restaurado, pois os valores dele continuam sendo gravados. Desligar este interruptor geral devolve tudo ao jogo original: a gravação para, nada é restaurado e todas as configurações das páginas Ativos, Funções e Acessórios ficam acinzentadas ao mesmo tempo, e cada ferramenta se comporta como o jogo faz por conta própria. Ele se desliga sozinho quando os três interruptores por página aqui embaixo estiverem todos desligados, e se religa assim que qualquer um deles for ligado.";
+		d["scope.line.sharedSingle"] = "Global: todas as ferramentas desta página que suportam este item usam um único valor";
+		d["scope.note"] = "Nota: as páginas Ativos, Funções e Acessórios guardam cada uma a sua própria memória, mesmo quando uma linha tem o mesmo nome em mais de uma página; «Global» e «Sem partilhar» só valem dentro da página que você está vendo.";
+		d["item.brush.desc"] = "Lembra as linhas «Tamanho do pincel» e «Força do pincel»: o tamanho define até onde uma passada alcança e a força define quanto cada passada muda. Este item só cobre a pintura feita na página Ativos, ou seja, colocar com o pincel ativos como as árvores do menu Vegetação; as nove ferramentas de Terraformação têm o próprio item de pincel na página Funções e as oito categorias de acessórios têm o delas na página Acessórios, e as três páginas nunca dividem valores entre si. As ferramentas cujo painel não tem essas duas linhas não são gravadas nem alteradas.";
+		d["item.brush.ex.group"] = "por exemplo, você põe o tamanho do pincel em 30 m ao pintar árvores e os outros ativos pintáveis do mesmo grupo também ficam em 30 m, mas um ativo de outro grupo não";
+		d["item.brush.ex.menu"] = "todo ativo que você pinta no menu Vegetação usa este mesmo tamanho e força de pincel, mas ao mudar para outro menu não";
+		d["item.brush.ex.category"] = "ao mudar para outra espécie de árvore este mesmo pincel continua valendo, mas as ferramentas de Terraformação e os acessórios guardam cada um a sua própria cópia em outra página (precisa do próprio ajuste)";
+		d["domain.asset.desc"] = "Cobre todos os itens da página Ativos: a gravação e a restauração ao carregar se ligam e se desligam juntas. Enquanto ele estiver desligado, a página Ativos inteira fica acinzentada e sem efeito, as ferramentas se comportam como no jogo original e os valores já gravados continuam no arquivo intactos, então religá-lo restaura tudo como antes.";
+		d["domain.asset.label"] = "Lembrar os itens de ferramenta dos ativos";
+		d["domain.function.desc"] = "Cobre todos os itens da página Funções, ou seja, os seis grupos de funções: os tipos de zona, as ferramentas de área, todas as ferramentas de rota, as ferramentas de Terraformação, os espaços e áreas, e os marcadores e objetos pré-fabricados. Enquanto ele estiver desligado, a página Funções inteira fica acinzentada e sem efeito, as ferramentas se comportam como no jogo original e os valores já gravados continuam no arquivo intactos, então religá-lo restaura tudo como antes.";
+		d["domain.function.label"] = "Lembrar os itens de ferramenta das funções";
+		d["domain.item.desc"] = "Cobre todos os itens da página Acessórios, ou seja, as oito categorias de acessórios do menu Paisagismo: Natureza, Parque, Acessórios residenciais, Acessórios comerciais, Acessórios industriais, Detritos, Decalques e Plantas envasadas. Enquanto ele estiver desligado, a página Acessórios inteira fica acinzentada e sem efeito, as ferramentas se comportam como no jogo original e os valores já gravados continuam no arquivo intactos, então religá-lo restaura tudo como antes.";
+		d["domain.item.label"] = "Lembrar os itens de ferramenta dos acessórios";
+		d["group.domain"] = "Interruptores por página";
+		d["item.color.label"] = "Cor";
+		d["item.decoration.desc"] = "Lembra o interruptor «Preservar idade»: com ele ligado, as árvores que você pinta ou coloca param de crescer e param de morrer de velhas, o que congela a idade daquele conjunto de árvores exatamente onde está. Essa linha só aparece nos ativos que carregam dados de árvore (ao pintar árvores no menu Vegetação); os ativos cujo painel não tem essa linha não são gravados nem alterados.";
+		d["item.decoration.ex.category"] = "ao mudar para outra espécie de árvore ele continua ligado, mas essa linha só existe nos ativos com dados de árvore, então pintar um decalque não tem essa linha nenhuma (precisa do próprio ajuste)";
+		d["item.decoration.ex.group"] = "por exemplo, você liga «Preservar idade» ao pintar árvores e as outras formas de pintar vegetação do mesmo grupo também ficam ligadas, mas as de outro grupo não";
+		d["item.decoration.ex.menu"] = "todos os ativos do menu Vegetação mantêm essa linha ligada, mas ao mudar para outro menu não";
+		d["item.decoration.label"] = "Preservar idade";
+		d["item.f.brush.desc"] = "Lembra as linhas «Tamanho do pincel» e «Força do pincel» nos painéis das funções: o tamanho define até onde uma passada alcança e a força define quanto cada passada muda. Só valem para as funções cujo painel realmente tem essas duas linhas, ou seja, as nove ferramentas de Terraformação (Ferramenta de modificação de terreno, Ferramenta de suavização de terreno, Ferramenta de nivelamento de terreno, Ferramenta de declive, Ferramenta de pintura de textura 01 a 04 e Borracha de textura) e a pintura de zonas; as funções sem essas duas linhas não são gravadas nem alteradas.";
+		d["item.f.brush.ex.category"] = "ao mudar para outro grupo de funções vale o pincel daquele próprio grupo (precisa do próprio ajuste), mesmo que os dois painéis tenham essas duas linhas";
+		d["item.f.brush.ex.group"] = "por exemplo, você põe o tamanho do pincel da Ferramenta de modificação de terreno em 30 m e as outras ferramentas de Terraformação do mesmo grupo também ficam em 30 m, mas as de outro grupo não";
+		d["item.f.brush.ex.menu"] = "todas as ferramentas do grupo Terraformação usam este mesmo tamanho e força de pincel, mas as de outro grupo de funções não";
+		d["item.f.snap.desc"] = "Lembra cada interruptor da linha «Aderir» nos painéis das funções: aderir a ângulos de 90 graus, aderir à grade, aderir a vias, aderir ao lado do proprietário, exibir linhas de contorno e assim por diante; quais interruptores aparecem dependem da ferramenta. O próprio botão do jogo que ativa ou desativa todas as aderências de uma vez é um interruptor em lote e não é lembrado. A linha «Aderir» da página Ativos e a da página Acessórios são lembradas à parte e nenhuma interfere nas outras.";
+		d["item.f.snap.ex.category"] = "ao mudar para outro grupo de funções voltam os interruptores padrão daquele grupo (precisa do próprio ajuste), mesmo que os dois possam ser abertos pelo mesmo menu da barra de ferramentas";
+		d["item.f.snap.ex.group"] = "por exemplo, você desliga a aderência à grade na zona residencial e as zonas comercial, industrial e de escritórios também ficam sem ela, mas as ferramentas de área não";
+		d["item.f.snap.ex.menu"] = "todas as ferramentas de um mesmo grupo de funções usam este mesmo conjunto de interruptores, mas as de outro grupo de funções não";
+		d["item.f.toolMode.desc"] = "Lembra a escolha feita na linha «Modo da ferramenta» dos painéis das funções. As opções mudam conforme a ferramenta: os tipos de zona oferecem Preencher, Marcar e Pintar; as ferramentas de área (Ferramenta de criação de distrito, Ferramenta de área de especialização industrial e Ferramenta de área de superfície) oferecem Editar e Gerar grade de mapa; cada ferramenta de Terraformação tem os próprios modos; a ferramenta de demolição oferece Elementos principais, Subelementos e Tudo. O modo da ferramenta da página Ativos e o da página Acessórios são lembrados à parte e nenhum interfere nos outros.";
+		d["item.f.toolMode.ex.category"] = "ao mudar para outro grupo de funções vale de novo o modo daquele próprio grupo (precisa do próprio ajuste), mesmo que os dois possam ser abertos pelo mesmo menu da barra de ferramentas";
+		d["item.f.toolMode.ex.group"] = "por exemplo, você escolhe Pintar na zona residencial e as zonas comercial, industrial e de escritórios também ficam em Pintar, mas as ferramentas de área não";
+		d["item.f.toolMode.ex.menu"] = "todas as ferramentas de um mesmo grupo de funções usam este mesmo modo, mas as de outro grupo de funções não";
+		d["item.f.topography.desc"] = "Lembra se a linha «Linhas de contorno» dos painéis das funções está ligada ou desligada, isto é, se você vê as curvas de nível do terreno enquanto desenha zonas. Essa linha é lida e gravada página por página: a página Funções guarda a cópia das zonas, a página Ativos guarda a sua, e uma nunca sobrescreve a outra.";
+		d["item.f.topography.ex.category"] = "ao mudar para outro grupo de funções vale a cópia daquele próprio grupo (precisa do próprio ajuste); a linha «Linhas de contorno» da página Ativos é uma cópia à parte e não é afetada";
+		d["item.f.topography.ex.group"] = "por exemplo, você marca as linhas de contorno na zona residencial e as zonas comercial, industrial e de escritórios também ficam marcadas";
+		d["item.f.topography.ex.menu"] = "todas as ferramentas de um mesmo grupo de funções ficam com a marcação ativa, mas as de outro grupo de funções não";
+		d["item.f.underground.desc"] = "Lembra se a linha «Modo Subterrâneo» dos painéis das funções está ligada ou desligada. Essa linha é lida e gravada página por página: a página Funções guarda a cópia das zonas, e as páginas Ativos e Acessórios guardam cada uma a sua, sem nada em comum.";
+		d["item.f.underground.ex.category"] = "ao mudar para outro grupo de funções vale a cópia daquele próprio grupo (precisa do próprio ajuste); a linha «Modo Subterrâneo» da página Ativos é uma cópia à parte e não é afetada";
+		d["item.f.underground.ex.group"] = "por exemplo, você liga o modo subterrâneo na zona residencial e as zonas comercial, industrial e de escritórios também vão para debaixo da terra";
+		d["item.f.underground.ex.menu"] = "todas as ferramentas de um mesmo grupo de funções ficam no modo subterrâneo, mas as de outro grupo de funções não";
+		d["item.i.brush.desc"] = "Lembra as linhas «Tamanho do pincel» e «Força do pincel» nos painéis dos acessórios, ou seja, até onde uma passada do pincel alcança e quantos acessórios cada passada coloca. Só valem para os acessórios cujo painel realmente tem essas duas linhas; os acessórios sem essas linhas não são gravados nem alterados.";
+		d["item.i.brush.ex.category"] = "ao mudar para outra categoria de acessórios vale o pincel daquela própria categoria (precisa do próprio ajuste), mesmo que as duas estejam no menu Paisagismo";
+		d["item.i.brush.ex.group"] = "por exemplo, você põe o tamanho do pincel em 20 m e os outros acessórios pintáveis do mesmo grupo também ficam em 20 m, mas os de outro grupo não";
+		d["item.i.brush.ex.menu"] = "todos os acessórios pintáveis do menu Paisagismo usam este mesmo pincel, mas ao mudar para outro menu não";
+		d["item.i.snap.desc"] = "Lembra cada interruptor da linha «Aderir» nos painéis dos acessórios: aderir à superfície de um objeto, aderir a geometria próxima, aderir a vias, remover apenas o tipo correspondente e assim por diante, conforme o acessório. A linha «Aderir» da página Ativos e a da página Funções são lembradas à parte e nenhuma interfere nas outras.";
+		d["item.i.snap.ex.category"] = "ao mudar para outra categoria de acessórios voltam os interruptores padrão daquela categoria (precisa do próprio ajuste), mesmo que as duas estejam no menu Paisagismo";
+		d["item.i.snap.ex.group"] = "por exemplo, você desliga a aderência à superfície de um objeto em um acessório de Parque e os outros acessórios do mesmo grupo também ficam sem ela, mas os de outro grupo não";
+		d["item.i.snap.ex.menu"] = "todos os acessórios do menu Paisagismo usam este mesmo conjunto de interruptores, mas ao mudar para outro menu não";
+		d["item.i.toolMode.desc"] = "Lembra a escolha feita na linha «Modo da ferramenta» dos painéis dos acessórios: Colocar um, Colocar vários, Linha, Curva, Ferramenta de carimbo de objetos, Pintar e assim por diante, conforme a ferramenta. O modo da ferramenta da página Ativos e o da página Funções são lembrados à parte e nenhum interfere nos outros.";
+		d["item.i.toolMode.ex.category"] = "ao mudar para outra categoria de acessórios, por exemplo de Natureza para Decalques, vale de novo o modo daquela própria categoria (precisa do próprio ajuste), mesmo que as duas estejam no menu Paisagismo";
+		d["item.i.toolMode.ex.group"] = "por exemplo, você escolhe Colocar vários em um acessório de Natureza e os outros acessórios do mesmo grupo também usam Colocar vários, mas os de outro grupo não";
+		d["item.i.toolMode.ex.menu"] = "todos os acessórios do menu Paisagismo estão neste modo, mas ao mudar para outro menu não";
+		d["item.i.topography.desc"] = "Lembra se a linha «Linhas de contorno» dos painéis dos acessórios está ligada ou desligada. Essa linha é lida e gravada página por página: a página Acessórios guarda a cópia dos acessórios, e as páginas Ativos e Funções guardam cada uma a sua, sem nada em comum.";
+		d["item.i.topography.ex.category"] = "ao mudar para outra categoria de acessórios vale a cópia daquela própria categoria (precisa do próprio ajuste); as linhas «Linhas de contorno» das páginas Ativos e Funções são cópias à parte e não são afetadas";
+		d["item.i.topography.ex.group"] = "por exemplo, você marca as linhas de contorno ao colocar acessórios e os outros acessórios do mesmo grupo também ficam marcados";
+		d["item.i.topography.ex.menu"] = "todos os acessórios do menu Paisagismo ficam com a marcação ativa, mas ao mudar para outro menu não";
+		d["item.i.underground.desc"] = "Lembra se a linha «Modo Subterrâneo» dos painéis dos acessórios está ligada ou desligada, isto é, se você coloca os acessórios abaixo ou acima do solo. Essa linha é lida e gravada página por página: a página Acessórios guarda a cópia dos acessórios, e as páginas Ativos e Funções guardam cada uma a sua, sem nada em comum.";
+		d["item.i.underground.ex.category"] = "ao mudar para outra categoria de acessórios vale a cópia daquela própria categoria (precisa do próprio ajuste); as linhas «Modo Subterrâneo» das páginas Ativos e Funções são cópias à parte e não são afetadas";
+		d["item.i.underground.ex.group"] = "por exemplo, você liga o modo subterrâneo em um acessório e os outros acessórios do mesmo grupo também vão para debaixo da terra";
+		d["item.i.underground.ex.menu"] = "todos os acessórios do menu Paisagismo vão para debaixo da terra, mas ao mudar para outro menu não";
+		d["scope.category.function"] = "Mesmo tipo";
+		d["scope.category.item"] = "Mesmo tipo de acessório";
+		d["scope.line.category.function"] = "Mesmo tipo: agrupa por um dos seis grupos de funções a que a ferramenta pertence - os tipos de zona (residencial, comercial, industrial e de escritórios), as ferramentas de área (Ferramenta de criação de distrito, Ferramenta de área de especialização industrial e Ferramenta de área de superfície), as ferramentas de rota (todas as rotas do menu Transporte), as nove ferramentas de Terraformação (Ferramenta de modificação de terreno, Ferramenta de suavização de terreno, Ferramenta de nivelamento de terreno, Ferramenta de declive, Ferramenta de pintura de textura 01 a 04, Borracha de textura), os espaços e áreas (Área de parque, Área de pedestre, Área de convivência, Área vazia e Superfície de transparência) e os marcadores e objetos pré-fabricados (a ferramenta de geração de animais e outras parecidas): {0}";
+		d["scope.line.category.item"] = "Mesmo tipo de acessório: agrupa por uma das oito categorias de acessórios do menu Paisagismo a que o item pertence (Natureza, Parque, Acessórios residenciais, Acessórios comerciais, Acessórios industriais, Detritos, Decalques e Plantas envasadas); um modelo diferente ou um tamanho diferente dentro da mesma categoria não é outro tipo: {0}";
+		d["tab.assets"] = "Ativos";
+		d["tab.functions"] = "Funções";
+		d["tab.items"] = "Acessórios";
+		d["tab.master"] = "Interruptor geral";
 			return d;
 		}
 
@@ -274,17 +400,13 @@ namespace ToolModeMemory
 			d["group.reset"] = "Управление памятью";
 			d["group.about"] = "Сведения и ссылки";
 
-			d["enabled.label"] = "Включить память режима инструмента";
-			d["enabled.desc"] = "По умолчанию включено. Пока это включено, каждое значение записывается постоянно, и при возврате к сохранению панели будут такими, какими вы их оставили. Отключение одного пункта лишь убирает его восстановление, а значения всё равно записываются. Запись прекращается только при выключении этого главного переключателя, и каждый инструмент возвращается к обычному поведению.";
 			d["scope.label"] = "Область общего доступа";
 			d["scope.desc"] = "Насколько широко разделяется значение этого пункта. Скобки в раскрывающемся списке показывают, как поступает оригинал и что мы рекомендуем.";
 			d["scope.line.group"] = "Та же группа: {0}";
 			d["scope.line.menu"] = "То же меню: {0}";
 			d[kScopeLineCategory] = "Тот же тип объекта: объекты группируются по тому, кому они реально служат, поэтому число полос, ширина, уровень и размер, как и категория на панели инструментов, различий не создают (маленькая парковка и большая парковка — один тип), но мосты, набережные и развязки образуют каждый свой тип, отдельный от дорог, а именно {0}";
 			d["scope.line.shared"] = "Глобально: каждый объект и каждая функция, поддерживающие этот пункт, делят одно значение, но объекты и функции не делят между собой";
-			d["scope.line.sharedSingle"] = "Глобально: каждый объект и каждая функция, поддерживающие этот пункт, делят одно значение, и объекты и функции тоже делят его между собой";
 			d["scope.line.unique"] = "Без разделения: каждый объект и каждая функция, поддерживающие этот пункт, настраиваются совершенно независимо";
-			d["scope.note"] = "Примечание: под функциями имеются в виду Зоны, Пространства и области, Терраформирование, Маркер и префабы объектов, то есть инструменты, которые не являются объектами";
 
 			d[kScopeGroup] = "Та же группа";
 			d[kScopeMenu] = "То же меню";
@@ -377,10 +499,77 @@ namespace ToolModeMemory
 
 			// v0.6.2 新增：笔刷（笔刷粗细 / 笔刷强度）从「其它」独立成行
 			d["item.brush.label"] = "Кисть";
-			d["item.brush.desc"] = "Запоминает строки «Размер кисти» и «Нажим кисти»: размер определяет, какую площадь охватывает одно движение, а нажим — насколько сильно каждое движение все меняет. Это касается только инструментов, где эти две строки есть: инструментов ландшафтного дизайна (Высота рельефа, Сглаживание рельефа, Выравнивание рельефа, Склон, Инструмент рисования текстуры и прочих) и режима кисти при размещении объектов; инструменты без этих строк не записываются и не меняются.";
-			d["item.brush.ex.group"] = "например, задайте «Поднять» размер кисти 30 м, и другие инструменты ландшафта в той же группе тоже станут 30 м, а инструмент из другой группы — нет";
-			d["item.brush.ex.menu"] = "у любого инструмента ландшафта, выбранного в меню «Ландшафтный дизайн», используются тот же размер и нажим кисти, но в меню «Электричество» уже нет";
-			d["item.brush.ex.category"] = "этот уровень группирует активы по тому, что они обслуживают; у инструментов ландшафта такого нет, поэтому каждый хранит собственный вариант: переход от «Поднять» к «Рисовать текстуру» использует кисть этого инструмента (нужна отдельная настройка)";
+
+		// ==================== v0.7.0 新增 / 重写（ru-RU）====================
+		d["tab.master"] = "Главный переключатель";
+		d["tab.assets"] = "Активы";
+		d["tab.functions"] = "Функции";
+		d["tab.items"] = "Объекты";
+		d["group.domain"] = "Постраничные переключатели";
+		d["domain.asset.label"] = "Запоминать настройки инструментов на странице активов";
+		d["domain.asset.desc"] = "Охватывает все инструменты на странице «Активы»: запись и восстановление при загрузке переключаются вместе. Пока выключено, все настройки страницы «Активы» становятся недоступными и не действуют, инструменты ведут себя как в оригинале, а уже записанные значения остаются в файле нетронутыми и при повторном включении восстанавливаются.";
+		d["domain.function.label"] = "Запоминать настройки инструментов на странице функций";
+		d["domain.function.desc"] = "Охватывает все инструменты на странице «Функции» — шесть функциональных групп: типы зон, инструменты областей, инструменты маршрутов, инструменты терраформирования, пространства и области, а также маркеры и префабы объектов. Пока выключено, все настройки страницы «Функции» становятся недоступными и не действуют, инструменты ведут себя как в оригинале, а уже записанные значения остаются в файле нетронутыми и при повторном включении восстанавливаются.";
+		d["domain.item.label"] = "Запоминать настройки инструментов на странице объектов";
+		d["domain.item.desc"] = "Охватывает все инструменты на странице «Объекты» — восемь категорий объектов меню «Ландшафтный дизайн»: «Природа», «Парк», «Объекты жилой зоны», «Объекты торговой зоны», «Объекты промышленной зоны», «Обломки», «Надписи» и «Растения в горшках». Пока выключено, все настройки страницы «Объекты» становятся недоступными и не действуют, инструменты ведут себя как в оригинале, а уже записанные значения остаются в файле нетронутыми и при повторном включении восстанавливаются.";
+		d["item.color.label"] = "Цвет";
+		d["item.decoration.label"] = "Заморозить возраст";
+		d["item.decoration.desc"] = "Запоминает переключатель «Заморозить возраст»: когда он включён, деревья, которые вы закрашиваете или размещаете, перестают расти и умирать от старости — возраст этой группы деревьев словно замораживается на текущем значении. Эта строка появляется только на активах с данными деревьев (при закрашивании деревьев из меню «Флора»); активы, на панелях которых такой строки нет, не записываются и не меняются.";
+		d["item.decoration.ex.category"] = "при переходе к другому виду деревьев он остаётся включённым, но эта строка есть только у активов с данными деревьев, поэтому при закрашивании надписи её нет вовсе (нужна отдельная настройка)";
+		d["item.decoration.ex.group"] = "например, включите «Заморозить возраст» при закрашивании деревьев, и другие способы размещения растительности в той же группе тоже останутся включёнными, а в другой группе — нет";
+		d["item.decoration.ex.menu"] = "все активы в меню «Флора» остаются с включённым «Заморозить возраст», но в других меню — нет";
+		d["item.f.brush.desc"] = "Запоминает строки «Размер кисти» и «Нажим кисти» на функциональных панелях: «Размер кисти» задаёт, какую площадь охватывает одно движение, а «Нажим кисти» — насколько каждое движение меняет результат. Действует только на те инструменты, у которых на панели есть обе строки: девять инструментов терраформирования («Высота рельефа», «Сглаживание рельефа», «Выравнивание рельефа», «Склон», «Инструмент рисования текстуры 01–04» и «Ластик текстуры») и закрашивание зон; функции, у которых этих строк нет, не записываются и не меняются.";
+		d["item.f.brush.ex.category"] = "при переходе к другой функциональной группе используется её собственная кисть (нужна отдельная настройка), даже если на обеих панелях есть эти две строки";
+		d["item.f.brush.ex.group"] = "например, задайте размер кисти 30 м для одного из инструментов рельефа, и другие инструменты терраформирования в той же группе тоже станут 30 м, а в другой группе — нет";
+		d["item.f.brush.ex.menu"] = "все инструменты в группе терраформирования используют одни и те же размер и нажим кисти, а в другой функциональной группе — нет";
+		d["item.f.snap.desc"] = "Запоминает каждый переключатель в строке «Привязка» на функциональных панелях: «Привязка к прямым углам», «Привязка к сетке», «Привязка к дорогам», «Привязка к зданию-владельцу», «Показать контурные линии» и так далее — какие переключатели показаны, зависит от инструмента. Собственная кнопка игры «Включить/выключить привязку» является пакетной и не запоминается. Строка «Привязка» на страницах «Активы» и «Объекты» запоминается отдельно, и одна на другую не влияет.";
+		d["item.f.snap.ex.category"] = "при переходе к другой функциональной группе возвращаются её собственные переключатели по умолчанию (нужна отдельная настройка), даже если обе группы открываются из одного меню панели инструментов";
+		d["item.f.snap.ex.group"] = "например, выключите «Привязку к сетке» для жилой зоны, и в коммерческих, промышленных и офисных зонах она тоже будет выключена, а у инструментов областей — нет";
+		d["item.f.snap.ex.menu"] = "все инструменты в одной функциональной группе используют один и тот же набор переключателей, а в другой функциональной группе — нет";
+		d["item.f.toolMode.desc"] = "Запоминает выбор в строке «Режим инструмента» на функциональных панелях. Варианты зависят от инструмента: типы зон предлагают «Заливка», «Рамка» и «Кисть»; инструменты областей («Создание района», «Инструмент района с промышленной специализацией», «Инструмент поверхности») — «Изменить» и «Создать сетку карты»; у инструментов терраформирования свои режимы для каждого инструмента; инструмент сноса предлагает «Только основные элементы», «Вместе с дополнительными» и «Всё». Режим инструмента на страницах «Активы» и «Объекты» запоминается отдельно, и один на другой не влияет.";
+		d["item.f.toolMode.ex.category"] = "при переходе к другой функциональной группе возвращается её собственный режим (нужна отдельная настройка), даже если обе группы открываются из одного меню панели инструментов";
+		d["item.f.toolMode.ex.group"] = "например, выберите «Кисть» для жилой зоны, и коммерческие, промышленные и офисные зоны тоже перейдут в режим «Кисть», а инструменты областей — нет";
+		d["item.f.toolMode.ex.menu"] = "все инструменты в одной функциональной группе используют один и тот же режим, а в другой функциональной группе — нет";
+		d["item.f.topography.desc"] = "Запоминает строку «Топография» (контурные линии) на функциональных панелях, то есть видны ли контуры рельефа, пока вы рисуете зоны. Эта строка считывается и записывается по страницам: страница «Функции» хранит свою копию для функциональных зон, а страница «Активы» — отдельную, и одна никогда не перезаписывает другую.";
+		d["item.f.topography.ex.category"] = "при переходе к другой функциональной группе используется её собственная копия (нужна отдельная настройка); строка «Топография» на странице «Активы» — отдельная копия, и она от этой не зависит";
+		d["item.f.topography.ex.group"] = "например, включите контурные линии для жилой зоны, и в коммерческих, промышленных и офисных зонах они тоже будут включены";
+		d["item.f.topography.ex.menu"] = "во всех инструментах одной функциональной группы контурные линии включены, а в другой функциональной группе — нет";
+		d["item.f.underground.desc"] = "Запоминает строку «Режим тоннеля» на функциональных панелях. Эта строка считывается и записывается по страницам: страница «Функции» хранит свою копию для функциональных зон, а страницы «Активы» и «Объекты» — каждая свою, и они не делятся между собой.";
+		d["item.f.underground.ex.category"] = "при переходе к другой функциональной группе используется её собственная копия (нужна отдельная настройка); строка «Режим тоннеля» на странице «Активы» — отдельная копия, и она от этой не зависит";
+		d["item.f.underground.ex.group"] = "например, включите режим тоннеля для жилой зоны, и коммерческие, промышленные и офисные зоны тоже уйдут под землю";
+		d["item.f.underground.ex.menu"] = "все инструменты в одной функциональной группе находятся в режиме тоннеля, а в другой функциональной группе — нет";
+		d["item.i.brush.desc"] = "Запоминает строки «Размер кисти» и «Нажим кисти» на панелях объектов, то есть какую площадь охватывает одно движение кисти и сколько объектов размещается за один проход. Действует только на те объекты, у которых на панели есть обе строки; объекты без этих строк не записываются и не меняются.";
+		d["item.i.brush.ex.category"] = "при переходе к другой категории объектов используется её собственная кисть (нужна отдельная настройка), даже если обе находятся в меню «Ландшафтный дизайн»";
+		d["item.i.brush.ex.group"] = "например, задайте размер кисти 20 м, и другие размещаемые кистью объекты в той же группе тоже станут 20 м, а в другой группе — нет";
+		d["item.i.brush.ex.menu"] = "все размещаемые кистью объекты в меню «Ландшафтный дизайн» используют одну и ту же кисть, а в другом меню — нет";
+		d["item.i.snap.desc"] = "Запоминает каждый переключатель в строке «Привязка» на панелях объектов: «Привязка к поверхности объекта», «Привязка к ближайшим формам», «Привязка к дорогам», «Удалить только определенный тип» и так далее — какие переключатели показаны, зависит от объекта. Строка «Привязка» на страницах «Активы» и «Функции» запоминается отдельно, и одна на другую не влияет.";
+		d["item.i.snap.ex.category"] = "при переходе к другой категории объектов возвращаются её собственные переключатели по умолчанию (нужна отдельная настройка), даже если обе находятся в меню «Ландшафтный дизайн»";
+		d["item.i.snap.ex.group"] = "например, выключите «Привязку к поверхности объекта» для объекта категории «Парк», и у других объектов в той же группе она тоже будет выключена, а в другой группе — нет";
+		d["item.i.snap.ex.menu"] = "все объекты в меню «Ландшафтный дизайн» используют один и тот же набор переключателей, а в другом меню — нет";
+		d["item.i.toolMode.desc"] = "Запоминает выбор в строке «Режим инструмента» на панелях объектов: «Разместить один», «Разместить несколько», «Линия», «Кривая», «Инструмент копирования объекта», «Кисть» и так далее — в зависимости от объекта. Режим инструмента на страницах «Активы» и «Функции» запоминается отдельно, и один на другой не влияет.";
+		d["item.i.toolMode.ex.category"] = "при переходе к другой категории объектов, скажем от «Природы» к «Надписям», возвращается её собственный режим (нужна отдельная настройка), даже если обе находятся в меню «Ландшафтный дизайн»";
+		d["item.i.toolMode.ex.group"] = "например, выберите «Разместить несколько» для объекта категории «Природа», и другие объекты в той же группе тоже будут в режиме «Разместить несколько», а в другой группе — нет";
+		d["item.i.toolMode.ex.menu"] = "все объекты в меню «Ландшафтный дизайн» находятся в одном и том же режиме, а в другом меню — нет";
+		d["item.i.topography.desc"] = "Запоминает строку «Топография» (контурные линии) на панелях объектов. Эта строка считывается и записывается по страницам: страница «Объекты» хранит свою копию для объектов, а страницы «Активы» и «Функции» — каждая свою, и они не делятся между собой.";
+		d["item.i.topography.ex.category"] = "при переходе к другой категории объектов используется её собственная копия (нужна отдельная настройка); строки «Топография» на страницах «Активы» и «Функции» — отдельные копии, и они от этой не зависят";
+		d["item.i.topography.ex.group"] = "например, включите контурные линии при размещении объектов, и у других объектов в той же группе они тоже будут включены";
+		d["item.i.topography.ex.menu"] = "все объекты в меню «Ландшафтный дизайн» остаются с включёнными контурными линиями, а в другом меню — нет";
+		d["item.i.underground.desc"] = "Запоминает строку «Режим тоннеля» на панелях объектов, то есть размещаются ли объекты под землёй или над ней. Эта строка считывается и записывается по страницам: страница «Объекты» хранит свою копию для объектов, а страницы «Активы» и «Функции» — каждая свою, и они не делятся между собой.";
+		d["item.i.underground.ex.category"] = "при переходе к другой категории объектов используется её собственная копия (нужна отдельная настройка); строки «Режим тоннеля» на страницах «Активы» и «Функции» — отдельные копии, и они от этой не зависят";
+		d["item.i.underground.ex.group"] = "например, включите режим тоннеля для одного объекта, и другие объекты в той же группе тоже уйдут под землю";
+		d["item.i.underground.ex.menu"] = "все объекты в меню «Ландшафтный дизайн» уходят под землю, а в другом меню — нет";
+		d["scope.category.function"] = "Тот же тип";
+		d["scope.category.item"] = "Тот же тип объекта";
+		d["scope.line.category.function"] = "Тот же тип: группировка по одной из шести функциональных групп, к которым относится инструмент, — типы зон (жилые, коммерческие, промышленные, офисные), инструменты областей («Создание района», «Инструмент района с промышленной специализацией», «Инструмент поверхности»), инструменты маршрутов (все маршруты в меню «Транспорт»), девять инструментов терраформирования («Высота рельефа», «Сглаживание рельефа», «Выравнивание рельефа», «Склон», «Инструмент рисования текстуры 01–04», «Ластик текстуры»), пространства и области («Парковка», «Пешеходная зона», «Область ожидания», «Свободная область», «Обрезка поверхности») и маркеры с префабами объектов (инструмент появления животных и подобные): {0}";
+		d["scope.line.category.item"] = "Тот же тип объекта: группировка по одной из восьми категорий объектов меню «Ландшафтный дизайн», к которой принадлежит элемент («Природа», «Парк», «Объекты жилой зоны», «Объекты торговой зоны», «Объекты промышленной зоны», «Обломки», «Надписи», «Растения в горшках»); другая модель или другой размер внутри одной категории не образуют другой тип: {0}";
+		d["enabled.label"] = "Включить мод";
+		d["enabled.desc"] = "По умолчанию включено. Пока это включено, все расположенные ниже настройки действуют, а значения всех инструментов записываются по мере работы, поэтому при возврате к сохранению панели оказываются точно такими, какими вы их оставили; отключение одного пункта лишь прекращает его восстановление — его значения продолжают записываться. Выключение этого главного переключателя возвращает всё к оригиналу: запись прекращается, восстановление не выполняется, а все настройки на страницах «Активы», «Функции» и «Объекты» одновременно отключаются (становятся серыми), и каждый инструмент ведёт себя так, как задумано в игре. Он выключается сам, когда все три расположенных ниже переключателя страниц выключены, и снова включается, как только включается любой из них.";
+		d["scope.line.sharedSingle"] = "Глобально: все инструменты на этой странице, поддерживающие данный пункт, используют одно значение";
+		d["scope.note"] = "Примечание: страницы «Активы», «Функции» и «Объекты» хранят память каждую отдельно, даже если строка называется одинаково на нескольких страницах; «Глобально» и «Без разделения» действуют только в пределах страницы, которую вы просматриваете.";
+		d["item.brush.desc"] = "Запоминает строки «Размер кисти» и «Нажим кисти»: размер определяет, какую площадь охватывает одно движение, а нажим — насколько каждое движение меняет результат. Этот пункт касается только закрашивания на странице «Активы», то есть размещения кистью таких активов, как деревья из меню «Флора»; у девяти инструментов терраформирования есть собственный пункт кисти на странице «Функции», у восьми категорий объектов — свой на странице «Объекты», и три страницы никогда не делят значения. Инструменты, на панелях которых нет этих строк, не записываются и не меняются.";
+		d["item.brush.ex.group"] = "например, задайте размер кисти 30 м при закрашивании деревьев, и другие размещаемые кистью активы в той же группе тоже станут 30 м, а актив из другой группы — нет";
+		d["item.brush.ex.menu"] = "все активы, закрашиваемые в меню «Флора», используют одни и те же размер и нажим кисти, а в другом меню — нет";
+		d["item.brush.ex.category"] = "при переходе к другому виду деревьев используется та же кисть, но этот уровень группирует активы по тому, кому они служат, поэтому инструменты терраформирования и объекты хранят каждый свою копию на двух других страницах (нужна отдельная настройка)";
 			return d;
 		}
 	}

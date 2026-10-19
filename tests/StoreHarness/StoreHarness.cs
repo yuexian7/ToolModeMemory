@@ -48,6 +48,12 @@ namespace ToolModeMemory.Tests
 			return MemoryKeys.WithDomain(levelKey, isFunction) + "$" + family;
 		}
 
+		/// <summary>v0.7.0 三域版完整键（生产代码走这条，bool 版只是老用例的兼容层）。</summary>
+		private static string K(string levelKey, ItemDomain domain, string family)
+		{
+			return MemoryKeys.WithDomain(levelKey, domain) + "$" + family;
+		}
+
 		private static readonly string kSmallRoads = MemoryKeys.Group("Roads", "SmallRoads");
 		private static readonly string kAlleyAsset = MemoryKeys.Asset("Game.Prefabs.NetPrefab:Alley");
 
@@ -678,74 +684,118 @@ namespace ToolModeMemory.Tests
 			Check(K(group, false, "net") != K(group, false, "obj"), "不同枚举家族绝不共用同一桶");
 		}
 
-		/// <summary>0.2.2 工具目录：项数、项 id、板块归属、子字段与范围推荐。</summary>
+		/// <summary>
+		/// v0.7.0 工具目录：三个标签页（资产 / 功能 / 道具）、每页内编号 1..n、官方在前第三方在后、
+		/// 记忆桶与域前缀。条数一律从 ToolItemCatalog 推，不写死常数（写死的数字会跟源码一起漂，
+		/// 而漂了的断言比没有断言更坏 —— 它看着像通过）。
+		/// </summary>
 		private static void CatalogShape()
 		{
-			Console.WriteLine("[18] 工具目录形状（13 项 / 板块 / Subs）");
+			Console.WriteLine("[18] 工具目录形状（三页 / 板块 / Subs / 域前缀）");
 
 			ToolItemDef[] items = ToolItemCatalog.Items;
-			Check(items.Length == 13, "v0.6.2 = 13 个工具项（官方 10 + Anarchy 3）");
 			Check(ToolItemCatalog.Count == items.Length, "Count 与数组一致");
+			Check(items.Length == ToolItemCatalog.AssetItems.Length
+				+ ToolItemCatalog.FunctionItems.Length + ToolItemCatalog.ItemItems.Length,
+				"Items = 资产页 + 功能页 + 道具页三段拼接（" + items.Length + " 项）");
 
-			string[] expectIds =
+			// ---- 每页内编号 1..n 连续，且官方项在前、Anarchy 项在后 ----
+			ItemDomain[] domains = { ItemDomain.Asset, ItemDomain.Function, ItemDomain.Item };
+			bool numbering = true;
+			bool anarchyLast = true;
+			for (int d = 0; d < domains.Length; d++)
 			{
-				ToolItemCatalog.kThemes, ToolItemCatalog.kPacks, ToolItemCatalog.kToolMode,
-				ToolItemCatalog.kElevation, ToolItemCatalog.kParallel, ToolItemCatalog.kSnap,
-				ToolItemCatalog.kTopography, ToolItemCatalog.kUnderground, ToolItemCatalog.kBrush,
-				ToolItemCatalog.kOther,
-				ToolItemCatalog.kAnarchy, ToolItemCatalog.kLeftRight, ToolItemCatalog.kGeneral
-			};
-			bool idsInOrder = expectIds.Length == items.Length;
-			for (int i = 0; i < items.Length && i < expectIds.Length; i++)
-			{
-				if (items[i].Id != expectIds[i] || items[i].Number != i + 1) idsInOrder = false;
-			}
-			Check(idsInOrder, "项 id 与设置页序号 1..13 逐一对应（跨板块连续编号）");
-
-			// 需求（v0.6.2，owner 定）：「其它」永远是官方板块的最后一项。
-			// 上面那条 expectIds 是「清单钉子」—— 改目录的人必须来看一次；这条是**结构断言**：
-			// 以后不管插多少官方项（一律插在「笔刷」之后、「其它」之前），「其它」之后
-			// 都不许再出现 Vanilla / Toolbar 项，否则就是摆错了位置。
-			int otherIndex = -1;
-			int lastOfficialIndex = -1;
-			for (int i = 0; i < items.Length; i++)
-			{
-				if (items[i].Id == ToolItemCatalog.kOther) otherIndex = i;
-				if (items[i].Source == ItemSource.Vanilla || items[i].Source == ItemSource.Toolbar)
+				ToolItemDef[] page = ToolItemCatalog.ForDomain(domains[d]);
+				for (int i = 0; i < page.Length; i++)
 				{
-					lastOfficialIndex = i;
+					if (page[i].Number != i + 1) numbering = false;
+					if (page[i].Domain != domains[d]) numbering = false;
+					// 官方项之后不许再出现 Anarchy 项
+					if (i > 0 && page[i - 1].Source == ItemSource.AnarchyMod
+						&& page[i].Source != ItemSource.AnarchyMod) anarchyLast = false;
 				}
 			}
-			Check(otherIndex >= 0 && otherIndex == lastOfficialIndex,
-				"「其它」永远是官方板块最后一项：新官方项插在笔刷之后、「其它」之前（其它之后只许是非官方项）");
+			Check(numbering, "三个标签页各自编号 1..n 连续，且每项 Domain 与所在页一致");
+			Check(anarchyLast, "每页都是官方工具项在前、第三方（Anarchy）在后（需求 5）");
 
-			// 板块归属由 Source 决定：Vanilla + Toolbar -> 「官方工具项设置」，AnarchyMod -> Anarchy 板块。
-			int official = 0;
-			int anarchyItems = 0;
-			int extra = 0;
-			bool ok = true;
+			// ---- 需求 4：全部工具项都归入三域之一，没有「其它」这种兜底项 ----
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kRetiredOther) == null,
+				"「其它」已从目录删除（需求 4：去掉其它、全部列出来）");
+			Check(ToolItemCatalog.Find("other.color0") != null
+				&& ToolItemCatalog.Find("other.color0").Id == ToolItemCatalog.kColor,
+				"配色桶 other.color* 认回新项「颜色」（桶名不变，玩家记过的配色不丢）");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kColor).LocaleAlias == ToolItemCatalog.kRetiredOther,
+				"「颜色」的文案沿用旧「其它」那一份（12 语言已写好的句子不重写）");
+
+			// ---- 桶名：三域共用同一批名字，靠域前缀隔离（不是靠改桶名）----
+			// 每个桶都必须 Find 得回一个认识的项：MemoryStore 读档时就是靠 Find() 决定
+			// 「这一桶还认不认」，认不回就整桶丢掉，玩家记下的值凭空消失。
+			//
+			// 0.6.2 那条「子字段 id 不许占用别的项 id」在 v0.7.0 **故意不再成立**：
+			// 功能页「工具模式」的桶名就是 toolMode（与资产页那一项同名），
+			// 因为桶名只回答「这是面板上哪一行」，而三页的隔离由完整键的 A|/F|/I| 前缀做。
+			// 给功能页另起一套桶名（f.toolMode…）等于把 0.6.2 之前玩家记下的同桶值整桶作废。
+			// 所以这里改钉两条：① 同一页内部仍然不许撞名；② 跨页共用的桶必须是那几页的同名行。
+			HashSet<string> itemIds = new HashSet<string>(StringComparer.Ordinal);
+			for (int i = 0; i < items.Length; i++) itemIds.Add(items[i].Id);
+			bool resolvable = true;
+			int buckets = 0;
 			for (int i = 0; i < items.Length; i++)
 			{
-				int v = items[i].RecommendedScope;
-				// -1 = kNoRecommendation（「无推荐，跟原版走」）
-				if (v != ToolItemCatalog.kNoRecommendation && (v < 0 || v > (int)MemoryScope.GlobalUnique)) ok = false;
-				if (string.IsNullOrEmpty(items[i].Id)) ok = false;
-				if (ToolItemCatalog.Find(items[i].Id) == null) ok = false;
-				if (items[i].VanillaScope != ToolItemCatalog.kVanillaNone
-					&& (items[i].VanillaScope < 0 || items[i].VanillaScope > (int)MemoryScope.GlobalUnique)) ok = false;
-				if (items[i].Source == ItemSource.AnarchyMod) anarchyItems++;
-				else if (items[i].Source == ItemSource.ExtraNetworksMod) extra++;
-				else official++;
-				// 「-1 = 无推荐」时 EffectiveRecommendedScope 必须落到合法档
-				int eff = items[i].EffectiveRecommendedScope();
-				if (eff < 0 || eff > (int)MemoryScope.GlobalUnique) ok = false;
+				string[] subs = items[i].Subs;
+				int count = subs == null ? 1 : subs.Length;
+				HashSet<string> inPage = new HashSet<string>(StringComparer.Ordinal);
+				for (int j = 0; j < count; j++)
+				{
+					string fieldId = subs == null ? items[i].Id : subs[j];
+					buckets++;
+					if (ToolItemCatalog.Find(fieldId) == null) resolvable = false;
+					if (!inPage.Add(fieldId)) resolvable = false;   // 同一项内部两个桶重名
+					// 同一页（同域）里别的项不许用同一个桶名 —— 那才会真的串档
+					for (int k = 0; k < items.Length; k++)
+					{
+						if (k == i || items[k].Domain != items[i].Domain) continue;
+						string[] os = items[k].Subs;
+						int oc = os == null ? 1 : os.Length;
+						for (int m = 0; m < oc; m++)
+						{
+							if ((os == null ? items[k].Id : os[m]) == fieldId) resolvable = false;
+						}
+					}
+				}
 			}
-			Check(ok, "推荐/原版档位都在枚举范围内（含 -1 哨兵）");
-			Check(official == 10 && anarchyItems == 3 && extra == 0,
-				"板块划分：官方 10 项（v0.6.2 起含「笔刷」）/ Anarchy 3 项 / 没有 Extra Networks 项（两块面板反编译确认属 Anarchy）");
+			HashSet<string> bucketNames = new HashSet<string>(StringComparer.Ordinal);
+			for (int i = 0; i < items.Length; i++)
+			{
+				string[] subs = items[i].Subs;
+				if (subs == null) { bucketNames.Add(items[i].Id); continue; }
+				for (int j = 0; j < subs.Length; j++) bucketNames.Add(subs[j]);
+			}
+			Check(resolvable, "每个记忆桶都 Find 得回一个认识的项，且同一页内不撞名（" + items.Length + " 项）");
+			Check(buckets > bucketNames.Count,
+				"跨页共用的桶确实存在（" + buckets + " 个桶位 / " + bucketNames.Count
+				+ " 个不同桶名）：隔离靠键的域前缀，不靠改桶名");
+			Check(itemIds.Count == items.Length, "项 id 全局唯一（" + items.Length + " 个）");
+
+			// ---- 三个域的记忆键必须真的互不相同（同一个桶名 + 同一个层级键）----
+			string level = MemoryKeys.Group("Roads", "SmallRoads");
+			string aKey = K(level, ItemDomain.Asset, "road");
+			string fKey = K(level, ItemDomain.Function, "road");
+			string iKey = K(level, ItemDomain.Item, "road");
+			Check(aKey != fKey && fKey != iKey && aKey != iKey,
+				"同名行在三域用三把不同的键：" + aKey + " / " + fKey + " / " + iKey);
+			Check(MemoryKeys.DomainOf(aKey) == ItemDomain.Asset
+				&& MemoryKeys.DomainOf(fKey) == ItemDomain.Function
+				&& MemoryKeys.DomainOf(iKey) == ItemDomain.Item,
+				"DomainOf 能把三域键反解回各自的域");
+			Check(MemoryKeys.StripDomain(aKey) == MemoryKeys.StripDomain(fKey)
+				&& MemoryKeys.StripDomain(fKey) == MemoryKeys.StripDomain(iKey)
+				&& MemoryKeys.StripDomain(aKey) == level + "$road",
+				"剥掉域前缀后三把键回到同一个「层级 + 家族」（域是唯一差别）");
+
 			Check(ToolItemCatalog.Find(ToolItemCatalog.kThemes).Source == ItemSource.Toolbar
 				&& ToolItemCatalog.Find(ToolItemCatalog.kPacks).Source == ItemSource.Toolbar,
-				"地区主题 / 数据包 = 工具栏筛选项（进官方板块）");
+				"地区主题 / 数据包 = 工具栏筛选项（进资产页官方板块）");
 
 			Check(ToolItemCatalog.Find(ToolItemCatalog.kElevation).VanillaScope == (int)MemoryScope.GlobalShared,
 				"高度原版档 = 全局共用（整个会话只有一个值）");
@@ -755,11 +805,13 @@ namespace ToolModeMemory.Tests
 				&& ToolItemCatalog.Find(ToolItemCatalog.kUnderground).RecommendedScope == (int)MemoryScope.Group
 				&& !ToolItemCatalog.Find(ToolItemCatalog.kUnderground).DefaultEnabled,
 				"地下模式推荐 == 原版 -> 出厂不开");
-			Check(ToolItemCatalog.Find(ToolItemCatalog.kOther).VanillaScope == ToolItemCatalog.kVanillaNone,
-				"「其它」（道路配色）原版不记忆");
-			Check(ToolItemCatalog.Find(ToolItemCatalog.kOther).RecommendedScope == ToolItemCatalog.kNoRecommendation
-				&& ToolItemCatalog.Find(ToolItemCatalog.kOther).EffectiveRecommendedScope() == (int)MemoryScope.Group,
-				"「其它」无推荐 -> 出厂退到同组");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kColor).VanillaScope == ToolItemCatalog.kVanillaNone,
+				"「颜色」（道路配色）原版不记忆");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kColor).RecommendedScope == ToolItemCatalog.kNoRecommendation
+				&& ToolItemCatalog.Find(ToolItemCatalog.kColor).EffectiveRecommendedScope() == (int)MemoryScope.Group,
+				"「颜色」无推荐 -> 出厂退到同组");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kDecoration).VanillaScope == ToolItemCatalog.kVanillaNone,
+				"「保留年代」原版每次换资产都复位（ObjectToolSystem 里 decorationMode = false）");
 
 			// 10、11、12 三项属于 Anarchy（74604）：见 research/extra/anarchy
 			Check(ToolItemCatalog.Find(ToolItemCatalog.kAnarchy).Source == ItemSource.AnarchyMod
@@ -770,6 +822,9 @@ namespace ToolModeMemory.Tests
 				&& ToolItemCatalog.Find(ToolItemCatalog.kLeftRight).VanillaScope == ToolItemCatalog.kVanillaNone
 				&& ToolItemCatalog.Find(ToolItemCatalog.kGeneral).VanillaScope == ToolItemCatalog.kVanillaNone,
 				"Anarchy 三项原版无记忆");
+			Check(ToolItemCatalog.AnarchyCount(ItemDomain.Function) == 0
+				&& ToolItemCatalog.AnarchyCount(ItemDomain.Item) == 0,
+				"功能页 / 道具页目前没有第三方项（只有 Anarchy，而它只在资产页）");
 
 			// 「全局共用」必须真的只剩一把键：游戏里只有一份值的项不能再按域/家族碎裂，
 			// 否则玩家设成全局共用后，换到另一个工具组读到的还是没记过的默认值。
@@ -787,14 +842,11 @@ namespace ToolModeMemory.Tests
 			}
 			// 枚举 / 位掩码项反过来：同一个数字在道路工具和区域工具里是两回事，
 			// 并成一把键会把非法组合写进工具，必须继续按域 + 家族分开。
-			// 「笔刷」也在这里：地形笔刷与摆件的刷涂模式都用 ToolBaseSystem.brushSize，
-			// 可一个是每一下的位移量、一个是物体密度（原版自己也是两份独立值：
-			// TerrainToolSystem 私有 TerraformingBrushValues[4] 与 ObjectToolBaseSystem.m_BrushSize），
-			// 所以 0.6.2 没有按审查建议给笔刷套 family-free —— 地形侧仍然只有一把 F|S$other。
 			string[] familyBound = new string[]
 			{
 				ToolItemCatalog.kToolMode, ToolItemCatalog.kElevation, ToolItemCatalog.kParallel,
-				ToolItemCatalog.kSnap, ToolItemCatalog.kOther, ToolItemCatalog.kBrush
+				ToolItemCatalog.kSnap, ToolItemCatalog.kColor, ToolItemCatalog.kBrush,
+				ToolItemCatalog.kDecoration
 			};
 			for (int i = 0; i < familyBound.Length; i++)
 			{
@@ -816,15 +868,18 @@ namespace ToolModeMemory.Tests
 			string[] lr = ToolItemCatalog.Find(ToolItemCatalog.kLeftRight).Subs;
 			Check(lr != null && lr.Length == 2 && lr[0] == "leftRight.left" && lr[1] == "leftRight.right",
 				"左侧和右侧 = 左右两个子字段");
-			string[] other = ToolItemCatalog.Find(ToolItemCatalog.kOther).Subs;
-			Check(other != null && other.Length == 4
-				&& other[0] == "other.color0" && other[1] == "other.color1" && other[2] == "other.color2"
-				&& other[3] == "other.color3",
-				"其它 = 配色 3+1 通道（v0.6.2 起笔刷两项已经独立成行）");
+			string[] color = ToolItemCatalog.Find(ToolItemCatalog.kColor).Subs;
+			Check(color != null && color.Length == 4
+				&& color[0] == "other.color0" && color[1] == "other.color1" && color[2] == "other.color2"
+				&& color[3] == "other.color3",
+				"「颜色」= 配色 3+1 通道，桶名照旧（other.color*）");
 			string[] brush = ToolItemCatalog.Find(ToolItemCatalog.kBrush).Subs;
 			Check(brush != null && brush.Length == 2
 				&& brush[0] == "other.brushSize" && brush[1] == "other.brushStrength",
 				"笔刷 = 粗细 + 强度两个子字段，且**桶名沿用 other.***（改名会抹掉玩家记过的笔刷）");
+			string[] deco = ToolItemCatalog.Find(ToolItemCatalog.kDecoration).Subs;
+			Check(deco != null && deco.Length == 1 && deco[0] == "decoration",
+				"保留年代 = decoration 一个字段（新行，没有历史包袱）");
 
 			// 高度阶段不再是一项，而是「高度」的子字段：共用高度的开关、范围与记忆键，
 			// 字段 id 仍是 "elevation" / "elevationStep"，所以 0.2.1 及更早的记忆文件照旧读得回。
@@ -850,7 +905,7 @@ namespace ToolModeMemory.Tests
 			Check(ToolItemCatalog.Find("leftRight.left").Id == ToolItemCatalog.kLeftRight
 				&& ToolItemCatalog.Find("leftRight.right").Id == ToolItemCatalog.kLeftRight,
 				"leftRight.* 认回父项");
-			Check(ToolItemCatalog.Find("other.color2").Id == ToolItemCatalog.kOther, "other.color* 认回「其它」");
+			Check(ToolItemCatalog.Find("other.color2").Id == ToolItemCatalog.kColor, "other.color* 认回「颜色」");
 			Check(ToolItemCatalog.Find("other.brushSize").Id == ToolItemCatalog.kBrush
 				&& ToolItemCatalog.Find("other.brushStrength").Id == ToolItemCatalog.kBrush,
 				"笔刷两个桶认回新独立项「笔刷」（Subs 精确匹配优先于点号前缀兜底，老文件不换名）");
@@ -863,34 +918,6 @@ namespace ToolModeMemory.Tests
 			Check(ToolItemCatalog.Find("nope.unknown") == null && ToolItemCatalog.Find(null) == null
 				&& ToolItemCatalog.Find("") == null && ToolItemCatalog.Find(".count") == null,
 				"未知/畸形 id 返回 null（Find 不许抛）");
-
-			// 记忆桶 = 每项实际使用的字段 id（单值项为项 id，多值项为 Subs）。
-			// 三条不变量：桶名不重复；每个桶都 Find 得回自己的父项；子字段不能占用别的项 id
-			//（Find 先匹配项 id，占用了就会把值记到别人头上）。
-			HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
-			HashSet<string> itemIds = new HashSet<string>(StringComparer.Ordinal);
-			for (int i = 0; i < items.Length; i++) itemIds.Add(items[i].Id);
-			bool unique = true;
-			int buckets = 0;
-			for (int i = 0; i < items.Length; i++)
-			{
-				string[] subs = items[i].Subs;
-				int count = subs == null ? 1 : subs.Length;
-				for (int j = 0; j < count; j++)
-				{
-					string fieldId = subs == null ? items[i].Id : subs[j];
-					buckets++;
-					if (!seen.Add(fieldId)) unique = false;
-					ToolItemDef owner = ToolItemCatalog.Find(fieldId);
-					if (owner == null || owner.Id != items[i].Id) unique = false;
-					if (fieldId != items[i].Id && itemIds.Contains(fieldId)) unique = false;
-				}
-			}
-			// 条数与桶数一起钉：加一项（0.6.2 的「笔刷」）或改一个 Subs 都会让这里变红，
-			// 而 itemIds.Count == items.Length 另挡一种事故——两项用了同一个 id。
-			Check(unique && items.Length == 13 && itemIds.Count == items.Length
-				&& seen.Count == 20 && buckets == 20,
-				"13 项 / 20 个记忆桶全部唯一且认得回父项（elevation 既是项 id 也是「高度」的字段 id，属同一桶）");
 		}
 
 		/// <summary>0.2.2 工具栏筛选项（地区主题 / 数据包）：一选项一键 + 计数哨兵。</summary>
@@ -1883,23 +1910,32 @@ namespace ToolModeMemory.Tests
 			Check(ToolItemCatalog.Find("other.brushSize").Id == ToolItemCatalog.kBrush
 				&& ToolItemCatalog.Find("other.brushStrength").Id == ToolItemCatalog.kBrush,
 				"Subs 精确匹配优先于「点号前缀」兜底：笔刷桶认回「笔刷」而不是「其它」");
-			Check(ToolItemCatalog.Find("other.color0").Id == ToolItemCatalog.kOther
-				&& ToolItemCatalog.Find("other.color3").Id == ToolItemCatalog.kOther,
-				"配色三个通道 + 占位仍归「其它」");
-			string[] otherSubs = ToolItemCatalog.Find(ToolItemCatalog.kOther).Subs;
-			bool otherClean = otherSubs != null && otherSubs.Length == 4;
-			for (int i = 0; otherClean && i < otherSubs.Length; i++)
+			Check(ToolItemCatalog.Find("other.color0").Id == ToolItemCatalog.kColor
+				&& ToolItemCatalog.Find("other.color3").Id == ToolItemCatalog.kColor,
+				"配色三个通道 + 占位归新项「颜色」（桶名照旧 other.color*）");
+			string[] colorSubs = ToolItemCatalog.Find(ToolItemCatalog.kColor).Subs;
+			bool colorClean = colorSubs != null && colorSubs.Length == 4;
+			for (int i = 0; colorClean && i < colorSubs.Length; i++)
 			{
-				if (otherSubs[i] == "other.brushSize" || otherSubs[i] == "other.brushStrength") otherClean = false;
+				if (colorSubs[i] == "other.brushSize" || colorSubs[i] == "other.brushStrength") colorClean = false;
 			}
-			Check(otherClean, "「其它」的 Subs 里已经没有笔刷（关掉配色不再连带关掉笔刷）");
+			Check(colorClean, "「颜色」的 Subs 里已经没有笔刷（关掉配色不再连带关掉笔刷）");
 
-			// 跨板块连续编号：「其它」= 10、Anarchy 三项顺次 11..13
-			Check(ToolItemCatalog.Find(ToolItemCatalog.kOther).Number == 10
-				&& ToolItemCatalog.Find(ToolItemCatalog.kAnarchy).Number == 11
-				&& ToolItemCatalog.Find(ToolItemCatalog.kLeftRight).Number == 12
-				&& ToolItemCatalog.Find(ToolItemCatalog.kGeneral).Number == 13,
-				"「其它」= 官方板块最后（10）、Anarchy 三项 = 11/12/13，编号仍然跨板块连续");
+			// v0.7.0 编号在每个标签页内各自从 1 数（「功能」页另起 1..5，「道具」页 1..5）：
+			// 三页是三张独立的设置单，跨页连续编号既无必要又会让资产页跳到 15、16。
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kColor).Number == 10
+				&& ToolItemCatalog.Find(ToolItemCatalog.kDecoration).Number == 11
+				&& ToolItemCatalog.Find(ToolItemCatalog.kAnarchy).Number == 12
+				&& ToolItemCatalog.Find(ToolItemCatalog.kLeftRight).Number == 13
+				&& ToolItemCatalog.Find(ToolItemCatalog.kGeneral).Number == 14,
+				"资产页 = 配色 10 / 保留年代 11 / Anarchy 12/13/14");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kFBrush).Number == 5
+				&& ToolItemCatalog.Find(ToolItemCatalog.kFToolMode).Number == 1
+				&& ToolItemCatalog.FunctionItems.Length == 5,
+				"功能页另起 1..5（工具模式 1 / 笔刷 5）");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kIBrush).Number == 3
+				&& ToolItemCatalog.ItemItems.Length == 5,
+				"道具页另起 1..5（笔刷 3）");
 
 			// 与审查建议不同的一处：笔刷**不**套 family-free。地形笔刷与摆件刷涂模式共用
 			// ToolBaseSystem.brushSize，可含义不同（位移量 vs 物体密度），原版也是两套独立值，
