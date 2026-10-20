@@ -80,6 +80,11 @@ def main():
             return ""
         return tpl.replace("{0}", ex)
 
+    def nl(text):
+        """源码里写成 \\n 的换行是给游戏渲染用的；预览里还原成真换行，
+        否则预览会显示成字面量「\\n」，看不出实际排版。"""
+        return text.replace("\\n", "\n") if text else text
+
     ALIAS = {"color": "other"}
 
     def txt(item_id, slot, domain):
@@ -153,7 +158,7 @@ def main():
                 label = "%d. %s" % (num, txt(item_id, "label", suffix) or item_id)
                 out.append("")
                 out.append("── %s" % label)
-                out.append("   说明: " + txt(item_id, "desc", suffix))
+                out.append("   说明: " + nl(txt(item_id, "desc", suffix)))
                 # v0.8.0：与 LocaleTable.ScopeDescription 完全对齐 ——
                 # 「同类 / 全局共用 / 全部不共用」三句都按当前项的域取专用键
                 # （scope.line.X.<asset|function|item>），本语言没写专用键时剥掉最后一段
@@ -171,16 +176,21 @@ def main():
                     shared_line = d[shared_key]          # 本页共用一份，三页通用
                 else:
                     shared_line = by_domain("scope.line.shared")
+                # v0.9.0 需求 4：功能页与道具页不再提供「同类」这一档
+                # （LocaleTable.BuildScopeDropdown 只给建筑与服务页列它），
+                # 所以预览也要少一行，否则看到的下拉说明比游戏里多一项。
                 scope = [d["scope.desc"],
                          fill(d["scope.line.group"], txt(item_id, "ex.group", suffix)),
-                         fill(d["scope.line.menu"], txt(item_id, "ex.menu", suffix)),
-                         fill(d.get(line_cat, d["scope.line.category"]), txt(item_id, "ex.category", suffix)),
-                         shared_line,
-                         by_domain("scope.line.unique"),
-                         d["scope.note"]]
-                out.append("   共用范围（%s，本档 = %s）:" % (d["scope.label"], d[cat_key]))
+                         fill(d["scope.line.menu"], txt(item_id, "ex.menu", suffix))]
+                if suffix == "asset":
+                    scope.append(fill(d["scope.line.category"],
+                                      txt(item_id, "ex.category", suffix)))
+                scope.append(shared_line)
+                scope.append(by_domain("scope.line.unique"))
+                scope.append(d["scope.note"])
+                out.append("   共用范围（%s）:" % d["scope.label"])
                 for i, line in enumerate(scope):
-                    out.append("     %d) %s" % (i + 1, line))
+                    out.append("     %d) %s" % (i + 1, nl(line)))
 
         emit(group_key, official)
         if anarchy:

@@ -568,18 +568,23 @@ namespace ToolModeMemory
 			// 大开关：需求 3 要求改叫「启用模组」，它管住下面所有共用设置与读档恢复。
 			// v0.8.0 需求 3：「资产」页改名「建筑与服务」（道具本身也是资产，旧名有歧义）。
 			d["enabled.label"] = "启用模组";
-			d["enabled.desc"] = "默认打开。开着时下面所有设置都生效，所有工具项的数值都会实时记录，回到存档时就是你上次离开时的样子；单独关掉某一项只是不再恢复那一项，它的数值仍在记录。关掉这个大开关则一切回到原版：停止记录、不再恢复，建筑与服务、功能、道具三页里的所有设置同时失效（灰掉），每个工具都按原版自己的规矩走。下面三个分域开关全关时这里自动跟着关；三个里任何一个打开，这里自动打开。";
+			// v0.9.0 文案
+			d["enabled.desc"] = "本模组的全部功能的开关。\n打开后下面三个分域开关才会生效，每个工具面板的设置都会实时记住，回到存档时自动恢复。\n关掉后模组完全不参与，所有工具都是游戏原本的样子。";
 			d["domain.asset.label"] = "启用建筑与服务的工具项记忆";
 			// v0.8.0 需求 5：分类口径的说明写在这里（不在共用范围的下拉说明里重复一遍）。
-			d["domain.asset.desc"] = "管「建筑与服务」页里所有工具项：记录与读档恢复一起开关。这一页收录的是建筑、服务设施与各类可建造的资产（道路、铁路、轨道、电线、水管、桥梁、埠头、交叉路口、停车场、学校、医院、消防、警察、供电、供水、垃圾处理、公园、广场等等，凡是放在工具栏菜单里买下来盖下去的都在这一页）。关掉之后本页的设置全部灰掉不生效，工具回到原版行为，已记录的数据仍保留在文件里，重新打开照旧恢复。";
+			// v0.9.0 文案
+			d["domain.asset.desc"] = "管这一页所有工具项是否记忆：\n打开时，你的设置会实时记住，回到存档时自动恢复；\n关掉时不记忆、也不会从存档恢复，共用范围自然也就无从设置。\n这一页收录道路、建筑、服务设施等可以建造的东西。";
 			d["domain.function.label"] = "启用功能的工具项记忆";
-			d["domain.function.desc"] = "管「功能」页里所有工具项：记录与读档恢复一起开关。这一页按六个功能分类收录工具：功能区（住宅、商业、工业、办公四种功能区的规划工具）、区域工具（市辖区创建工具、专门产业区工具、表面区域规划工具）、路线工具（交通运输菜单里的全部路线工具）、地形改造工具（海拔调整、地形平滑、地面平整、斜坡生成、纹理绘制 01～04、纹理橡皮擦共九种）、空间与区域（公园区域、徒步区域、散步区域、清空区域、剪裁地面）、标记与预制对象（动物生成工具等）。关掉之后本页的设置全部灰掉不生效，工具回到原版行为，已记录的数据仍保留在文件里，重新打开照旧恢复。";
+			// v0.9.0 文案
+			d["domain.function.desc"] = "管这一页所有工具项是否记忆：\n打开时，你的设置会实时记住，回到存档时自动恢复；\n关掉时不记忆、也不会从存档恢复，共用范围自然也就无从设置。\n这一页收录功能区、区域、路线、地形改造等非资产类工具。";
 			d["domain.item.label"] = "启用道具的工具项记忆";
-			d["domain.item.desc"] = "管「道具」页里所有工具项：记录与读档恢复一起开关。这一页按八类道具收录城市美化菜单里的道具：自然、公园、住宅道具、商业道具、工业道具、残骸、贴花、盆栽。关掉之后本页的设置全部灰掉不生效，工具回到原版行为，已记录的数据仍保留在文件里，重新打开照旧恢复。";
+			// v0.9.0 文案
+			d["domain.item.desc"] = "管这一页所有工具项是否记忆：\n打开时，你的设置会实时记住，回到存档时自动恢复；\n关掉时不记忆、也不会从存档恢复，共用范围自然也就无从设置。\n这一页收录城市美化菜单里的道具，树木也在这一页。";
 
 
 			d["scope.label"] = "共用范围";
-			d["scope.desc"] = "这一项的数值在多大范围内共用，下拉框括号里标出原版行为与推荐选择。";
+			// v0.9.0 需求 4：功能页与道具页不再有推荐，所以这里只说「标出原版行为」。
+			d["scope.desc"] = "这一项的数值在多大范围内共用。括号里标出游戏原本的做法（原版）。";
 			d[kScopeLineGroup] = "同组：{0}";
 			d[kScopeLineMenu] = "同菜单：{0}";
 			// v0.8.0 需求 4/5：范围说明只写「共用给谁」，不再罗列分类成员，
@@ -630,7 +635,8 @@ namespace ToolModeMemory
 			d["about.rainbow.desc"] = "打开 RAINBOW 系列官网。";
 
 			// ---------- Anarchy ----------
-			d["item.anarchy.desc"] = "记忆 Anarchy 模组的开关，Anarchy 模组是全局共用，开启后可以修改共用范围。没安装 Anarchy 模组时这一项不会出现。";
+			// v0.9.0 文案
+			d["item.anarchy.desc"] = "记住 Anarchy 模组的开关。\n没安装 Anarchy 时这一项不会出现。";
 			d["item.anarchy.ex.group"] = "比如给两车道小型道路打开 Anarchy，切换到其它的小型道路，也是打开的，但切换到大型道路就不是了";
 			d["item.anarchy.ex.menu"] = "点击道路菜单里面的所有资产，Anarchy 都是打开的，但切换到电力菜单就不是了";
 			d["item.anarchy.ex.category"] = "切换到六车道道路也是打开的，但切换到桥梁或双向地铁轨道就变成关闭（需单独设置），即使它们都在道路菜单下";
@@ -638,47 +644,54 @@ namespace ToolModeMemory
 			// 地区主题 / 数据包：工具栏筛选面板那两行，行名照原版语言包
 			// （Toolbar.THEME_PANEL_TITLE / Toolbar.ASSET_PACKS_PANEL_TITLE）。
 			d["item.themes.label"] = "地区主题";
-			d["item.themes.desc"] = "记忆工具栏筛选面板里「地区主题」勾选了哪些。只有当前分类里确实有资产用到主题时才会出现这一行，勾上之后工具栏只列出支持这些主题的资产。原版只在读档时把它重置回默认主题，所以这一项不推荐开。";
+			// v0.9.0 文案
+			d["item.themes.desc"] = "记住工具栏筛选面板里「地区主题」勾选了哪些。\n只有当前分类里确实有资产用到主题时才有这一行。";
 			d["item.themes.ex.group"] = "比如只在道路/小型道路里勾了某个主题，切换到大型道路就不按它筛选了";
 			d["item.themes.ex.menu"] = "在道路菜单里勾的主题，切换到电力菜单就不生效，回到道路菜单又还是那一套";
 			d["item.themes.ex.category"] = "这一行的勾选属于工具栏面板本身，按当前所在的菜单+分类记忆，不按资产类别共用";
 			d["item.packs.label"] = "数据包";
-			d["item.packs.desc"] = "记忆工具栏筛选面板里「数据包」勾选了哪些，勾上之后工具栏只列出属于这些数据包的资产。原版每次切换菜单或分类都会把它清空，所以按「同一菜单+分类」来记最贴近你看到的规律，这一项也不推荐开。";
+			// v0.9.0 文案
+			d["item.packs.desc"] = "记住工具栏筛选面板里「数据包」勾选了哪些。\n勾上后工具栏只列出属于这些数据包的资产。";
 			d["item.packs.ex.group"] = "比如在道路/小型道路勾了某个数据包，切到大型道路会被原版清空，回到小型道路又自动恢复";
 			d["item.packs.ex.menu"] = "在道路菜单勾的数据包，和电力菜单勾的各记各的";
 			d["item.packs.ex.category"] = "这一行的勾选属于工具栏面板本身，按当前所在的菜单+分类记忆；原版每次换分类都会把它清空";
 
 			// ---------- 工具模式 ----------
 			d["item.toolMode.label"] = "工具模式";
-			d["item.toolMode.desc"] = "记忆每个工具所选的模式，可选项按工具不同：道路、轨道、管道为直线、简单曲线、复杂曲线、连续曲线、网格、替换、节点；建筑、装饰物、树木为放置单个、放置多个、直线、曲线、目标印戳工具；功能区为填充、滚动、刷涂；区域为编辑、生成地图网格。资产的工具模式与功能的工具模式分开记忆，因为它们的选项并不相同。";
+			// v0.9.0 文案
+			d["item.toolMode.desc"] = "记住每个工具所选的模式。\n这一页的可选值就是直线、简单曲线、复杂曲线、连续曲线、网格、替换、节点，以及建筑的放置方式。";
 			d["item.toolMode.ex.group"] = "比如给两车道小型道路选了简单曲线，切换到其它的小型道路，也是简单曲线，但切换到大型道路就不是了";
 			d["item.toolMode.ex.menu"] = "点击道路菜单里面的所有资产，都是简单曲线，但切换到电力菜单就不是了";
 			d["item.toolMode.ex.category"] = "切换到六车道道路也是简单曲线，但切换到桥梁或双向地铁轨道就回到默认模式（需单独设置），即使它们都在道路菜单下";
 
 			// ---------- 高度（用户原话的例子） ----------
 			d["item.elevation.label"] = "高度";
-			d["item.elevation.desc"] = "记忆工具离开时的高度值，也包括提升高度、降低高度得到的结果；「高度阶段」（一次抬高或降低多少米，Anarchy 面板里那一行叫高度调整幅度）跟高度一起记忆、用同一个共用范围。交叉路口的高度不在记忆范围内。部分资产自己限定了可用的高度范围：共用数值超出所选资产允许的范围时，那件资产保持它自己允许的高度，已记忆的共用数值不变。";
+			// v0.9.0 文案
+			d["item.elevation.desc"] = "记住道路离开时的高度，包括抬高、降低之后的结果。\n「高度阶段」（一次抬高或降低多少米）跟着高度一起记，共用同一个范围。";
 			d["item.elevation.ex.group"] = "比如点击两车道道路将高度提高到10m，那么切换其它的小型道路，高度也是10m，但切换到大型道路就不是10m了";
 			d["item.elevation.ex.menu"] = "点击所有道路菜单里面的资产，高度都是10m，但切换到电力菜单就不是10m了";
 			d["item.elevation.ex.category"] = "切换到六车道道路高度也是10m，但切换到桥梁或双线铁路就变成0m（需单独设置），即使它们都在道路菜单下";
 
 			// ---------- 并列模式 ----------
 			d["item.parallel.label"] = "并列模式";
-			d["item.parallel.desc"] = "记忆「并列道路」面板里的两样东西：并列模式开关（切换并列模式）与「并列偏移」的间距。原版一次并列就是两条线：打开后沿主线旁边同时画出第二条，能调的是这两条之间隔多远，比如 1 米、2 米；关掉就只画一条。";
+			// v0.9.0 文案
+			d["item.parallel.desc"] = "记住并列道路的开关与两条线之间的间距。\n原版一次并列就是两条；关掉只画一条。";
 			d["item.parallel.ex.group"] = "比如给两车道小型道路打开并列模式并把并列偏移调到5米，切换到其它的小型道路，同样是打开、偏移也是5米，但切换到大型道路就不是了";
 			d["item.parallel.ex.menu"] = "点击道路菜单里面的所有资产，并列都是打开、偏移都是5米，但切换到电力菜单就不是了";
 			d["item.parallel.ex.category"] = "切换到六车道道路同样是打开、偏移也是5米，但切换到桥梁或地铁轨道就变成关闭（需单独设置），即使它们都在道路菜单下";
 
 			// ---------- 对齐 ----------
 			d["item.snap.label"] = "对齐";
-			d["item.snap.desc"] = "记忆「对齐」里的每一个开关：快速对齐当前形状、快速对齐功能区单元格长度、快速对齐直角、快速对齐路边、快速对齐道路、快速对齐拥有者一侧、快速对齐建筑两侧、快速对齐道路中央、快速对齐海岸线、快速对齐附近形状、快速对齐导线、快速对齐功能区网格、快速对齐节点、快速对齐物体表面、快速直立对齐、快速对齐空地网格、将重叠物体绑定至建筑、仅移除相符类型、显示轮廓线条、快速对齐距离。游戏自带的「开启／关闭所有对齐功能」是批量开关，本身不会被记忆。";
+			// v0.9.0 文案
+			d["item.snap.desc"] = "记住「对齐」里各个开关的勾选状态。\n游戏自带的「开启／关闭所有对齐」是批量开关，本身不记忆。";
 			d["item.snap.ex.group"] = "比如给两车道小型道路关掉快速对齐路边，切换到其它的小型道路，也是关着的，但切换到大型道路就是全开的默认状态";
 			d["item.snap.ex.menu"] = "点击道路菜单里面的所有资产，对齐开关都是这一套，但切换到电力菜单就不是了";
 			d["item.snap.ex.category"] = "切换到六车道道路也保持这一套开关，但切换到桥梁或步行道就恢复默认（需单独设置），即使它们都在道路菜单下";
 
 			// ---------- 地形 ----------
 			d["item.topography.label"] = "地形";
-			d["item.topography.desc"] = "记忆「地形」这一行，也就是显示轮廓线条的开与关。";
+			// v0.9.0 文案
+			d["item.topography.desc"] = "记住「地形」这一行，也就是显示轮廓线条的开与关。";
 			d["item.topography.ex.group"] = "比如给两车道小型道路勾上地形，切换到其它的小型道路，同样是勾着的，但切换到大型道路就不是了";
 			d["item.topography.ex.menu"] = "点击道路菜单里面的所有资产，地形都是勾着的，但切换到电力菜单就不是了";
 			d["item.topography.ex.category"] = "切换到六车道道路也是勾着的，但切换到桥梁或电缆就变成不勾（需单独设置）";
@@ -686,14 +699,16 @@ namespace ToolModeMemory
 
 			// ---------- 左侧和右侧（Anarchy） ----------
 			d["item.leftRight.label"] = "左侧和右侧";
-			d["item.leftRight.desc"] = "记忆 Anarchy 网络面板里「左侧」「右侧」两行所选的网络升级，例如自行车车道、树木、草坪、堤岸、挡土墙、隔音屏障。需要安装 Anarchy（Paradox 模组 74604），没装时这一项不会出现。";
+			// v0.9.0 文案
+			d["item.leftRight.desc"] = "记住 Anarchy 网络面板里「左侧」「右侧」两行所选的网络升级。\n没安装 Anarchy 时这一项不会出现。";
 			d["item.leftRight.ex.group"] = "比如给两车道小型道路的右侧选上自行车车道，切换到其它的小型道路，右侧同样是自行车车道，但切换到大型道路就不是了";
 			d["item.leftRight.ex.menu"] = "点击道路菜单里面的所有资产，左右两侧都是这一套升级，但切换到电力菜单就不是了";
 			d["item.leftRight.ex.category"] = "切换到六车道道路右侧也是自行车车道，但切换到桥梁或双线铁路就变成未选择（需单独设置），即使它们都在道路菜单下";
 
 			// ---------- 常规（Anarchy） ----------
 			d["item.general.label"] = "常规";
-			d["item.general.desc"] = "记忆 Anarchy 网络面板里「常规」一行的开关：强制地面、强制高架、强制隧道、平直斜坡、宽分隔带、扩展高度范围（取消高度上限）等。需要安装 Anarchy（Paradox 模组 74604），没装时这一项不会出现。";
+			// v0.9.0 文案
+			d["item.general.desc"] = "记住 Anarchy 网络面板里「常规」一行的开关。\n没安装 Anarchy 时这一项不会出现。";
 			d["item.general.ex.group"] = "比如给两车道小型道路勾上强制隧道，切换到其它的小型道路，同样是强制隧道，但切换到大型道路就不是了";
 			d["item.general.ex.menu"] = "点击道路菜单里面的所有资产，常规选项都是这一套，但切换到电力菜单就不是了";
 			d["item.general.ex.category"] = "切换到六车道道路也是强制隧道，但切换到桥梁或双向地铁轨道就全部回到未勾选（需单独设置），即使它们都在道路菜单下";
@@ -701,14 +716,16 @@ namespace ToolModeMemory
 			// owner 2026-10-20 定：锁定变换 / 高度 / 高度变化范围 / 抬高降低的幅度 是同一排显示的，
 			// 算同一项、一起记忆一起共用；「重置高度为 0」是瞬时按钮，不列。
 			d["item.anarchyObjectElevation.label"] = "物件高度";
-			d["item.anarchyObjectElevation.desc"] = "记忆 Anarchy 在摆件工具面板上加的那一排高度控件：锁定变换、高度、高度变化范围、抬高降低的幅度。这四项在同一排显示，所以算作一项、一起记忆。只有摆件工具在放置、刷涂、印章、直线、曲线这几种模式下才有这一排，升级与移动模式没有。「重置高度为 0」是按下即生效的按钮、没有可以记住的状态，所以不列。";
+			// v0.9.0 文案
+			d["item.anarchyObjectElevation.desc"] = "记住 Anarchy 在摆件工具面板上加的那一排高度控件：锁定变换、高度、高度变化范围、抬高降低的幅度。\n这四项在同一排显示，所以一起记忆、一起共用。";
 			d["item.anarchyObjectElevation.ex.group"] = "比如把高度设成15米、变化范围设为2米，同一组里的其它摆件也按这一套，但换到另一组就不是了";
 			d["item.anarchyObjectElevation.ex.menu"] = "同一个菜单里的所有摆件都是这一套高度，换到别的菜单就不是了";
 			d["item.anarchyObjectElevation.ex.category"] = "切换到另一类摆件就按它自己那一份高度（需单独设置）";
 
 			// ---------- 地下模式 ----------
 			d["item.underground.label"] = "地下模式";
-			d["item.underground.desc"] = "记忆「地下模式」开关（切换地下模式），也就是你放的东西在地面以下还是地面之上。";
+			// v0.9.0 文案
+			d["item.underground.desc"] = "记住「地下模式」开关，也就是你放的东西在地面以下还是地面之上。";
 			d["item.underground.ex.group"] = "比如给两车道小型道路打开地下模式，切换到其它的小型道路，同样在地下，但切换到大型道路就不是了";
 			d["item.underground.ex.menu"] = "点击道路菜单里面的所有资产，都在地下模式，但切换到电力菜单就不是了";
 			d["item.underground.ex.category"] = "切换到六车道道路也在地下，但切换到桥梁或双线铁路就回到地面（需单独设置），即使它们都在道路菜单下";
@@ -725,17 +742,20 @@ namespace ToolModeMemory
 			// Toolbar.BRUSH_SIZE = 笔刷粗细、Toolbar.BRUSH_STRENGTH = 笔刷强度。
 			// 本页（建筑与服务）没有这三行 —— 只有摆件工具的可刷涂资产与地形改造工具才有。
 			d["item.brushType.label"] = "笔刷种类";
-			d["item.brushType.desc"] = "记忆面板上「笔刷种类」这一行选的刷子：圆形、方形、柔边等，决定刷出来的边角形状。只有能刷涂的工具才有这一行，也就是摆件工具选到可刷涂资产的时候，以及九种地形改造工具。建筑与服务这一页没有这一行，所以这一项归功能页与道具页。";
+			// v0.9.0 文案
+			d["item.brushType.desc"] = "记住「笔刷种类」这一行选的刷子：圆形、方形、柔边等。\n只有能刷涂的工具才有这一行。";
 			d["item.brushType.ex.group"] = "比如刷涂时选了方形刷子，同一组里其它能刷的资产也是方形刷子，但换到另一组就不是了";
 			d["item.brushType.ex.menu"] = "同一个菜单里所有能刷涂的资产都用这把刷子，换到别的菜单就不是了";
 			d["item.brushType.ex.category"] = "切换到另一类道具就按它自己那份刷子（需单独设置），即使都能刷涂";
 			d["item.brushSize.label"] = "笔刷粗细";
-			d["item.brushSize.desc"] = "记忆面板上「笔刷粗细」这一行：一次刷过多大范围。只有能刷涂的工具才有这一行（摆件工具选到可刷涂资产时、以及九种地形改造工具），建筑与服务这一页不出现。地形改造工具的粗细与道具刷涂的粗细含义不同，两者各记各的。";
+			// v0.9.0 文案
+			d["item.brushSize.desc"] = "记住「笔刷粗细」这一行：一次刷过多大范围。\n只有能刷涂的工具才有这一行。";
 			d["item.brushSize.ex.group"] = "比如把笔刷粗细调到30米，同一组里其它能刷的资产也是30米，但换到另一组就不是了";
 			d["item.brushSize.ex.menu"] = "同一个菜单里所有能刷涂的资产都是这个粗细，换到别的菜单就不是了";
 			d["item.brushSize.ex.category"] = "切换到另一类道具就按它自己那份粗细（需单独设置），即使都能刷涂";
 			d["item.brushStrength.label"] = "笔刷强度";
-			d["item.brushStrength.desc"] = "记忆面板上「笔刷强度」这一行：每一下刷动改变多少。只有能刷涂的工具才有这一行（摆件工具选到可刷涂资产时、以及九种地形改造工具），建筑与服务这一页不出现。地形改造工具的强度是每次抬降的幅度，道具刷涂的强度是摆放密度，两者各记各的。";
+			// v0.9.0 文案
+			d["item.brushStrength.desc"] = "记住「笔刷强度」这一行：每一下刷动改变多少。\n只有能刷涂的工具才有这一行。";
 			d["item.brushStrength.ex.group"] = "比如把笔刷强度调到一半，同一组里其它能刷的资产也是这个强度，但换到另一组就不是了";
 			d["item.brushStrength.ex.menu"] = "同一个菜单里所有能刷涂的资产都是这个强度，换到别的菜单就不是了";
 			d["item.brushStrength.ex.category"] = "切换到另一类道具就按它自己那份强度（需单独设置），即使都能刷涂";
@@ -746,23 +766,27 @@ namespace ToolModeMemory
 
 			// ---------- 保留年代（面板行名 ToolOptions.DECORATION_MODE_TITLE = 保留年代） ----------
 			d["item.decoration.label"] = "保留年代";
-			d["item.decoration.desc"] = "记忆「保留年代」开关：勾上之后被刷到的树不再成长、也不再老化倒下，等于把这片树的年龄冻在当下。这一行只出现在带树木数据的资产面板上（植被菜单里刷树的时候），其它资产面板上没有这一行，也就不记录、不改动。";
+			// v0.9.0 文案
+			d["item.decoration.desc"] = "记住「保留年代」开关：勾上后刷到的树不再成长、也不再老化倒下。\n这一行只在树上有。";
 			d["item.decoration.ex.group"] = "比如刷树时打开保留年代，同一组里的其它植被刷法同样是打开的，但换到另一组就不是了";
 			d["item.decoration.ex.menu"] = "点击植被菜单里面的所有资产，保留年代都是打开的，但切换到其它菜单就不是了";
 			d["item.decoration.ex.category"] = "切换到另一种树也是打开的，但这一行只在带树木数据的资产上有，刷贴花之类根本没有这一行（需单独设置）";
 			d["item.i.anarchy.label"] = "Anarchy";
 			d["item.brushHeight.label"] = "目标高度";
-			d["item.brushHeight.desc"] = "记忆面板上「目标高度」这一行的数值：地形工具要把地面削平或压成斜坡，最终停在多高。这一行只有地面平整工具与斜坡生成工具这两种地形资产上才有，其余七种地形改造工具面板上没有它，摆件刷涂更是没有，也就不记录、不改动。";
+			// v0.9.0 文案
+			d["item.brushHeight.desc"] = "记住「目标高度」这一行：地形要把地面削平或压成斜坡，最终停在多高。\n只有地面平整与斜坡这两种地形工具有这一行。";
 			d["item.brushHeight.ex.group"] = "比如把平整的目标高度设成50米，同一组里的其它地形改造工具也按50米，但换到另一组就不是了";
 			d["item.brushHeight.ex.menu"] = "地形改造这一类里的工具都按这个目标高度，换到另一类功能就不是了";
 			d["item.brushHeight.ex.category"] = "切换到另一类功能就按它自己那份目标高度（需单独设置）；其余地形工具根本没有这一行";
 			d["item.distance.label"] = "距离";
-			d["item.distance.desc"] = "记忆面板上「距离」这一行的数值：用直线或曲线摆放时，相邻两个之间隔多远。这一行只在直线、曲线两种模式下出现（摆件工具与标记类工具），单个放置、连续放置、印章、刷涂模式下都没有它。";
+			// v0.9.0 文案
+			d["item.distance.desc"] = "记住「距离」这一行：用直线或曲线摆放时，相邻两个之间隔多远。\n只有直线、曲线两种模式下才有这一行。";
 			d["item.distance.ex.group"] = "比如把距离调成10米，同一组里的其它道具也是10米，但换到另一组就不是了";
 			d["item.distance.ex.menu"] = "同一个菜单里所有能拉直线的都按这个距离，换到别的菜单就不是了";
 			d["item.distance.ex.category"] = "切换到另一类就按它自己那份距离（需单独设置），即使都能拉直线";
 			d["item.ageMask.label"] = "年龄";
-			d["item.ageMask.desc"] = "记忆面板上「年龄」这一行勾了哪几档：幼苗、幼树、成树、老树，可以同时勾多档。这一行只出现在树木类资产上（植被菜单里刷树或点放树的时候），其它道具面板上没有它，也就不记录、不改动。";
+			// v0.9.0 文案
+			d["item.ageMask.desc"] = "记住「年龄」这一行勾了哪几档：幼苗、幼树、成树、老树，可以同时勾多档。\n只有树上有这一行。";
 			d["item.ageMask.ex.group"] = "比如刷树时只勾了成树，同一组里的其它树也按只生成成树，但换到另一组就不是了";
 			d["item.ageMask.ex.menu"] = "植被菜单里的所有树都按这几档年龄，换到别的菜单就不是了";
 			d["item.ageMask.ex.category"] = "切换到另一种树也是这几档，但这一行只在树木类资产上有，刷贴花之类根本没有这一行（需单独设置）";
@@ -770,35 +794,43 @@ namespace ToolModeMemory
 			// ---------- 功能页五项（f.*）：行名与资产页同名项完全一致，主语换成六类功能 ----------
 			// 需求 4：工具模式、对齐在三个页上各一套，互相独立；等高线/地下模式同样三页各一份，
 			// 按当前工具所在页读写；笔刷只出现在地形改造工具与刷涂类功能上。
-			d["item.f.toolMode.desc"] = "记忆功能面板上「工具模式」一行的选择：功能区为填充、框选、刷涂；区域工具（市辖区创建工具、专门产业区划分工具、表面区域规划工具）为编辑、生成地图网格；地形改造工具按工具各有模式；拆除工具为仅拆除主要元素、连同子元素、拆除一切。资产页与道具页的工具模式各记各的，互不影响。";
+			// v0.9.0 文案
+			d["item.f.toolMode.desc"] = "记住功能面板上「工具模式」一行的选择：功能区为填充、框选、刷涂；区域工具为编辑、生成地图网格；地形改造工具按工具各有模式；拆除工具为仅拆除主要元素、连同子元素、拆除一切。";
 			d["item.f.toolMode.ex.group"] = "比如给住宅功能区选了刷涂，切换到商业、工业、办公功能区同样是刷涂，但换到区域工具就不是了";
 			d["item.f.toolMode.ex.menu"] = "同一类功能里的工具都是这一套模式，换到另一类功能就不是了";
 			d["item.f.toolMode.ex.category"] = "切换到另一类功能就回到它自己那份模式（需单独设置），即使它们都在同一个菜单栏里";
-			d["item.f.snap.desc"] = "记忆功能区面板上「对齐」里的每一个开关：快速对齐直角、快速对齐网格、快速对齐道路、快速对齐拥有者一侧、显示轮廓线条等，可选项随工具不同而不同。游戏自带的「开启／关闭所有对齐功能」是批量开关，本身不会被记忆。资产页与道具页的对齐各记各的，互不影响。";
+			// v0.9.0 文案
+			d["item.f.snap.desc"] = "记住功能区面板上「对齐」里各个开关的勾选状态，可选项随工具不同而不同。\n游戏自带的「开启／关闭所有对齐」是批量开关，本身不记忆。";
 			d["item.f.snap.ex.group"] = "比如给住宅功能区关掉快速对齐网格，切换到商业、工业、办公功能区同样是关着的，但换到区域工具就不是了";
 			d["item.f.snap.ex.menu"] = "同一类功能里的工具都是这一套开关，换到另一类功能就不是了";
 			d["item.f.snap.ex.category"] = "切换到另一类功能就恢复它自己的默认开关（需单独设置），即使它们都在同一个菜单栏里";
-			d["item.f.topography.desc"] = "记忆功能区面板上「等高线」一行的开与关，也就是画区域时看不看得到地形等高线。这一行按当前工具所在的那一页读写：功能页记的是功能区这一份，资产页另有资产那一份，两边不会互相顶掉。";
+			// v0.9.0 文案
+			d["item.f.topography.desc"] = "记住功能区面板上「等高线」一行的开与关，也就是画区域时看不看得到地形等高线。";
 			d["item.f.topography.ex.group"] = "比如给住宅功能区勾上等高线，切换到商业、工业、办公功能区同样是勾着的";
 			d["item.f.topography.ex.menu"] = "同一类功能里的工具都是勾着的，换到另一类功能就不是了";
 			d["item.f.topography.ex.category"] = "切换到另一类功能就按它自己那份（需单独设置）；资产页的「地形」是另一份，不受这里影响";
-			d["item.f.underground.desc"] = "记忆功能区面板上「地下模式」一行的开与关。这一行按当前工具所在的那一页读写：功能页记的是功能区这一份，资产页与道具页各有自己那一份，互不共用。";
+			// v0.9.0 文案
+			d["item.f.underground.desc"] = "记住功能区面板上「地下模式」一行的开与关。";
 			d["item.f.underground.ex.group"] = "比如给住宅功能区打开地下模式，切换到商业、工业、办公功能区同样在地下";
 			d["item.f.underground.ex.menu"] = "同一类功能里的工具都在地下模式，换到另一类功能就不是了";
 			d["item.f.underground.ex.category"] = "切换到另一类功能就按它自己那份（需单独设置）；资产页的「地下模式」是另一份，不受这里影响";
-			d["item.i.toolMode.desc"] = "记忆道具面板上「工具模式」一行的选择：放置单个、放置多个、直线、曲线、目标印戳工具、刷涂等（按工具不同）。资产页与功能页的工具模式各记各的，互不影响。";
+			// v0.9.0 文案
+			d["item.i.toolMode.desc"] = "记住道具面板上「工具模式」一行的选择：放置单个、放置多个、直线、曲线、目标印戳工具、刷涂等。";
 			d["item.i.toolMode.ex.group"] = "比如给某个自然类道具选了放置多个，切换到同一组的其它道具同样是放置多个，但换到另一组就不是了";
 			d["item.i.toolMode.ex.menu"] = "城市美化菜单里的所有道具都是这一套模式，换到别的菜单就不是了";
 			d["item.i.toolMode.ex.category"] = "切换到另一类道具（比如从自然换到贴花）就回到它自己那份模式（需单独设置），即使都在城市美化菜单下";
-			d["item.i.snap.desc"] = "记忆道具面板上「对齐」里的每一个开关：快速对齐建筑表面、快速对齐附近形状、快速对齐道路、仅移除相符类型等，可选项随道具不同而不同。资产页与功能页的对齐各记各的，互不影响。";
+			// v0.9.0 文案
+			d["item.i.snap.desc"] = "记住道具面板上「对齐」里各个开关的勾选状态，可选项随道具不同而不同。";
 			d["item.i.snap.ex.group"] = "比如给某个公园类道具关掉快速对齐建筑表面，切换到同一组的其它道具同样是关着的，但换到另一组就不是了";
 			d["item.i.snap.ex.menu"] = "城市美化菜单里的所有道具都是这一套开关，换到别的菜单就不是了";
 			d["item.i.snap.ex.category"] = "切换到另一类道具就恢复它自己的默认开关（需单独设置），即使都在城市美化菜单下";
-			d["item.i.topography.desc"] = "记忆道具面板上「等高线」一行的开与关。这一行按当前工具所在的那一页读写：道具页记的是道具这一份，资产页与功能页各有自己那一份，互不共用。";
+			// v0.9.0 文案
+			d["item.i.topography.desc"] = "记住道具面板上「等高线」一行的开与关。";
 			d["item.i.topography.ex.group"] = "比如刷道具时勾上等高线，同一组里其它道具同样是勾着的";
 			d["item.i.topography.ex.menu"] = "城市美化菜单里的所有道具都是勾着的，换到别的菜单就不是了";
 			d["item.i.topography.ex.category"] = "切换到另一类道具就按它自己那份（需单独设置）；资产页、功能页的「等高线」是另外的份，不受这里影响";
-			d["item.i.underground.desc"] = "记忆道具面板上「地下模式」一行的开与关，也就是摆在地面以下还是地面之上。这一行按当前工具所在的那一页读写：道具页记的是道具这一份，资产页与功能页各有自己那一份，互不共用。";
+			// v0.9.0 文案
+			d["item.i.underground.desc"] = "记住道具面板上「地下模式」一行的开与关，也就是摆在地面以下还是地面之上。";
 			d["item.i.underground.ex.group"] = "比如给某个道具打开地下模式，同一组里其它道具同样在地下";
 			d["item.i.underground.ex.menu"] = "城市美化菜单里的所有道具都在地下模式，换到别的菜单就不是了";
 			d["item.i.underground.ex.category"] = "切换到另一类道具就按它自己那份（需单独设置）；资产页、功能页的「地下模式」是另外的份，不受这里影响";
@@ -820,13 +852,17 @@ namespace ToolModeMemory
 			d["group.about"] = "資訊與連結";
 
 			d["enabled.label"] = "啟用模組";
-			d["enabled.desc"] = "預設開啟。開啟時下面所有設定都生效，所有工具項的數值都會即時記錄，回到存檔時就是你上次離開時的樣子；單獨關掉某一項只是不再恢復那一項，它的數值仍在記錄。關掉這個大開關則一切回到原版：停止記錄、不再恢復，建築與服務、功能、道具三頁裡的所有設定同時失效（灰掉），每個工具都按原版自己的規矩走。下面三個分域開關全關時這裡自動跟著關；三個裡任何一個開啟，這裡自動開啟。";
+			// v0.9.0 文案
+			d["enabled.desc"] = "本模组的全部功能的开关。\n打开后下面三个分域开关才会生效，每个工具面板的设置都会实时记住，回到存档时自动恢复。\n关掉后模组完全不参与，所有工具都是游戏原本的样子。";
 			d["domain.asset.label"] = "啟用建築與服務的工具項記憶";
-			d["domain.asset.desc"] = "管「建築與服務」頁裡所有工具項：記錄與讀檔恢復一起開關。這一頁收錄的是建築、服務設施與各類可建造的資產（道路、鐵路、軌道、電線、水管、橋樑、埠頭、交叉路口、停車場、學校、醫院、消防、警察、供電、供水、垃圾處理、公園、廣場等等，凡是放在工具欄選單裡買下來蓋下去的都在這一頁）。關掉之後本頁的設定全部灰掉不生效，工具回到原版行為，已記錄的資料仍保留在檔案裡，重新開啟照舊恢復。";
+			// v0.9.0 文案
+			d["domain.asset.desc"] = "管这一页所有工具项是否记忆：\n打开时，你的设置会实时记住，回到存档时自动恢复；\n关掉时不记忆、也不会从存档恢复，共用范围自然也就无从设置。\n这一页收录道路、建筑、服务设施等可以建造的东西。";
 			d["domain.function.label"] = "啟用功能的工具項記憶";
-			d["domain.function.desc"] = "管「功能」頁裡所有工具項：記錄與讀檔恢復一起開關。這一頁按六個功能分類收錄工具：功能區（住宅、商業、工業、辦公四種功能區的規劃工具）、區域工具（市轄區建立工具、專門產業區工具、表面區域規劃工具）、路線工具（交通運輸選單裡的全部路線工具）、地形改造工具（海拔調整、地形平滑、地面平整、斜坡生成、紋理繪製 01～04、紋理橡皮擦共九種）、空間與區域（公園區域、徒步區域、閒逛區域、清空區域、裁剪地面）、標記與預製物件（動物生成工具等）。關掉之後本頁的設定全部灰掉不生效，工具回到原版行為，已記錄的資料仍保留在檔案裡，重新開啟照舊恢復。";
+			// v0.9.0 文案
+			d["domain.function.desc"] = "管这一页所有工具项是否记忆：\n打开时，你的设置会实时记住，回到存档时自动恢复；\n关掉时不记忆、也不会从存档恢复，共用范围自然也就无从设置。\n这一页收录功能区、区域、路线、地形改造等非资产类工具。";
 			d["domain.item.label"] = "啟用道具的工具項記憶";
-			d["domain.item.desc"] = "管「道具」頁裡所有工具項：記錄與讀檔恢復一起開關。這一頁按八類道具收錄景觀美化選單裡的道具：自然、公園、住宅道具、商業道具、工業道具、殘骸、貼花、盆栽。關掉之後本頁的設定全部灰掉不生效，工具回到原版行為，已記錄的資料仍保留在檔案裡，重新開啟照舊恢復。";
+			// v0.9.0 文案
+			d["domain.item.desc"] = "管这一页所有工具项是否记忆：\n打开时，你的设置会实时记住，回到存档时自动恢复；\n关掉时不记忆、也不会从存档恢复，共用范围自然也就无从设置。\n这一页收录城市美化菜单里的道具，树木也在这一页。";
 			d["tab.mod"] = "工具模式記憶設定";
 			d["tab.master"] = "總開關";
 			d["tab.assets"] = "建築與服務";
@@ -834,7 +870,7 @@ namespace ToolModeMemory
 			d["tab.items"] = "道具";
 			d["group.domain"] = "分域開關";
 			d["scope.label"] = "共用範圍";
-			d["scope.desc"] = "這一項的數值在多大範圍內共用，下拉框括號裡標出原版行為與推薦選擇。";
+			d["scope.desc"] = "這一項的數值在多大範圍內共用。括號裡標出遊戲原本的做法（原版）。";
 			d[kScopeLineGroup] = "同組：{0}";
 			d[kScopeLineMenu] = "同選單：{0}";
 			d[kScopeLineCategory] = "同類：按本頁工具服務的對象歸成群組，同一群共用一份：{0}";
@@ -881,7 +917,8 @@ namespace ToolModeMemory
 			d["about.rainbow.desc"] = "開啟 RAINBOW 系列官網。";
 
 			// ---------- Anarchy ----------
-			d["item.anarchy.desc"] = "記憶 Anarchy 模組的開關，Anarchy 模組是全域共用，開啟後可以修改共用範圍。沒安裝 Anarchy 模組時這一項不會出現。";
+			// v0.9.0 文案
+			d["item.anarchy.desc"] = "记住 Anarchy 模组的开关。\n没安装 Anarchy 时这一项不会出现。";
 			d["item.anarchy.ex.group"] = "例如給兩車道小型道路開啟 Anarchy，切換到其他小型道路也是開啟的，但切換到大型道路就不是了";
 			d["item.anarchy.ex.menu"] = "點選道路選單裡面的所有資產，Anarchy 都是開啟的，但切換到電力選單就不是了";
 			d["item.anarchy.ex.category"] = "切換到六車道道路同樣是開啟的，但切換到橋樑或雙線地鐵軌道就變成關閉（需單獨設定），即使它們都在道路選單下";
@@ -889,47 +926,54 @@ namespace ToolModeMemory
 			// 地區主題 / 資料包：行名照原版語言包（Toolbar.THEME_PANEL_TITLE = 主題、
 			// Toolbar.ASSET_PACKS_PANEL_TITLE = 安裝包）。
 			d["item.themes.label"] = "主題";
-			d["item.themes.desc"] = "記憶工具列篩選面板裡「主題」勾選了哪些。只有目前分類確實有資產使用主題時才會出現這一列，勾選後工具列只列出支援這些主題的資產。原版只在讀檔時把它重置回預設主題，所以這一項不建議開。";
+			// v0.9.0 文案
+			d["item.themes.desc"] = "记住工具栏筛选面板里「地区主题」勾选了哪些。\n只有当前分类里确实有资产用到主题时才有这一行。";
 			d["item.themes.ex.group"] = "例如只在道路/小型道路勾了某個主題，切換到大型道路就不按它篩選了";
 			d["item.themes.ex.menu"] = "在道路選單勾的主題，切換到電力選單就不生效，回到道路選單又還是那一組";
 			d["item.themes.ex.category"] = "這一行的勾選屬於工具欄面板本身，按當前所在的選單+分類記憶，不按資產類別共用";
 			d["item.packs.label"] = "安裝包";
-			d["item.packs.desc"] = "記憶工具列篩選面板裡「安裝包」勾選了哪些，勾選後工具列只列出屬於這些安裝包的資產。原版每次切換選單或分類都會把它清空，所以按「同一選單+分類」來記最貼近你看到的規律，這一項也不建議開。";
+			// v0.9.0 文案
+			d["item.packs.desc"] = "记住工具栏筛选面板里「数据包」勾选了哪些。\n勾上后工具栏只列出属于这些数据包的资产。";
 			d["item.packs.ex.group"] = "例如在道路/小型道路勾了某個安裝包，切到大型道路會被原版清空，回到小型道路又自動恢復";
 			d["item.packs.ex.menu"] = "在道路選單勾的安裝包，和電力選單勾的各記各的";
 			d["item.packs.ex.category"] = "這一行的勾選屬於工具欄面板本身，按當前所在的選單+分類記憶；原版每次換分類都會把它清空";
 
 			// ---------- 工具模式 ----------
 			d["item.toolMode.label"] = "工具模式";
-			d["item.toolMode.desc"] = "記憶每個工具所選的模式，可選項按工具不同：道路、軌道、管道為直線、簡單曲線、複數曲線、連續曲線、網格、替換、連接點；建築、裝飾物、樹木為設置一個、設置多個、直線、曲線、物件印章工具；功能區為填充、選取方格、塗上；區域為編輯、生成地圖方格。資產的工具模式與功能的工具模式分開記憶，因為它們的選項並不相同。";
+			// v0.9.0 文案
+			d["item.toolMode.desc"] = "记住每个工具所选的模式。\n这一页的可选值就是直线、简单曲线、复杂曲线、连续曲线、网格、替换、节点，以及建筑的放置方式。";
 			d["item.toolMode.ex.group"] = "例如給兩車道小型道路選了簡單曲線，切換到其他小型道路也是簡單曲線，但切換到大型道路就不是了";
 			d["item.toolMode.ex.menu"] = "點選道路選單裡面的所有資產，都是簡單曲線，但切換到電力選單就不是了";
 			d["item.toolMode.ex.category"] = "切換到六車道道路也是簡單曲線，但切換到橋樑或雙線地鐵軌道就回到預設模式（需單獨設定），即使它們都在道路選單下";
 
 			// ---------- 高度 ----------
 			d["item.elevation.label"] = "高度";
-			d["item.elevation.desc"] = "記憶工具離開時的高度值，也包括提升高度、降低高度得到的結果；「高度階段」（一次抬高或降低多少公尺，Anarchy 面板裡那一行叫高度間距）跟高度一起記憶、用同一個共用範圍。交叉路口的高度不在記憶範圍內。部分資產自己限定了可用的高度範圍：共用數值超出所選資產允許的範圍時，該資產保持它自己允許的高度，已記憶的共用數值不變。";
+			// v0.9.0 文案
+			d["item.elevation.desc"] = "记住道路离开时的高度，包括抬高、降低之后的结果。\n「高度阶段」（一次抬高或降低多少米）跟着高度一起记，共用同一个范围。";
 			d["item.elevation.ex.group"] = "例如點選兩車道道路把高度提高到10m，那麼切換其他小型道路，高度也是10m，但切換到大型道路就不是10m了";
 			d["item.elevation.ex.menu"] = "點選所有道路選單裡面的資產，高度都是10m，但切換到電力選單就不是10m了";
 			d["item.elevation.ex.category"] = "切換到六車道道路高度也是10m，但切換到橋樑或雙軌鐵路就變成0m（需單獨設定），即使它們都在道路選單下";
 
 			// ---------- 並行模式 ----------
 			d["item.parallel.label"] = "並行模式";
-			d["item.parallel.desc"] = "記憶「並行道路」面板裡的兩樣東西：並行模式開關（切換並行模式）與「並行偏移」的間距。原版一次並行就是兩條線：開啟後沿主線旁邊同時畫出第二條，能調的是這兩條之間隔多遠，例如 1 米、2 米；關掉就只畫一條。";
+			// v0.9.0 文案
+			d["item.parallel.desc"] = "记住并列道路的开关与两条线之间的间距。\n原版一次并列就是两条；关掉只画一条。";
 			d["item.parallel.ex.group"] = "例如給兩車道小型道路開啟並行模式並把並行偏移調到5米，切換到其他小型道路同樣是開啟、偏移也是5米，但切換到大型道路就不是了";
 			d["item.parallel.ex.menu"] = "點選道路選單裡面的所有資產，並行都是開啟、偏移都是5米，但切換到電力選單就不是了";
 			d["item.parallel.ex.category"] = "切換到六車道道路同樣是開啟、偏移也是5米，但切換到橋樑或地鐵軌道就變成關閉（需單獨設定），即使它們都在道路選單下";
 
 			// ---------- 吸附 ----------
 			d["item.snap.label"] = "吸附";
-			d["item.snap.desc"] = "記憶「吸附」裡的每一個開關：快速對齊已有幾何線、快速對齊功能區單位格長度、快速對齊90度角、快速對齊路邊、快速對齊道路、快速對齊擁有者一側、快速對齊建築兩側、快速對齊道路中央、快速對齊水陸交界線、快速對齊附近幾何線、快速對齊導線、快速對齊功能區網格、快速對齊節點、快速對齊物件表面、快速直立對齊、快速對齊空地網格、將重疊對象綁定至建築、只移除符合的類型、顯示輪廓、對齊距離。遊戲自帶的「開啟／關閉所有對齊功能」是批次開關，本身不會被記憶。";
+			// v0.9.0 文案
+			d["item.snap.desc"] = "记住「对齐」里各个开关的勾选状态。\n游戏自带的「开启／关闭所有对齐」是批量开关，本身不记忆。";
 			d["item.snap.ex.group"] = "例如給兩車道小型道路關掉快速對齊路邊，切換到其他小型道路同樣是關著的，但切換到大型道路就是全開的預設狀態";
 			d["item.snap.ex.menu"] = "點選道路選單裡面的所有資產，吸附開關都是這一組，但切換到電力選單就不是了";
 			d["item.snap.ex.category"] = "切換到六車道道路仍保持這一組開關，但切換到橋樑或步行道就恢復預設（需單獨設定），即使它們都在道路選單下";
 
 			// ---------- 地形圖 ----------
 			d["item.topography.label"] = "地形圖";
-			d["item.topography.desc"] = "記憶「地形圖」這一行的開與關，也就是是否顯示輪廓。";
+			// v0.9.0 文案
+			d["item.topography.desc"] = "记住「地形」这一行，也就是显示轮廓线条的开与关。";
 			d["item.topography.ex.group"] = "例如給兩車道小型道路勾選地形圖，切換到其他小型道路同樣是勾選的，但切換到大型道路就不是了";
 			d["item.topography.ex.menu"] = "點選道路選單裡面的所有資產，地形圖都是勾選的，但切換到電力選單就不是了";
 			d["item.topography.ex.category"] = "切換到六車道道路也是勾選的，但切換到橋樑或電纜就變成不勾（需單獨設定）";
@@ -937,14 +981,16 @@ namespace ToolModeMemory
 
 			// ---------- 左側和右側（Anarchy） ----------
 			d["item.leftRight.label"] = "左側和右側";
-			d["item.leftRight.desc"] = "記憶 Anarchy 網路面板「左」「右」兩行所選的網路升級，例如自行車道、樹木、草坪、堤岸、擋土牆、音障。需要安裝 Anarchy（Paradox 模組 74604），沒裝時這一項不會出現。";
+			// v0.9.0 文案
+			d["item.leftRight.desc"] = "记住 Anarchy 网络面板里「左侧」「右侧」两行所选的网络升级。\n没安装 Anarchy 时这一项不会出现。";
 			d["item.leftRight.ex.group"] = "例如給兩車道小型道路的右側選上自行車道，切換到其他小型道路右側同樣是自行車道，但切換到大型道路就不是了";
 			d["item.leftRight.ex.menu"] = "點選道路選單裡面的所有資產，左右兩側都是這一組升級，但切換到電力選單就不是了";
 			d["item.leftRight.ex.category"] = "切換到六車道道路右側也是自行車道，但切換到橋樑或雙軌鐵路就變成未選擇（需單獨設定），即使它們都在道路選單下";
 
 			// ---------- 一般（Anarchy） ----------
 			d["item.general.label"] = "一般";
-			d["item.general.desc"] = "記憶 Anarchy 網路面板「一般」一行的開關：地面、高架、隧道、固定坡度、寬分隔島、擴展高度範圍（取消高度上限）等。需要安裝 Anarchy（Paradox 模組 74604），沒裝時這一項不會出現。";
+			// v0.9.0 文案
+			d["item.general.desc"] = "记住 Anarchy 网络面板里「常规」一行的开关。\n没安装 Anarchy 时这一项不会出现。";
 			d["item.general.ex.group"] = "例如給兩車道小型道路勾選隧道，切換到其他小型道路同樣是隧道，但切換到大型道路就不是了";
 			d["item.general.ex.menu"] = "點選道路選單裡面的所有資產，一般選項都是這一組，但切換到電力選單就不是了";
 			d["item.general.ex.category"] = "切換到六車道道路也是隧道，但切換到橋樑或雙線地鐵軌道就全部回到未勾選（需單獨設定），即使它們都在道路選單下";
@@ -952,14 +998,16 @@ namespace ToolModeMemory
 			// owner 2026-10-20 定：鎖定變換 / 高度 / 高度變化範圍 / 抬高降低的幅度 是同一排顯示的，
 			// 算同一項、一起記憶一起共用；「重設高度為 0」是瞬時按鈕，不列。
 			d["item.anarchyObjectElevation.label"] = "物件高度";
-			d["item.anarchyObjectElevation.desc"] = "記憶 Anarchy 在擺件工具面板上加的那一排高度控制項：鎖定變換、高度、高度變化範圍、抬高降低的幅度。這四項在同一排顯示，所以算作一項、一起記憶。只有擺件工具在放置、刷塗、印章、直線、曲線這幾種模式下才有這一排，升級與移動模式沒有。「重設高度為 0」是按下即生效的按鈕、沒有可以記住的狀態，所以不列。";
+			// v0.9.0 文案
+			d["item.anarchyObjectElevation.desc"] = "记住 Anarchy 在摆件工具面板上加的那一排高度控件：锁定变换、高度、高度变化范围、抬高降低的幅度。\n这四项在同一排显示，所以一起记忆、一起共用。";
 			d["item.anarchyObjectElevation.ex.group"] = "例如把高度設成15公尺、變化範圍設為2公尺，同一組裡的其他擺件也按這一套，但換到另一組就不是了";
 			d["item.anarchyObjectElevation.ex.menu"] = "同一個選單裡的擺件都是這一套高度，換到別的選單就不是了";
 			d["item.anarchyObjectElevation.ex.category"] = "切換到另一類擺件就按它自己那一份高度（需單獨設定）";
 
 			// ---------- 地下模式 ----------
 			d["item.underground.label"] = "地下模式";
-			d["item.underground.desc"] = "記憶「地下模式」開關（切換地下模式），也就是你放的東西在地面以下還是地面之上。";
+			// v0.9.0 文案
+			d["item.underground.desc"] = "记住「地下模式」开关，也就是你放的东西在地面以下还是地面之上。";
 			d["item.underground.ex.group"] = "例如給兩車道小型道路開啟地下模式，切換到其他小型道路同樣在地下，但切換到大型道路就不是了";
 			d["item.underground.ex.menu"] = "點選道路選單裡面的所有資產，都在地下模式，但切換到電力選單就不是了";
 			d["item.underground.ex.category"] = "切換到六車道道路也在地下，但切換到橋樑或雙軌鐵路就回到地面（需單獨設定），即使它們都在道路選單下";
@@ -977,77 +1025,93 @@ namespace ToolModeMemory
 
 			// ---------- 保留年代（面板行名 ToolOptions.DECORATION_MODE_TITLE = 保留年代） ----------
 			d["item.decoration.label"] = "保留年代";
-			d["item.decoration.desc"] = "記憶「保留年代」開關：勾上之後被刷到的樹不再成長、也不再老化倒下，等於把這片樹的年齡凍在當下。這一行只出現在帶樹木資料的資產面板上（植被選單裡刷樹的時候），其他資產面板上沒有這一行，也就不記錄、不改動。";
+			// v0.9.0 文案
+			d["item.decoration.desc"] = "记住「保留年代」开关：勾上后刷到的树不再成长、也不再老化倒下。\n这一行只在树上有。";
 			d["item.decoration.ex.group"] = "例如刷樹時打開保留年代，同一組裡面的其他植被刷法同样是打開的，但換到另一組就不是了";
 			d["item.decoration.ex.menu"] = "點選植被選單裡面的所有資產，保留年代都是打開的，但切換到其他選單就不是了";
 			d["item.decoration.ex.category"] = "切換到另一種樹也是打開的，但這一行只在帶樹木資料的資產上有，刷貼花之類根本没有這一行（需單獨設定）";
 			d["item.i.anarchy.label"] = "Anarchy";
 			d["item.brushType.label"] = "筆刷種類";
-			d["item.brushType.desc"] = "記憶面板上「筆刷種類」這一行選的刷子：圓形、方形、柔邊等，決定刷出來的邊角形狀。這一行只出現在能刷塗的工具上——九種地形改造工具，以及擺件工具選到可刷塗資產的時候；建築、區域、功能區、路線、拆除這些面板上都沒有它，也就不記錄、不改動。";
+			// v0.9.0 文案
+			d["item.brushType.desc"] = "记住「笔刷种类」这一行选的刷子：圆形、方形、柔边等。\n只有能刷涂的工具才有这一行。";
 			d["item.brushType.ex.group"] = "例如刷塗時選了方形刷子，同一組裡其他能刷的資產也是方形刷子，但換到另一組就不是了";
 			d["item.brushType.ex.menu"] = "同一個選單裡所有能刷塗的資產都用這把刷子，換到別的選單就不是了";
 			d["item.brushType.ex.category"] = "切換到另一類就按它自己那一份刷子（需單獨設定），即使都能刷塗";
 			d["item.brushSize.label"] = "筆刷大小";
-			d["item.brushSize.desc"] = "記憶面板上「筆刷大小」這一行：一次刷過多大範圍。這一行只出現在能刷塗的工具上——九種地形改造工具，以及擺件工具選到可刷塗資產的時候。兩處含義不同：地形工具是每次抬降覆蓋的地面範圍，擺件刷塗是一次擺放的覆蓋範圍，所以功能頁與道具頁各記各的。";
+			// v0.9.0 文案
+			d["item.brushSize.desc"] = "记住「笔刷粗细」这一行：一次刷过多大范围。\n只有能刷涂的工具才有这一行。";
 			d["item.brushSize.ex.group"] = "例如把筆刷大小調成30公尺，同一組裡其他能刷的資產也是30公尺，但換到另一組就不是了";
 			d["item.brushSize.ex.menu"] = "同一個選單裡所有能刷塗的資產都是這個大小，換到別的選單就不是了";
 			d["item.brushSize.ex.category"] = "切換到另一類就按它自己那一份大小（需單獨設定），即使都能刷塗";
 			d["item.brushStrength.label"] = "筆刷硬度";
-			d["item.brushStrength.desc"] = "記憶面板上「筆刷硬度」這一行：每一下刷動改變多少。這一行只出現在能刷塗的工具上——九種地形改造工具，以及擺件工具選到可刷塗資產的時候。兩處含義不同：地形工具是每次抬降的幅度，擺件刷塗是擺放密度，所以功能頁與道具頁各記各的。";
+			// v0.9.0 文案
+			d["item.brushStrength.desc"] = "记住「笔刷强度」这一行：每一下刷动改变多少。\n只有能刷涂的工具才有这一行。";
 			d["item.brushStrength.ex.group"] = "例如把筆刷硬度調成一半，同一組裡其他能刷的資產也是這個硬度，但換到另一組就不是了";
 			d["item.brushStrength.ex.menu"] = "同一個選單裡所有能刷塗的資產都是這個硬度，換到別的選單就不是了";
 			d["item.brushStrength.ex.category"] = "切換到另一類就按它自己那一份硬度（需單獨設定），即使都能刷塗";
 			d["item.brushHeight.label"] = "目標高度";
-			d["item.brushHeight.desc"] = "記憶面板上「目標高度」這一行的數值：地形工具要把地面削平或壓成斜坡，最後停在哪個高度。這一行只有地面平整工具與斜坡生成工具這兩種地形資產上才有，其餘七種地形改造工具面板上沒有它，擺件刷塗更是沒有，也就不記錄、不改動。";
+			// v0.9.0 文案
+			d["item.brushHeight.desc"] = "记住「目标高度」这一行：地形要把地面削平或压成斜坡，最终停在多高。\n只有地面平整与斜坡这两种地形工具有这一行。";
 			d["item.brushHeight.ex.group"] = "例如把平整的目標高度設成50公尺，同一組裡的其他地形改造工具也按50公尺，但換到另一組就不是了";
 			d["item.brushHeight.ex.menu"] = "地形改造這一類裡的工具都按這個目標高度，換到另一類功能就不是了";
 			d["item.brushHeight.ex.category"] = "切換到另一類功能就按它自己那一份目標高度（需單獨設定）；其餘地形工具根本沒有這一行";
 			d["item.distance.label"] = "距離";
-			d["item.distance.desc"] = "記憶面板上「距離」這一行的數值：用直線或曲線擺放時，相鄰兩個之間隔多遠。這一行只在直線、曲線兩種模式下出現（擺件工具與標記類工具），單個放置、連續放置、印章、刷塗模式下都沒有它。";
+			// v0.9.0 文案
+			d["item.distance.desc"] = "记住「距离」这一行：用直线或曲线摆放时，相邻两个之间隔多远。\n只有直线、曲线两种模式下才有这一行。";
 			d["item.distance.ex.group"] = "例如把距離調成10公尺，同一組裡的其他道具也是10公尺，但換到另一組就不是了";
 			d["item.distance.ex.menu"] = "同一個選單裡所有能拉直線的都按這個距離，換到別的選單就不是了";
 			d["item.distance.ex.category"] = "切換到另一類就按它自己那一份距離（需單獨設定），即使都能拉直線";
 			d["item.ageMask.label"] = "年齡";
-			d["item.ageMask.desc"] = "記憶面板上「年齡」這一行勾了哪幾檔：幼苗、幼樹、成樹、老樹，可以同時勾多檔。這一行只出現在樹木類資產上（植被選單裡刷樹或點放樹的時候），其他道具面板上沒有它，也就不記錄、不改動。";
+			// v0.9.0 文案
+			d["item.ageMask.desc"] = "记住「年龄」这一行勾了哪几档：幼苗、幼树、成树、老树，可以同时勾多档。\n只有树上有这一行。";
 			d["item.ageMask.ex.group"] = "例如刷樹時只勾了成樹，同一組裡的其他樹也按只產生長成樹，但換到另一組就不是了";
 			d["item.ageMask.ex.menu"] = "植被選單裡的樹都按這幾檔年齡，換到別的選單就不是了";
 			d["item.ageMask.ex.category"] = "切換到另一種樹也是這幾檔，但這一行只在樹木類資產上有，刷貼花之類根本沒有這一行（需單獨設定）";
 			d["item.anarchyObjectElevation.label"] = "物件高度";
-			d["item.anarchyObjectElevation.desc"] = "記憶 Anarchy 在擺件工具面板上加的那一排高度控制項：鎖定變換、高度、高度變化範圍、抬高降低的幅度。這四項在同一排顯示，所以算作一項、一起記憶一起共用；「重設高度為 0」是按下即生效的按鈕、沒有可記住的狀態，所以不列。只有擺件工具在放置、刷塗、印章、直線、曲線這幾種模式下才有這一排，升級與移動模式沒有。建築與服務頁與道具頁各有一份，互不共用。";
+			// v0.9.0 文案
+			d["item.anarchyObjectElevation.desc"] = "记住 Anarchy 在摆件工具面板上加的那一排高度控件：锁定变换、高度、高度变化范围、抬高降低的幅度。\n这四项在同一排显示，所以一起记忆、一起共用。";
 			d["item.anarchyObjectElevation.ex.group"] = "例如把高度設成15公尺、變化範圍設為2公尺，同一組裡的其他擺件也按這一套，但換到另一組就不是了";
 			d["item.anarchyObjectElevation.ex.menu"] = "同一個選單裡的擺件都是這一套高度，換到別的選單就不是了";
 			d["item.anarchyObjectElevation.ex.category"] = "切換到另一類擺件就按它自己那一份高度（需單獨設定）";
 
 			// ---------- 功能頁五項（f.*）----------
-			d["item.f.toolMode.desc"] = "記憶功能面板上「工具模式」一行的選擇：功能區為填充、框選、刷塗；區域工具（行政區創建工具、特殊工業功能區域工具、地面區域劃分工具）為編輯、產生地圖網格；地形改造工具按工具各有模式；拆除工具為僅拆除主要元素、連同子元素、拆除一切。資產頁與道具頁的工具模式各記各的，互不影響。";
+			// v0.9.0 文案
+			d["item.f.toolMode.desc"] = "记住功能面板上「工具模式」一行的选择：功能区为填充、框选、刷涂；区域工具为编辑、生成地图网格；地形改造工具按工具各有模式；拆除工具为仅拆除主要元素、连同子元素、拆除一切。";
 			d["item.f.toolMode.ex.group"] = "例如給住宅功能區選了刷塗，切換到商業、工業、辦公功能區同样是刷塗，但換到區域工具就不是了";
 			d["item.f.toolMode.ex.menu"] = "同一類功能裡面的工具都是這一組模式，換到另一類功能就不是了";
 			d["item.f.toolMode.ex.category"] = "切換到另一類功能就回到它自己那組的標準（需單獨設定），即使它們都可以在同一個工具欄選單進入";
-			d["item.f.snap.desc"] = "記憶功能面板上「對齊」裡面的每一個開關：快速對齊直角、快速對齊格線、快速對齊道路、快速對齊擁有者一側、顯示輪廓線條等，可選項隨工具而不同。遊戲自帶的「開啟／關閉所有對齊功能」是批次開關，本身不會被記憶。資產頁與道具頁的對齊各記各的，互不影響。";
+			// v0.9.0 文案
+			d["item.f.snap.desc"] = "记住功能区面板上「对齐」里各个开关的勾选状态，可选项随工具不同而不同。\n游戏自带的「开启／关闭所有对齐」是批量开关，本身不记忆。";
 			d["item.f.snap.ex.group"] = "例如給住宅功能區关掉快速對齊格線，切換到商業、工業、辦公功能區同样是關掉的，但換到區域工具就不是了";
 			d["item.f.snap.ex.menu"] = "同一類功能裡面的工具都是這一組開關，換到另一類功能就不是了";
 			d["item.f.snap.ex.category"] = "切換到另一類功能就恢復它自己的預設開關（需單獨設定），即使它們都可以在同一個工具欄選單進入";
-			d["item.f.topography.desc"] = "記憶功能面板上「等高線」一行的開與關，也就是畫區域時看不看得到地形等高線。這一行按目前工具所在的那一頁讀寫：功能頁記的是功能區那一份，資產頁另有資產那一份，兩邊不會互相頂掉。";
+			// v0.9.0 文案
+			d["item.f.topography.desc"] = "Remembers the Contour Lines row on function panels: whether contour lines show while you draw zones.";
 			d["item.f.topography.ex.group"] = "例如給住宅功能區勾上等高線，切換到商業、工業、辦公功能區同样是勾著的";
 			d["item.f.topography.ex.menu"] = "同一類功能裡面的工具都是勾著的，換到另一類功能就不是了";
 			d["item.f.topography.ex.category"] = "切換到另一類功能就按它自己那一份（需單獨設定）；資產頁的「地形」是另一份，不受這裡影響";
-			d["item.f.underground.desc"] = "記憶功能面板上「地下模式」一行的開與關。這一行按目前工具所在的那一頁讀寫：功能頁記的是功能區那一份，資產頁與道具頁各有自己那一份，互不共用。";
+			// v0.9.0 文案
+			d["item.f.underground.desc"] = "Remembers the Underground Mode toggle on function panels.";
 			d["item.f.underground.ex.group"] = "例如給住宅功能區打開地下模式，切換到商業、工業、辦公功能區同样在地下";
 			d["item.f.underground.ex.menu"] = "同一類功能裡面的工具都在地下模式，換到另一類功能就不是了";
 			d["item.f.underground.ex.category"] = "切換到另一類功能就按它自己那一份（需單獨設定）；資產頁的「地下模式」是另一份，不受這裡影響";
-			d["item.i.toolMode.desc"] = "記憶道具面板上「工具模式」一行的選擇：放置單一、放置多個、直線、曲線、目標圖戳工具、刷塗等（按工具而不同）。資產頁與功能頁的工具模式各記各的，互不影響。";
+			// v0.9.0 文案
+			d["item.i.toolMode.desc"] = "Remembers the mode chosen on prop panels: place single, place multiple, line, curve, object stamp tool, paint and so on.";
 			d["item.i.toolMode.ex.group"] = "例如給某個自然類道具選了放置多個，切換到同一組的其他道具同样是放置多個，但換到另一組就不是了";
 			d["item.i.toolMode.ex.menu"] = "景觀美化選單裡面的所有道具都是這一組模式，換到別的選單就不是了";
 			d["item.i.toolMode.ex.category"] = "切換到另一類道具（例如從自然換到貼花）就回到它那一份模式（需單獨設定），即使都在景觀美化選單下";
-			d["item.i.snap.desc"] = "記憶道具面板上「對齊」裡面的每一個開關：快速對齊建築表面、快速對齊附近形狀、快速對齊道路、僅移除相符類型等，可選項隨道具而不同。資產頁與功能頁的對齊各記各的，互不影響。";
+			// v0.9.0 文案
+			d["item.i.snap.desc"] = "Remembers which snapping toggles are ticked on prop panels; the choices differ from prop to prop.";
 			d["item.i.snap.ex.group"] = "例如給某個公園類道具关掉快速對齊建築表面，切換到同一組的其他道具同样是關掉的，但換到另一組就不是了";
 			d["item.i.snap.ex.menu"] = "景觀美化選單裡面的所有道具都是這一組開關，換到別的選單就不是了";
 			d["item.i.snap.ex.category"] = "切換到另一類道具就恢復它自己的預設開關（需單獨設定），即使都在景觀美化選單下";
-			d["item.i.topography.desc"] = "記憶道具面板上「等高線」一行的開與關。這一行按目前工具所在的那一頁讀寫：道具頁記的是道具那一份，資產頁與功能頁各有自己那一份，互不共用。";
+			// v0.9.0 文案
+			d["item.i.topography.desc"] = "Remembers the Contour Lines row on prop panels.";
 			d["item.i.topography.ex.group"] = "例如刷道具時勾上等高線，同一組裡其他道具同样是勾著的";
 			d["item.i.topography.ex.menu"] = "景觀美化選單裡面的所有道具都是勾著的，換到別的選單就不是了";
 			d["item.i.topography.ex.category"] = "切換到另一類道具就按它自己那一份（需單獨設定）；資產頁、功能頁的「等高線」是另外的份，不受這裡影響";
-			d["item.i.underground.desc"] = "記憶道具面板上「地下模式」一行的開與關，也就是擺在地面以下還是地面之上。這一行按目前工具所在的那一頁讀寫：道具頁記的是道具那一份，資產頁與功能頁各有自己那一份，互不共用。";
+			// v0.9.0 文案
+			d["item.i.underground.desc"] = "Remembers the Underground Mode toggle on prop panels: whether props are placed below or above ground.";
 			d["item.i.underground.ex.group"] = "例如給某個道具打開地下模式，同一組裡其他道具同样在地下";
 			d["item.i.underground.ex.menu"] = "景觀美化選單裡面的所有道具都在地下模式，換到別的選單就不是了";
 			d["item.i.underground.ex.category"] = "切換到另一類道具就按它自己那一份（需單獨設定）；資產頁、功能頁的「地下模式」是另外的份，不受這裡影響";
@@ -1075,18 +1139,22 @@ namespace ToolModeMemory
 			d["group.about"] = "Information and links";
 
 			d["enabled.label"] = "Enable Mod";
-			d["enabled.desc"] = "On by default. While it is on every setting below takes effect and every item's value is recorded as you work, so returning to a save puts the panels back exactly as you left them; turning one item off only stops that item from being restored - its values are still recorded. Switching this master switch off returns everything to vanilla: recording stops, nothing is restored, and all settings on the Buildings & Services, Functions and Items pages are greyed out at once, so every tool behaves the way the game does on its own. It turns itself off when all three per-page switches below are off, and back on as soon as any one of them is on.";
+			// v0.9.0 文案
+			d["enabled.desc"] = "Switches the whole mod on or off.\nWhile it is on, the three switches below take effect, every tool panel setting is remembered as you work and put back when you load a save.\nWhile it is off the mod stays out of the way and every tool behaves as it normally does.";
 			// v0.8.0 requirement 3: "Assets" renamed to "Buildings & Services" (props are assets too,
 			// so the old page name was ambiguous). Requirement 5: the taxonomy now lives in the
 			// per-page switch description, not in the sharing-scope lines below.
 			d["domain.asset.label"] = "Remember Buildings & Services tool items";
-			d["domain.asset.desc"] = "Covers every item on the Buildings & Services page: recording and restoring on load switch together. This page holds buildings, city services and every other placeable asset - roads, rails, tracks, cables, water pipes, bridges, quays, intersections, parking lots, schools, hospitals, fire, police, power, water, waste, parks, plazas and the rest of anything you buy from the toolbar menus and place on the map. While it is off the whole page is greyed out, tools behave like vanilla, and values already recorded stay in the file untouched, so switching it back on restores them.";
+			// v0.9.0 文案
+			d["domain.asset.desc"] = "Controls whether the items on this page are remembered:\non - your settings are recorded as you work and restored when you load a save;\noff - nothing is recorded or restored, so there is no sharing scope to configure.\nThis page holds roads, buildings and city services.";
 			d["domain.function.label"] = "Remember Function tool items";
-			d["domain.function.desc"] = "Covers every item on the Functions page: recording and restoring on load switch together. This page groups its tools into six function categories: the zone types (the residential, commercial, industrial and office zoning tools), the area tools (District Creation Tool, Specialized Industry Area Tool and Surface Area Tool), the route tools (every route tool in the Transportation menu), the nine terrain tools (Raise Terrain, Smooth Terrain, Level Terrain, Slope Terrain, Paint Texture 01-04 and Erase Texture), spaces and areas (Park Area, Walking Area, Hangaround Area, Clear Area and Clip Surface), and markers and object prefabs (the animal spawn tool and its like). While it is off the whole page is greyed out, tools behave like vanilla, and values already recorded stay in the file untouched, so switching it back on restores them.";
+			// v0.9.0 文案
+			d["domain.function.desc"] = "Controls whether the items on this page are remembered:\non - your settings are recorded as you work and restored when you load a save;\noff - nothing is recorded or restored, so there is no sharing scope to configure.\nThis page holds zones, areas, routes and terrain tools.";
 			d["domain.item.label"] = "Remember Prop tool items";
-			d["domain.item.desc"] = "Covers every item on the Items page: recording and restoring on load switch together. This page groups props by the eight prop categories of the Landscaping menu: Nature, Park, Residential Props, Commercial Props, Industrial Props, Debris, Decals and Potted Plants. While it is off the whole page is greyed out, tools behave like vanilla, and values already recorded stay in the file untouched, so switching it back on restores them.";
+			// v0.9.0 文案
+			d["domain.item.desc"] = "Controls whether the items on this page are remembered:\non - your settings are recorded as you work and restored when you load a save;\noff - nothing is recorded or restored, so there is no sharing scope to configure.\nThis page holds the props in the Landscaping menu, trees included.";
 			d["scope.label"] = "Sharing scope";
-			d["scope.desc"] = "How widely this item's value is shared. The brackets in the drop-down show what vanilla does and what we recommend.";
+			d["scope.desc"] = "How widely this item's value is shared. The brackets show what the game does by default (vanilla).";
 			d[kScopeLineGroup] = "Same group: {0}";
 			d[kScopeLineMenu] = "Same menu: {0}";
 			d[kScopeLineCategory] = "Same type: the tools on this page are put into groups by what each one actually serves, and one group shares one value: {0}";
@@ -1135,7 +1203,8 @@ namespace ToolModeMemory
 			d["about.rainbow.desc"] = "Open the Rainbow Series site.";
 
 			// ---------- Anarchy ----------
-			d["item.anarchy.desc"] = "Remembers the Anarchy mod's switch. Anarchy is shared across the whole game, so this one is global; once it is on you can change the sharing scope. Without the Anarchy mod installed this item does not appear.";
+			// v0.9.0 文案
+			d["item.anarchy.desc"] = "Remembers the Anarchy mod's toggle.\nThis item does not appear unless Anarchy is installed.";
 			d["item.anarchy.ex.group"] = "for example, turn Anarchy on for a two-lane small road and the other small roads keep it on, while a large road does not";
 			d["item.anarchy.ex.menu"] = "every asset you click in the Roads menu has Anarchy on, but moving to the Electricity menu it is not";
 			d["item.anarchy.ex.category"] = "switching to a six-lane road keeps it on, but a bridge or a double subway track turns it off and needs its own setting, even though they are all in the Roads menu";
@@ -1143,47 +1212,54 @@ namespace ToolModeMemory
 			// Row names follow the game's own language pack:
 			// Toolbar.THEME_PANEL_TITLE = "Theme", Toolbar.ASSET_PACKS_PANEL_TITLE = "Pack".
 			d["item.themes.label"] = "Theme";
-			d["item.themes.desc"] = "Remembers which entries are ticked in the toolbar's Theme filter. That row only appears when the current category really contains assets that use themes, and ticking one limits the toolbar list to assets supporting those themes. Vanilla only resets it to the default theme when a save is loaded, so we recommend leaving this item off.";
+			// v0.9.0 文案
+			d["item.themes.desc"] = "Remembers which entries are ticked in the Theme filter.\nThat row only appears when the current category really has assets that use themes.";
 			d["item.themes.ex.group"] = "for example you tick a theme only under Roads/Small Roads, so large roads don't filter by it";
 			d["item.themes.ex.menu"] = "a theme ticked in the Roads menu stops applying in the Electricity menu and is back when you return";
 			d["item.themes.ex.category"] = "this row is the filter panel's own state, so it is filed under the menu and group you are in rather than by asset type";
 			d["item.packs.label"] = "Pack";
-			d["item.packs.desc"] = "Remembers which entries are ticked in the toolbar's Pack filter; ticking one limits the toolbar list to assets belonging to those packs. Vanilla clears it every time you change menu or category, so remembering it per menu + category matches what you see; we recommend leaving this item off too.";
+			// v0.9.0 文案
+			d["item.packs.desc"] = "Remembers which entries are ticked in the Pack filter.\nTicking one limits the toolbar list to assets in those packs.";
 			d["item.packs.ex.group"] = "for example you tick a pack under Roads/Small Roads, vanilla clears it on large roads, and it comes back when you return";
 			d["item.packs.ex.menu"] = "packs ticked in the Roads menu and in the Electricity menu are remembered separately";
 			d["item.packs.ex.category"] = "this row is the filter panel's own state, filed under the menu and group you are in; vanilla clears it every time the group changes";
 
 			// ---------- Tool Mode ----------
 			d["item.toolMode.label"] = "Tool Mode";
-			d["item.toolMode.desc"] = "Remembers the mode picked for each tool, and the options differ by tool: roads, tracks and pipes offer Straight, Simple Curve, Complex Curve, Continuous, Grid, Replace and Point; buildings, props and trees offer Place one, Place multiple, Line, Curve and Object stamp tool; zones offer Fill, Marquee and Paint; areas offer Edit and Generate Map Grid. Asset tool modes and function tool modes are remembered separately because their option sets differ.";
+			// v0.9.0 文案
+			d["item.toolMode.desc"] = "Remembers the mode each tool is set to.\nOn this page that means straight, simple curve, complex curve, continuous curve, grid, replace and node, plus how buildings are placed.";
 			d["item.toolMode.ex.group"] = "for example, pick Simple Curve for a two-lane small road and the other small roads use Simple Curve too, while a large road does not";
 			d["item.toolMode.ex.menu"] = "every asset you click in the Roads menu is on Simple Curve, but moving to the Electricity menu it is not";
 			d["item.toolMode.ex.category"] = "switching to a six-lane road still gives Simple Curve, but a bridge or a double subway track falls back to its default mode and needs its own setting, even though they are all in the Roads menu";
 
 			// ---------- Elevation ----------
 			d["item.elevation.label"] = "Elevation";
-			d["item.elevation.desc"] = "Remembers the elevation a tool was left at, including where Increase elevation and Decrease elevation took it. The Elevation step (how far one press moves you — the row Anarchy adds for the same value carries that very name) is remembered together with it and shares its scope. The elevation of intersections is not covered. Some assets have their own elevation limits: if the shared value is outside what the selected asset allows, that asset keeps an elevation it can actually use, and the shared value itself stays as it was.";
+			// v0.9.0 文案
+			d["item.elevation.desc"] = "Remembers the height the road leaves at, including the result of raising or lowering it.\nThe height step (how many metres one raise or lower moves) is remembered with it and shares the same scope.";
 			d["item.elevation.ex.group"] = "for example, raise a two-lane road to 10 m and the other small roads go to 10 m too, while a large road is not at 10 m";
 			d["item.elevation.ex.menu"] = "every asset you click in the Roads menu is at 10 m, but moving to the Electricity menu it is not at 10 m";
 			d["item.elevation.ex.category"] = "switching to a six-lane road is still 10 m, but a bridge or a double train track goes back to 0 m and needs its own setting, even though they are all in the Roads menu";
 
 			// ---------- Parallel Mode ----------
 			d["item.parallel.label"] = "Parallel Mode";
-			d["item.parallel.desc"] = "Remembers the two things in the Parallel Road panel: the Parallel Mode switch (Toggle parallel mode) and the Parallel Offset spacing. Parallel mode is always two lines: switch it on and a second line is built alongside the one you draw, and what you can tune is how far apart those two sit, say 1 m or 2 m. Switched off you just get the single line.";
+			// v0.9.0 文案
+			d["item.parallel.desc"] = "Remembers the parallel road toggle and the gap between the two lines.\nVanilla always draws two lines side by side; turn it off and you get one.";
 			d["item.parallel.ex.group"] = "for example, turn on Parallel Mode for a two-lane small road and set the offset to 5 m, the other small roads come back switched on with the same 5 m, while a large road does not";
 			d["item.parallel.ex.menu"] = "every asset you click in the Roads menu is parallel with a 5 m offset, but moving to the Electricity menu it is not";
 			d["item.parallel.ex.category"] = "switching to a six-lane road is still on with the same 5 m offset, but a bridge or a subway track switches it off and needs its own setting, even though they are all in the Roads menu";
 
 			// ---------- Snapping ----------
 			d["item.snap.label"] = "Snapping";
-			d["item.snap.desc"] = "Remembers every switch on the Snapping row: Snap to existing geometry, Snap to zoning cell length, Snap to 90 degree angles, Snap to the sides of a road, Snap to roads, Snap to the side of the owner, Snap to the sides of a building, Snap to the middle of a road, Snap to shoreline, Snap to nearby geometry, Snap to guide lines, Snap to zone grid, Snap to nodes, Snap to the surface of an object, Snap upright, Snap to lot grid, Binds overlapping items to a building, Remove only matching type, Show contour lines and Snap to distance. The game's own Toggle all snapping on/off row is a batch switch and is not remembered.";
+			// v0.9.0 文案
+			d["item.snap.desc"] = "Remembers which snapping toggles are ticked.\nThe game's own enable/disable-all-snapping button is a batch toggle and is not remembered itself.";
 			d["item.snap.ex.group"] = "for example, switch off Snap to the sides of a road for a two-lane small road and the other small roads have it off too, while a large road still has everything on";
 			d["item.snap.ex.menu"] = "every asset you click in the Roads menu uses this same set of snapping switches, but moving to the Electricity menu it does not";
 			d["item.snap.ex.category"] = "switching to a six-lane road keeps the same set, but a bridge or a pathway returns to the defaults and needs its own setting, even though they are all in the Roads menu";
 
 			// ---------- Topography ----------
 			d["item.topography.label"] = "Topography";
-			d["item.topography.desc"] = "Remembers the Topography row, that is whether Show contour lines is on.";
+			// v0.9.0 文案
+			d["item.topography.desc"] = "Remembers the Contour Lines row: whether contour lines are shown.";
 			d["item.topography.ex.group"] = "for example, turn Topography on for a two-lane small road and the other small roads have it on too, while a large road does not";
 			d["item.topography.ex.menu"] = "every asset you click in the Roads menu shows contour lines, but moving to the Electricity menu it does not";
 			d["item.topography.ex.category"] = "switching to a six-lane road still shows them, but a bridge or an electric cable has the row off and needs its own setting";
@@ -1191,14 +1267,16 @@ namespace ToolModeMemory
 
 			// ---------- Left / Right (Anarchy) ----------
 			d["item.leftRight.label"] = "Left and Right";
-			d["item.leftRight.desc"] = "Remembers which network upgrades are picked on the Left and Right rows of the Anarchy network panel, for example Bike Lane, Trees, Grass, Quay, Retaining Wall and Sound Barrier. Needs Anarchy (Paradox mod 74604); without it this item does not appear.";
+			// v0.9.0 文案
+			d["item.leftRight.desc"] = "Remembers the upgrades chosen in Anarchy's Left and Right rows.\nThis item does not appear unless Anarchy is installed.";
 			d["item.leftRight.ex.group"] = "for example, pick Bike Lane on the right side of a two-lane small road and the other small roads get Bike Lane there too, while a large road does not";
 			d["item.leftRight.ex.menu"] = "every asset you click in the Roads menu uses this same pair of side selections, but moving to the Electricity menu it does not";
 			d["item.leftRight.ex.category"] = "switching to a six-lane road still has Bike Lane on the right, but a bridge or a double train track goes back to nothing picked and needs its own setting, even though they are all in the Roads menu";
 
 			// ---------- General (Anarchy) ----------
 			d["item.general.label"] = "General";
-			d["item.general.desc"] = "Remembers the switches on the General row of the Anarchy network panel: Ground, Elevated, Tunnel, Constant Slope, Wide Median and Expanded Elevation Range (which lifts the height limit). Needs Anarchy (Paradox mod 74604); without it this item does not appear.";
+			// v0.9.0 文案
+			d["item.general.desc"] = "Remembers the toggles in Anarchy's General row.\nThis item does not appear unless Anarchy is installed.";
 			d["item.general.ex.group"] = "for example, pick Tunnel for a two-lane small road and the other small roads are forced into tunnels too, while a large road is not";
 			d["item.general.ex.menu"] = "every asset you click in the Roads menu uses this same set of General switches, but moving to the Electricity menu it does not";
 			d["item.general.ex.category"] = "switching to a six-lane road still gives Tunnel, but a bridge or a double subway track goes back to nothing ticked and needs its own setting, even though they are all in the Roads menu";
@@ -1207,14 +1285,16 @@ namespace ToolModeMemory
 			// raise-lower step are one row on screen, so they are one item, remembered and shared together.
 			// "Reset elevation to 0" is an instantaneous button, so it is not listed.
 			d["item.anarchyObjectElevation.label"] = "Object Elevation";
-			d["item.anarchyObjectElevation.desc"] = "Remembers the row of height controls that Anarchy adds to the object tool panel: transform lock, elevation, elevation variance and the raise/lower step. All four sit on one row, so they count as one item and are remembered together. The row only exists while the object tool is in place, paint, stamp, line or curve mode; upgrade and move modes do not have it. Reset elevation to 0 is an instantaneous button with no state worth remembering, so it is not listed.";
+			// v0.9.0 文案
+			d["item.anarchyObjectElevation.desc"] = "Remembers the row of height controls Anarchy adds to the object tool panel: transform lock, elevation, elevation variance and the raise/lower step.\nThey sit on one row, so they are remembered and shared together.";
 			d["item.anarchyObjectElevation.ex.group"] = "for example, set the height to 15 m with a 2 m variance and the other props in the same group use the same values, while another group does not";
 			d["item.anarchyObjectElevation.ex.menu"] = "every prop in one menu uses this same height, but moving to another menu it does not";
 			d["item.anarchyObjectElevation.ex.category"] = "switching to another prop category uses that category's own height (needs its own setting)";
 
 			// ---------- Underground Mode ----------
 			d["item.underground.label"] = "Underground Mode";
-			d["item.underground.desc"] = "Remembers the Underground Mode switch (Toggle underground mode), which decides whether what you place goes below the ground or on top of it.";
+			// v0.9.0 文案
+			d["item.underground.desc"] = "Remembers the Underground Mode toggle: whether what you place goes below or above ground.";
 			d["item.underground.ex.group"] = "for example, turn on Underground Mode for a two-lane small road and the other small roads go underground too, while a large road does not";
 			d["item.underground.ex.menu"] = "every asset you click in the Roads menu is built underground, but moving to the Electricity menu it is not";
 			d["item.underground.ex.category"] = "switching to a six-lane road still goes underground, but a bridge or a double train track stays on the surface and needs its own setting, even though they are all in the Roads menu";
@@ -1232,49 +1312,58 @@ namespace ToolModeMemory
 
 			// ---------- Preserve Age (panel row = ToolOptions.DECORATION_MODE_TITLE) ----------
 			d["item.decoration.label"] = "Preserve Age";
-			d["item.decoration.desc"] = "Remembers the Preserve Age switch: while it is on, trees you brush or place stop growing and stop dying of old age, which freezes the age of that stand of trees where it is. The row only shows up on assets that carry tree data (brushing trees from the Vegetation menu); assets whose panel has no such row are neither recorded nor changed.";
+			// v0.9.0 文案
+			d["item.decoration.desc"] = "Remembers the Preserve Age toggle: trees you paint stop growing and no longer die of old age.\nOnly trees have this row.";
 			d["item.decoration.ex.group"] = "for example, switch Preserve Age on while brushing trees and the other ways of brushing vegetation in the same group are on too, while another group is not";
 			d["item.decoration.ex.menu"] = "every asset in the Vegetation menu keeps it on, but moving to another menu it does not";
 			d["item.decoration.ex.category"] = "switching to another kind of tree keeps it on, but the row only exists on assets with tree data, so brushing a decal has no such row at all (needs its own setting)";
 			d["item.i.anarchy.label"] = "Anarchy";
 			d["item.brushType.label"] = "Brush Type";
-			d["item.brushType.desc"] = "Remembers which brush the Brush Type row has selected: circle, square, soft edge and so on, which sets the shape of the edge you paint. The row only exists on tools that can paint - the nine terrain tools, and the object tool when the selected asset is brushable. Building, area, zone, route and bulldoze panels do not have it, so nothing is recorded or changed there.";
+			// v0.9.0 文案
+			d["item.brushType.desc"] = "Remembers the brush chosen in the Brush Type row: circle, square, soft edge and so on.\nOnly tools that can paint have this row.";
 			d["item.brushType.ex.group"] = "for example, pick a square brush while painting and the other paint-capable assets in the same group use the square brush too, while another group does not";
 			d["item.brushType.ex.menu"] = "every paint-capable asset in one menu uses this same brush, but moving to another menu it does not";
 			d["item.brushType.ex.category"] = "switching to another category uses that category own brush (needs its own setting), even when both can be painted";
 			d["item.brushSize.label"] = "Brush Size";
-			d["item.brushSize.desc"] = "Remembers the Brush Size row: how wide one stroke reaches. The row only exists on tools that can paint - the nine terrain tools, and the object tool when the selected asset is brushable. The two mean different things: on terrain tools it is the area of ground one raise or lower covers, on brushed props it is the area one placement covers, so the Functions page and the Items page each keep their own copy.";
+			// v0.9.0 文案
+			d["item.brushSize.desc"] = "Remembers the Brush Size row: how wide an area one stroke covers.\nOnly tools that can paint have this row.";
 			d["item.brushSize.ex.group"] = "for example, set a 30 m brush and the other paint-capable assets in the same group are 30 m too, while another group is not";
 			d["item.brushSize.ex.menu"] = "every paint-capable asset in one menu uses this same brush size, but moving to another menu it does not";
 			d["item.brushSize.ex.category"] = "switching to another category uses that category own brush size (needs its own setting), even when both can be painted";
 			d["item.brushStrength.label"] = "Brush Strength";
-			d["item.brushStrength.desc"] = "Remembers the Brush Strength row: how much one stroke changes. The row only exists on tools that can paint - the nine terrain tools, and the object tool when the selected asset is brushable. The two mean different things: on terrain tools it is how far one raise or lower moves, on brushed props it is the placement density, so the Functions page and the Items page each keep their own copy.";
+			// v0.9.0 文案
+			d["item.brushStrength.desc"] = "Remembers the Brush Strength row: how much one stroke changes.\nOnly tools that can paint have this row.";
 			d["item.brushStrength.ex.group"] = "for example, set the brush strength to half and the other paint-capable assets in the same group are at half too, while another group is not";
 			d["item.brushStrength.ex.menu"] = "every paint-capable asset in one menu uses this same brush strength, but moving to another menu it does not";
 			d["item.brushStrength.ex.category"] = "switching to another category uses that category own brush strength (needs its own setting), even when both can be painted";
 			d["item.brushHeight.label"] = "Target Height";
-			d["item.brushHeight.desc"] = "Remembers the value of the Target Height row: how high the ground ends up after a terrain tool flattens it or presses it into a slope. The row only exists on the level and slope terrain assets; the other terrain tools do not have it, and brushed props never do, so nothing is recorded or changed there.";
+			// v0.9.0 文案
+			d["item.brushHeight.desc"] = "Remembers the Target Height row: how high the ground ends up after levelling or sloping it.\nOnly the level and slope terrain tools have this row.";
 			d["item.brushHeight.ex.group"] = "for example, set target height 50 m while levelling and the other terrain tools in the same group use 50 m too, while another group does not";
 			d["item.brushHeight.ex.menu"] = "every tool in the terrain group uses this same target height, while another function group does not";
 			d["item.brushHeight.ex.category"] = "switching to another function group uses that group own target height (needs its own setting); the other terrain tools do not have the row at all";
 			d["item.distance.label"] = "Distance";
-			d["item.distance.desc"] = "Remembers the value of the Distance row: how far apart consecutive objects are when you place them along a line or a curve. The row only appears in the line and curve modes (object tool and marker tools); single placement, continuous placement, stamp and brush modes do not have it.";
+			// v0.9.0 文案
+			d["item.distance.desc"] = "Remembers the Distance row: how far apart consecutive objects are when you place them along a line or a curve.\nOnly the line and curve modes have this row.";
 			d["item.distance.ex.group"] = "for example, set the distance to 10 m and the other props in the same group are 10 m apart too, while another group is not";
 			d["item.distance.ex.menu"] = "every asset that can be placed along a line in one menu uses this same distance, but moving to another menu it does not";
 			d["item.distance.ex.category"] = "switching to another category uses that category own distance (needs its own setting), even when both can be placed along a line";
 			d["item.ageMask.label"] = "Age";
-			d["item.ageMask.desc"] = "Remembers which age stages the Age row has ticked: sapling, young, mature and elderly, and several can be ticked at once. The row only exists on tree assets (brushing or placing trees in the Vegetation menu), so other props do not have it and nothing is recorded or changed there.";
+			// v0.9.0 文案
+			d["item.ageMask.desc"] = "Remembers which age stages are ticked: sapling, young, mature and old, several at once if you like.\nOnly trees have this row.";
 			d["item.ageMask.ex.group"] = "for example, tick only mature while brushing trees and the other trees in the same group only spawn mature too, while another group does not";
 			d["item.ageMask.ex.menu"] = "every tree in the Vegetation menu uses these same age stages, but moving to another menu it does not";
 			d["item.ageMask.ex.category"] = "switching to another kind of tree keeps these stages, but the row only exists on tree assets, so brushing decals and the like do not have it at all (needs its own setting)";
 			d["item.anarchyObjectElevation.label"] = "Object Elevation";
-			d["item.anarchyObjectElevation.desc"] = "Remembers the row of height controls that Anarchy adds to the object tool panel: transform lock, elevation, elevation variance and the raise/lower step. All four sit on one row, so they count as one item and are remembered and shared together; Reset elevation to 0 is an instantaneous button with no state worth remembering, so it is not listed. The row only exists while the object tool is in place, paint, stamp, line or curve mode; upgrade and move modes do not have it. The Buildings and Services page and the Items page each keep their own copy, and neither overwrites the other.";
+			// v0.9.0 文案
+			d["item.anarchyObjectElevation.desc"] = "Remembers the row of height controls Anarchy adds to the object tool panel: transform lock, elevation, elevation variance and the raise/lower step.\nThey sit on one row, so they are remembered and shared together.";
 			d["item.anarchyObjectElevation.ex.group"] = "for example, set the height to 15 m with a 2 m variance and the other props in the same group use the same values, while another group does not";
 			d["item.anarchyObjectElevation.ex.menu"] = "every prop in one menu uses this same height, but moving to another menu it does not";
 			d["item.anarchyObjectElevation.ex.category"] = "switching to another category uses that category own height (needs its own setting)";
 
 			// ---------- Functions page (f.*): same panel rows, but grouped by the six function types ----------
-			d["item.f.toolMode.desc"] = "Remembers the Tool Mode row on function panels. The options differ per tool: zone types offer Fill, Marquee and Paint; the area tools (District Creation Tool, Specialized Industry Area Tool, Surface area tool) offer Edit and Generate Map Grid; each terrain tool has its own modes; the bulldozer offers Main Elements, Sub Elements and Everything. The tool mode on the Assets page and on the Items page is remembered separately and none of them affects the others.";
+			// v0.9.0 文案
+			d["item.f.toolMode.desc"] = "Remembers the mode chosen on function panels: fill, marquee and paint for zones; edit and generate grid for area tools; each terrain tool has its own; and bulldoze offers main elements only, with sub-elements, or everything.";
 			d["item.f.toolMode.ex.group"] = "for example, pick Paint for the residential zone and commercial, industrial and office zones are on Paint too, but the area tools are not";
 			d["item.f.toolMode.ex.menu"] = "every tool inside one function group uses this same mode, while another function group does not";
 			d["item.f.toolMode.ex.category"] = "switching to another function group falls back to that group's own mode (needs its own setting), even when both are reachable from the same toolbar menu";

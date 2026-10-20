@@ -78,10 +78,8 @@ SCALAR_KEYS = [
     "domain.item.label", "domain.item.desc",
     "scope.label", "scope.desc",
     "scope.line.group", "scope.line.menu", "scope.line.category",
-    "scope.line.category.function", "scope.line.category.item",
     "scope.line.shared", "scope.line.sharedSingle", "scope.line.unique", "scope.note",
     "scope.group", "scope.menu", "scope.category",
-    "scope.category.function", "scope.category.item",
     "scope.globalShared", "scope.globalUnique",
     "tag.vanilla", "tag.recommended", "tag.recVanilla",
     "reset.label", "reset.desc", "reset.warn", "reset.confirm",
@@ -104,8 +102,10 @@ ZH_LANGS = ("zh-HANS", "zh-HANT")
 NO_CJK_LANGS = ("en-US", "de-DE", "es-ES", "fr-FR", "it-IT", "pl-PL", "pt-BR", "ru-RU")
 CJK = re.compile(u'[ぁ-ヿ㐀-䶿一-鿿가-힣豈-﫿]')
 
-TEMPLATE_KEYS = ["scope.line.group", "scope.line.menu", "scope.line.category",
-                 "scope.line.category.function", "scope.line.category.item"]
+# v0.9.0 需求 4：功能页与道具页不再提供「同类」这一档（BuildScopeDropdown 只给
+# 建筑与服务页列它），所以 scope.line.category.function / .item 已删除，
+# 只剩不带后缀的通用键 scope.line.category（建筑与服务页专用）。
+TEMPLATE_KEYS = ["scope.line.group", "scope.line.menu", "scope.line.category"]
 
 # 赋值行：d[<键表达式>] = "值";
 # 键表达式允许三种写法（v0.7.0 起了第三种）："字面量" / 常量名 / 常量名 + "后缀"

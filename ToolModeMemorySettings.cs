@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Colossal;
@@ -86,8 +86,11 @@ namespace ToolModeMemory
 		/// </summary>
 		public static bool Ready;
 
-		private bool m_Enabled = true;
-		/// <summary>三块域开关（= 三个标签页的总闸）。</summary>
+		// v0.9.0 owner 需求 1：总开关默认关、三个分开关默认开。
+		// 这个字段值必须与 SetDefaults() 一致 —— 没有存档文件时没人调用 SetDefaults()，
+		// 出厂默认靠的就是这里的字段初始值（见下面构造函数注释）。
+		private bool m_Enabled = false;
+		/// <summary>三块域开关（= 三个标签页的总闸）。默认都开。</summary>
 		private readonly bool[] m_DomainEnabled = new bool[] { true, true, true };
 		private readonly Dictionary<string, bool> m_ItemEnabled = new Dictionary<string, bool>(StringComparer.Ordinal);
 		private readonly Dictionary<string, int> m_ItemScope = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -96,7 +99,7 @@ namespace ToolModeMemory
 		/// 模组设置不走 SharedSettings.Reset()：框架只把「当前实例」交给
 		/// AssetDatabase.LoadSettings(name, obj, defaultObj)（AssetDatabase.cs:611），
 		/// 没有存档文件时没人会调用 SetDefaults()。所以出厂默认必须在构造函数里就落好，
-		/// 这也让「总开关默认打开」真的成立（原版 GameplaySettings 的写法一致）。
+		/// 这也让「总开关默认关、分开关默认开」真的成立（原版 GameplaySettings 的写法一致）。
 		/// </summary>
 		public ToolModeMemorySettings(IMod mod) : base(mod)
 		{
@@ -1077,7 +1080,11 @@ namespace ToolModeMemory
 		/// </summary>
 		public override void SetDefaults()
 		{
-			m_Enabled = true;
+			// v0.9.0 owner 需求 1：总开关默认**关**，三个分开关默认**开**。
+			// 语义（需求 2）：总开关管全部；分开关管「本域是否记忆 + 是否随存档恢复」。
+			// 出厂总开关关 = 新玩家装上是彻底的原版行为，不会被任何默认记忆打扰；
+			// 玩家打开总开关那一刻，三块分开关已经是开的，立刻就能用，不需要再逐块点开。
+			m_Enabled = false;
 			m_DomainEnabled[0] = true;
 			m_DomainEnabled[1] = true;
 			m_DomainEnabled[2] = true;

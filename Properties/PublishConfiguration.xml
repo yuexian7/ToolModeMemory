@@ -24,7 +24,7 @@
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
 	<ModId Value="160529" />
-	<ModVersion Value="0.8.0" />
+	<ModVersion Value="0.9.0" />
 	<GameVersion Value="1.6.*" />
 	<!--Private = 不公开（用户要求）。若平台拒绝此值再改 Unlisted。-->
 	<AccessLevel Value="Private" />
@@ -38,24 +38,24 @@
 	<ExternalLink Type="kofi" Url="https://ko-fi.com/yuexian7" />
 	<ExternalLink Type="x" Url="https://x.com/yuexian777/status/2101942150447702427?s=20" />
 	<ChangeLog>
-v0.8.0
+v0.9.0
 
-*   Every tool option row on the game panel is now its own item with its own toggle and its own sharing scope. The old fused "Brush" item is split into Brush Type, Brush Size and Brush Strength, and three further rows were added: Target Height (terrain levelling and slope only), Age (trees only) and Distance (line and curve placement only).
-*   Each item now says which tools actually show that row, in all twelve languages, so a row is never offered on a page where the game never displays it.
-*   The Assets page is renamed Buildings & Services, since props are assets too. All tab titles, switch descriptions and scope texts were updated with it.
-*   Sharing-scope texts no longer mention the other pages. Each page now speaks only about itself (for example "shared by all Buildings & Services"), and the classification lists moved into the matching per-page switch description.
-*   Colour moved to the Functions page: the game only shows that row for route tools. Trees now belong to the Items page, so Age and Preserve Age live there.
-*   Anarchy: new Object Elevation item covering the elevation row Anarchy injects into the object tool panel. Transform lock, elevation, elevation variance and the raise/lower step are one row on screen, so they are remembered and shared together; Reset elevation to 0 is an instantaneous button and is not listed. It has its own copy on the Buildings & Services page and on the Items page.
+*   The mod now starts switched off, so a fresh install changes nothing until you turn it on. The three per-page switches start on, so once you enable the mod it simply works.
+*   The two kinds of switch now do clearly different things. The per-page switches control memory: on means settings are recorded as you work and restored when you load a save, off means nothing is recorded or restored. The per-item switches only control the sharing scope, so turning one off just greys out its scope dropdown and leaves that row to vanilla.
+*   Every description has been rewritten to be short and readable, with line breaks where the meaning splits. Implementation detail that players do not need is gone.
+*   Sharing scope no longer offers "Same type" on the Functions and Items pages. Vanilla only remembers NetTool settings, and it buckets them by the asset category, so on those two pages the "vanilla" option did not mean anything and the grouping mixed unrelated tool modes. Buildings & Services keeps it, since grouping by what an asset serves is what vanilla effectively does.
+*   Functions and Items pages no longer carry recommendations at all: every item there starts off and follows vanilla. On the Buildings & Services page Tool Mode now recommends "Same type", Elevation is unchanged, and Parallel Mode no longer recommends anything.
+*   Fixed the Colour item: it was reading the road custom colour, which the panel never shows, while the Color row belongs to route tools. It now remembers the colour row that route tools actually display.
 *   Your existing memories are kept: every memory bucket keeps its old name, so values recorded by earlier versions are read back unchanged.
 
 中文
 
-*   面板上的每一行现在都是独立一项，各有自己的开关与共用范围。原来合在一起的「笔刷」拆成笔刷种类、笔刷粗细、笔刷强度三项；另外新增三行：目标高度（只有地形平整与斜坡有）、年龄（只有树有）、距离（只有直线与曲线摆放有）。
-*   每一项都会写明这一行到底在哪些工具上出现（十二种语言都写了），不再在游戏不显示这一行的页面上提供它。
-*   「资产」页改名为「建筑与服务」——道具也属于资产。所有标签页标题、开关说明与共用范围说明同步改掉。
-*   共用范围的说明不再提其它页：每一页只讲自己（例如直接写「所有 建筑与服务 共用」），分类说明全部挪进对应分页开关的说明里。
-*   配色移到功能页：游戏只在路线工具上显示这一行。树木归到道具页，所以年龄与保留年代也放在那一页。
-*   Anarchy：新增「物件高度」一项，对应 Anarchy 在摆件工具面板上加的那一排。锁定变换、高度、高度变化范围、抬高降低的幅度是同一排，所以一起记忆、一起共用；「重置高度为 0」是瞬时按钮，不列。建筑与服务页与道具页各有一份，互不共用。
+*   模组出厂改为关闭：刚装好时什么都不改变，你主动打开才生效。三个分页开关出厂是打开的，所以一旦启用模组就能直接用。
+*   两类开关的分工现在很清楚。分页开关管记忆：打开就实时记录、读档自动恢复；关掉就不记录也不恢复。每一项自己的开关只管共用范围，关掉只是把它的共用范围灰掉，这一行交回原版。
+*   所有说明文本重写，短、好读，该换行的地方都换行，去掉玩家不需要的实现细节。
+*   共用范围在功能页与道具页不再提供「同类」。原版只记忆道路工具的设置，而且是按资产分类分组的，所以在功能页与道具页「原版」这一档没有意义，按同类归组还会把不同工具的模式混在一起。建筑与服务页保留它，因为「按这件资产服务谁」正是原版实际在做的事。
+*   功能页与道具页不再有推荐：那一页每一项都出厂关闭、按原版行为走。建筑与服务页里工具模式改为推荐「同类」，高度不变，并列模式去掉推荐。
+*   修复「颜色」一项：以前读的是道路的自定义配色，而面板上根本不显示那一行；「颜色」这一行属于路线工具。现在记忆路线工具真正显示的那个颜色。
 *   以前的记忆不丢：每个记忆桶的名字一个都没改，旧版本记下的值照旧读得回。
 </ChangeLog>
 </PublishConfiguration>

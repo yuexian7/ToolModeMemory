@@ -28,6 +28,13 @@ SETTINGS = os.path.join(ROOT, "ToolModeMemorySettings.cs")
 LOCALES = os.path.join(ROOT, "LocaleTable.cs")
 CATALOG = os.path.join(ROOT, "ToolItemCatalog.cs")
 
+# MemoryScope 的枚举值（与 ToolItemCatalog 里的定义逐字对应）。
+MEMORY_SCOPE_GROUP = 0
+MEMORY_SCOPE_MENU = 1
+MEMORY_SCOPE_CATEGORY = 2
+MEMORY_SCOPE_GLOBAL_SHARED = 3
+MEMORY_SCOPE_GLOBAL_UNIQUE = 4
+
 fails = []
 
 
@@ -56,6 +63,120 @@ def body_of(text, signature):
             if depth == 0:
                 return text[j:k + 1]
     return None
+
+
+def read_catalog():
+    """从 ToolItemCatalog.cs 解析出每一项的 id / 域 / 原版档 / 推荐档 / 出厂开关。
+
+    解析的是 new ToolItemDef(...) 构造调用的前 6 个参数（都是字面量）：
+      id, number, source, vanillaScope, recommendedScope, defaultEnabled
+    后面 subs / familyFreeScope / domain / localeAlias / places 用关键字或默认值，
+    domain 需要单独扫（第 7~9 个位置里写着 ItemDomain.Xxx）。
+    """
+    src = io.open(CATALOG, encoding="utf-8-sig").read()
+    # const string kToolMode = "toolMode"; -> {"kToolMode": "toolMode"}
+    const_ids = dict(re.findall(r'const string\s+(k\w+)\s*=\s*"([^"]+)"', src))
+    out = []
+    # 一次抓整个构造调用：参数里可能有嵌套的 s_XxxSubs 与 null，按逗号切会在括号内出错，
+    # 所以改成「从 new ToolItemDef( 起按圆括号配平取整段」。
+    for m in re.finditer(r"new ToolItemDef\(", src):
+        i = m.end() - 1
+        depth = 0
+        for k in range(i, len(src)):
+            if src[k] == "(":
+                depth += 1
+            elif src[k] == ")":
+                depth -= 1
+                if depth == 0:
+                    break
+        else:
+            continue
+        args = src[i + 1:k]
+
+        # 只解析这一项自己的作用域：到下一个 new ToolItemDef( 或 AssetItems/FunctionItems/ItemItems 数组尾
+        nxt = src.find("new ToolItemDef(", k)
+        seg = src[k:nxt if nxt > 0 else len(src)]
+
+        def lit(name):
+            mm = re.search(r"\b" + name + r"\s*=\s*([^,]+)", args)
+            return mm.group(1).strip() if mm else None
+
+        # 前 6 个位置参数。注意最后那个 places 参数是 "net,object" 这种带逗号的字符串，
+        # 所以不能无脑按逗号切整段 —— 按圆括号配平切，且只取前 n 个。
+        def split_args(text, n):
+            out, buf, depth, quote = [], "", 0, False
+            for ch in text:
+                if quote:
+                    buf += ch
+                    if ch == '"':
+                        quote = False
+                    continue
+                if ch == '"':
+                    quote = True
+                    buf += ch
+                    continue
+                if ch == "(":
+                    depth += 1
+                elif ch == ")":
+                    depth -= 1
+                if ch == "," and depth == 0:
+                    out.append(buf.strip())
+                    buf = ""
+                    if len(out) == n:      # 已经攒够 n 个，剩下的不用看了
+                        return out
+                    continue
+                buf += ch
+            if buf.strip():
+                out.append(buf.strip())
+            return out
+
+        parts = split_args(args, 6)
+        if len(parts) < 6:
+            continue
+        item_id = parts[0]
+        # 第一参数是常量名（kToolMode / kFToolMode），它的**值**才是记忆键与设置属性名主干。
+        # 直接拿常量名去比对会永远找不到，所以先把 const string kXxx = "yyy"; 的映射建起来。
+        cid = const_ids.get(item_id)
+        if cid is None:
+            continue
+
+        # vanillaScope / recommendedScope 在源码里写作 (int)MemoryScope.Xxx 或
+        # kVanillaNone / kNoRecommendation / 裸整数，这里统一换成数字。
+        def as_int(tok):
+            tok = tok.strip()
+            tok = re.sub(r"^\(int\)", "", tok)
+            table = {"kVanillaNone": -1, "kNoRecommendation": -1,
+                     "MemoryScope.Group": MEMORY_SCOPE_GROUP,
+                     "MemoryScope.Menu": MEMORY_SCOPE_MENU,
+                     "MemoryScope.Category": MEMORY_SCOPE_CATEGORY,
+                     "MemoryScope.GlobalShared": MEMORY_SCOPE_GLOBAL_SHARED,
+                     "MemoryScope.GlobalUnique": MEMORY_SCOPE_GLOBAL_UNIQUE}
+            if tok in table:
+                return table[tok]
+            try:
+                return int(tok)
+            except ValueError:
+                return None
+
+        vanilla = as_int(parts[3])
+        rec = as_int(parts[4])
+        if vanilla is None or rec is None:
+            continue
+        default_on = parts[5] == "true"
+
+        # domain 是第 7 个位置参数（subs、familyFreeScope 之后），写在 args 里面。
+        # 曾经写成去 args 之后的文本里找，会把**下一个**数组的 ItemDomain.Xxx 抓过来
+        # （资产页 37 项全是那么来的），改为只在 args 内找。
+        dom = re.search(r"ItemDomain\.(\w+)", args)
+        out.append({
+            "id": cid,
+            "domain": dom.group(1) if dom else "Asset",
+            "vanillaScope": vanilla,
+            "recommendedScope": rec,
+            "defaultEnabled": default_on,
+        })
+    return out
+
 
 
 def main():
@@ -253,11 +374,11 @@ def main():
     check("other" not in official_ids,
           "「其它」已从目录里彻底删除（需求 4：去掉其它、列出全部）")
 
-    # ---- 3. 出厂默认：总开关打开，兼容开关（v0.6.0 已取消）不允许再出现 ----
+    # ---- 3. 出厂默认：v0.9.0 起总开关**关**、三个分开关**开** ----
     defaults = body_of(s, "public override void SetDefaults()")
     check(defaults is not None, "SetDefaults() 存在")
     if defaults:
-        check("m_Enabled = true;" in defaults, "总开关出厂默认 = 开")
+        check("m_Enabled = false;" in defaults, "总开关出厂默认 = 关（v0.9.0 需求 1）")
         check("m_CompatOtherMods" not in defaults, "SetDefaults() 里已经没有兼容开关（该设置项已取消）")
         check("InitItemDefaults();" in defaults, "每一项的出厂值走目录里的推荐值")
 
@@ -266,7 +387,8 @@ def main():
           "构造函数调用 SetDefaults()（框架不会替模组设置调用它）")
 
     field = re.search(r"private bool m_Enabled\s*=\s*(\w+);", s)
-    check(field is not None and field.group(1) == "true", "m_Enabled 字段初值也是 true")
+    check(field is not None and field.group(1) == "false",
+          "m_Enabled 字段初值也是 false（没有存档文件时没人调用 SetDefaults，靠字段初值）")
     check("CompatOtherMods" not in s and "m_CompatOtherMods" not in s,
           "设置页里没有 CompatOtherMods 这一项（属性 / 字段 / Section 特性都已删干净）")
     bridge = io.open(os.path.join(ROOT, "ToolMemoryBridge.cs"), encoding="utf-8-sig").read()
@@ -293,6 +415,46 @@ def main():
           "每一项的 scope 行说明由 ScopeDescription() 按项拼装")
     check('GetOptionDescLocaleID(pascal + "Scope")' in loc,
           "scope 行说明按项注册（不再 11 项共用同一句）")
+
+    # ---- 6. v0.9.0 需求 4：功能页 / 道具页全部无推荐、出厂全关 ----
+    # owner 定案：原版只给 NetToolSystem 记偏好（按 m_Group），功能型与摆件工具
+    # 原版一个都不记，所以「原版档」对那两页无意义；那两页不提供推荐，
+    # 出厂一律关闭 = 完全原版行为，玩家想改共用范围自己改。
+    cat_items = read_catalog()
+    fn = [d for d in cat_items if d["domain"] == "Function"]
+    it = [d for d in cat_items if d["domain"] == "Item"]
+    check(len(fn) > 0 and len(it) > 0,
+          "目录解析到功能页 %d 项 / 道具页 %d 项" % (len(fn), len(it)))
+    bad_rec = [d["id"] for d in fn + it if d["recommendedScope"] >= 0]
+    check(not bad_rec,
+          "功能页 / 道具页没有任何项带推荐（原版不记 -> 无原版档可推荐）%s" % bad_rec)
+    bad_on = [d["id"] for d in fn + it if d["defaultEnabled"]]
+    check(not bad_on, "功能页 / 道具页全部出厂关闭 %s" % bad_on)
+
+    # 建筑与服务页：只有「原版没有同类记忆且按同类分真有增益」的项才留推荐。
+    # v0.9.0 owner 指定：工具模式 -> 同类；高度 -> 同组（不变）；并列模式 -> 无推荐。
+    as_ = [d for d in cat_items if d["domain"] == "Asset"]
+    by_id = {d["id"]: d for d in as_}
+    check(by_id["toolMode"]["recommendedScope"] == MEMORY_SCOPE_CATEGORY,
+          "建筑与服务：工具模式推荐改成「同类」")
+    check(by_id["elevation"]["recommendedScope"] == MEMORY_SCOPE_GROUP,
+          "建筑与服务：高度推荐仍是「同组」")
+    check(by_id["parallel"]["recommendedScope"] < 0,
+          "建筑与服务：并列模式推荐去掉（原版就按同组记，无增益）")
+    check(not by_id["parallel"]["defaultEnabled"],
+          "建筑与服务：并列模式出厂关闭")
+
+    # ---- 7. v0.9.0 需求 1：总开关默认关、三个分开关默认开 ----
+    defaults = body_of(s, "public override void SetDefaults()")
+    check(defaults is not None and re.search(r"m_Enabled\s*=\s*false", defaults) is not None,
+          "总开关出厂默认关（SetDefaults 里 m_Enabled = false）")
+    check(defaults is not None and defaults.count("m_DomainEnabled[") >= 3
+          and "m_DomainEnabled[0] = true" in defaults
+          and "m_DomainEnabled[1] = true" in defaults
+          and "m_DomainEnabled[2] = true" in defaults,
+          "三个分开关出厂默认开")
+    check(re.search(r"private bool m_Enabled\s*=\s*false", s) is not None,
+          "字段初值也是关（没有存档文件时没人调用 SetDefaults，靠字段初值）")
 
     print()
     print("ALL PASS" if not fails else "FAILURES=%d" % len(fails))

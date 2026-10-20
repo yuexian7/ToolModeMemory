@@ -1341,17 +1341,35 @@ namespace ToolModeMemory
 			return false;
 		}
 
+		/// <summary>
+		/// 路线工具「配色」行（v0.9.0 修：以前这项是空转的）。
+		///
+		/// 原版事实（research/round5/vanilla_scope_audit.md §3(a)-②）：
+		///  * 面板上「配色」这一行绑的是 <c>ToolBaseSystem.color</c>（ToolUISystem.cs:146-147，
+		///    binding `tool.color`，setter :672-675）；
+		///  * 只有路线工具显示它 —— <c>GetColorSupported() =&gt; activePrefab is IColored</c>
+		///    （ToolUISystem.cs:677-680），而 <c>IColored</c> 的唯一实现者是 <c>RoutePrefab</c>；
+		///  * 换资产时游戏把它覆盖成该资产默认色（RouteToolSystem.cs:1040
+		///    `color = m_SelectedPrefab.m_Color`）。
+		///
+		/// 0.8.0 及以前读写的是 <c>NetToolSystem.placementColor</c>（道路自定义配色），
+		/// 而 Net 面板上从来没有「配色」这一行 —— 于是在唯一有这一行的路线工具上
+		/// 永远记不到、在我们能读写的道路工具上又没有这一行，整项等于空转。
+		///
+		/// 现在只认路线工具 + <c>ToolBaseSystem.color</c>。一个颜色就是 RGBA32 一个整数，
+		/// 所以本项的主桶（other.color0）存它，其余三个历史通道桶继续接受写入但不读
+		/// （老记忆文件里那三个桶是 NetTool 时期的残留，见 <see cref="ColorChannelOf"/>）。
+		/// </summary>
 		private static bool CaptureColor(ToolBaseSystem tool, int channel, out int value)
 		{
 			value = 0;
-			NetToolSystem net = tool as NetToolSystem;
-			if (net == null) return false;
-			if (!HasPlacementColor(net)) return false;
-			// Game.Rendering.ColorSet 实测只有 m_Channel0..2 三个 UnityEngine.Color 通道
-			if (channel < 0 || channel > 2) return false;
-			ColorSet set = net.placementColor;
-			value = PackColor(set[channel]);
-			return true;
+			// 只有路线工具真正有这一行（IColored 唯一实现者 RoutePrefab）。
+			if (!(tool is RouteToolSystem)) return false;
+			// 只写第一个通道桶：一个颜色只需要一个桶，多存三份只会让老文件读出旧值。
+			if (channel != 0) return false;
+			value = PackColor32(tool.color);
+			// 0 = 「无默认」哨兵（全透明黑），不记。
+			return value != 0;
 		}
 
 		/// <summary>笔刷：只有 brushing 的工具真正使用（ToolBaseSystem.brushSize / brushStrength）。</summary>
@@ -1833,19 +1851,19 @@ namespace ToolModeMemory
 			return false;
 		}
 
+		/// <summary>
+		/// 写回路线工具「配色」行（见 <see cref="CaptureColor"/> 的原版事实与历史 bug 说明）。
+		/// 只认路线工具 + <c>ToolBaseSystem.color</c>；0 当「无默认」哨兵不写。
+		/// </summary>
 		private static bool ApplyColor(ToolBaseSystem tool, int channel, int value)
 		{
-			NetToolSystem net = tool as NetToolSystem;
-			if (net == null) return false;
-			if (!HasPlacementColor(net)) return false;
-			if (channel < 0 || channel > 2) return false;
-			// 0 = 「无默认值」哨兵（DefaultValue 对配色返回 0）：alpha 为 0 的颜色本身没有意义，
-			// 真去写反而会把该资产 NetCustomColorData 里的出厂配色刷成全透明黑。
+			// 只有路线工具有这一行；其余工具面板上根本没有「配色」，写进去等于改了个看不见的值。
+			if (!(tool is RouteToolSystem)) return false;
+			// 一个颜色一个桶（other.color0）。channel 1..3 是 NetTool 时期的残留，不再写。
+			if (channel != 0) return false;
+			// 0 = 「无默认值」哨兵：全透明黑没有意义，真写会把默认色刷成透明。
 			if (value == 0) return false;
-			// 只换指定通道，其余通道保持现值（ColorSet 有 indexer，见 Game.Rendering/ColorSet.cs）
-			ColorSet set = net.placementColor;
-			set[channel] = UnpackColor(value);
-			net.placementColor = set;
+			tool.color = UnpackColor32(value);
 			return true;
 		}
 
@@ -2230,27 +2248,10 @@ namespace ToolModeMemory
 			}
 		}
 
-		/// <summary>当前选中道路是否带自定义配色（私有 m_HasPlacementColor，取不到就当没有）。
-		/// <para>0.6.1 帧率复核：这个字段是原版在 <c>NetToolSystem.prefab</c> 的 setter 里派生的
-		/// （decompiled L5306-5326），选中资产不变它就不会变；而配色一项有 3 个通道、每帧各问一次，
-		/// <c>FieldInfo.GetValue</c> 每次都要把 bool 装成 object —— 于是道路工具下每帧白扔 4 个盒子。
-		/// 现在按 prefab 记忆（与 <see cref="s_LimitCache"/> 同一套失效纪律：换档 <see cref="ForgetNames"/> 清），
-		/// 每帧只剩一次字典查。</para></summary>
-		private static bool HasPlacementColor(NetToolSystem net)
-		{
-			if (s_HasPlacementColor == null) return false;
-			try
-			{
-				PrefabBase target = net.prefab;   // 只是 return m_SelectedPrefab（L5302-5305），零成本
-				bool cached;
-				if (target != null && s_HasColorCache.TryGetValue(target, out cached)) return cached;
-				object raw = s_HasPlacementColor.GetValue(net);
-				bool value = raw is bool && (bool)raw;
-				if (target != null && s_HasColorCache.Count < kCacheCap) s_HasColorCache[target] = value;
-				return value;
-			}
-			catch { return false; }
-		}
+		// v0.9.0：「配色」改读 ToolBaseSystem.color（路线工具那一行），
+		// 原来的 HasPlacementColor / s_HasPlacementColor / s_HasColorCache 全部删除 ——
+		// 那一套判的是 NetToolSystem.m_HasPlacementColor（道路自定义配色），
+		// 而 Net 面板上从来没有「配色」这一行，留着只会让人以为这条路还在用。
 
 		// ============================ 资产自己的取值限制（v0.6.0） ============================
 		//
@@ -3061,6 +3062,26 @@ namespace ToolModeMemory
 		}
 
 		private static UnityEngine.Color UnpackColor(int packed)
+		{
+			uint u = unchecked((uint)packed);
+			return new UnityEngine.Color32(
+				(byte)(u & 0xFFu),
+				(byte)((u >> 8) & 0xFFu),
+				(byte)((u >> 16) & 0xFFu),
+				(byte)((u >> 24) & 0xFFu));
+		}
+
+		/// <summary>
+		/// <c>ToolBaseSystem.color</c> 是 <c>Color32</c>（不是 ColorSet），直接按字节打包。
+		/// 与 <see cref="PackColor"/> 同一个字节序，所以老记忆文件里 NetTool 时期的
+		/// other.color0 值读出来仍是同一个 RGBA 含义。
+		/// </summary>
+		private static int PackColor32(UnityEngine.Color32 b)
+		{
+			return unchecked((int)((uint)b.r | ((uint)b.g << 8) | ((uint)b.b << 16) | ((uint)b.a << 24)));
+		}
+
+		private static UnityEngine.Color32 UnpackColor32(int packed)
 		{
 			uint u = unchecked((uint)packed);
 			return new UnityEngine.Color32(

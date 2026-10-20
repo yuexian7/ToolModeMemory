@@ -448,12 +448,17 @@ namespace ToolModeMemory
 		/// 建筑与服务页。这一份是「用工具栏资产干活的工具」的全部可记忆项：
 		/// NetToolSystem（道路/轨道/管线/电线）、UpgradeToolSystem、ObjectToolSystem 选中普通建筑。
 		///
-		/// v0.8.0 按 research/round4/vanilla_rows.md 第 5 节反查表逐行核过：
+		/// v0.8.0 按 research/round4/vanilla_rows.md 第 5 节反查表逐行核过；
+		/// v0.9.0 按 owner 需求 4 收紧推荐：只有「原版没有同类记忆、而按同类分真有增益」的项
+		/// 才留推荐，其余一律无推荐 + 出厂不开 = 完全原版行为。
 		///  * 「高度」「并列模式」**只有道路工具**有（net 专属，ToolUISystem L511-543）；
 		///  * 笔刷三行（种类/粗细/强度）**不在本页** —— AllowBrush 只认摆件工具的 Brushable 资产
 		///    与地形工具，建筑不是可刷涂资产，放上来就是「设了没反应」；
 		///  * 「配色」**不在本页** —— Game.dll 里 IColored 唯一实现者是 RoutePrefab，
-		///    只有路线工具显示颜色行，已移到功能页。
+		///    只有路线工具显示颜色行，已移到功能页；
+		///  * 装饰物 / 树木 / 区域**不在本页** —— 已分别移到道具页与功能页（0.8.0~0.9.0），
+		///    本页只剩道路/轨道/管线/电线/建筑这类「买下来盖下去」的资产，所以工具模式一行的
+		///    可选值也就是直线、曲线这些，不会再出现装饰物与树木的选项。
 		/// </summary>
 		public static readonly ToolItemDef[] AssetItems = new ToolItemDef[]
 		{
@@ -462,13 +467,22 @@ namespace ToolModeMemory
 				null, false, ItemDomain.Asset, null, "net,object"),
 			new ToolItemDef(kPacks, 2, ItemSource.Toolbar, (int)MemoryScope.Group, kNoRecommendation, false,
 				null, false, ItemDomain.Asset, null, "net,object"),
-			// 原版每个工具模式按分类记忆（NetToolPreferences），故推荐全局共用才有增益
-			new ToolItemDef(kToolMode, 3, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.GlobalShared, true,
+			// v0.9.0 owner 需求 4：工具模式推荐改成「同类」。
+			// 理由：原版按 m_Group（=分类）记，同一分类里换资产会串；而本页的工具模式可选值
+			// 只有直线/曲线这类，按「同类」（资产服务对象）归群之后，
+			// 「换到同为车行的四车道仍是直线」正是玩家想要的行为。
+			new ToolItemDef(kToolMode, 3, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.Category, true,
 				null, false, ItemDomain.Asset, null, "net,object"),
+			// 高度：原版整个会话一个值（跨资产共用），推荐「同组」= 每组分一份 -> 出厂开
 			new ToolItemDef(kElevation, 4, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.Group, true,
 				s_ElevationSubs, false, ItemDomain.Asset, null, "net"),
-			new ToolItemDef(kParallel, 5, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.GlobalUnique, true,
+			// v0.9.0 owner 需求 4：并列模式推荐去掉、出厂关。
+			// 理由：原版就按 m_Group 记，「同组」这一档与原版逐字一致，没有增益；
+			// 而「全局共用 / 全局不共用」两档与原版差别也不大（并列数只在 Net 上出现，
+			// 同一组内的资产共用已经覆盖绝大多数使用场景）。
+			new ToolItemDef(kParallel, 5, ItemSource.Vanilla, (int)MemoryScope.Group, kNoRecommendation, false,
 				s_ParallelSubs, false, ItemDomain.Asset, null, "net"),
+			// 对齐：原版按 m_Group 记，本项是位掩码，跨工具混键会写非法组合 -> 推荐「同类」
 			new ToolItemDef(kSnap, 6, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.Category, true,
 				null, false, ItemDomain.Asset, null, "net,object"),
 			new ToolItemDef(kTopography, 7, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.GlobalShared, false,
@@ -478,11 +492,13 @@ namespace ToolModeMemory
 				null, true, ItemDomain.Asset, null, "net,object"),
 
 			// ---- Anarchy 板块（9..12：序号在同一标签页内连续，避免一页里出现两个「1.」）----
-			new ToolItemDef(kAnarchy, 9, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, false,
+			// Anarchy 是第三方模组，原版完全没有对应物（VanillaScope = kVanillaNone），
+			// 所以「原版档」对它无意义。v0.9.0 起本页 Anarchy 项一律无推荐、出厂关。
+			new ToolItemDef(kAnarchy, 9, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
 				null, true, ItemDomain.Asset, null, "anarchy"),
-			new ToolItemDef(kLeftRight, 10, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Group, true,
+			new ToolItemDef(kLeftRight, 10, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
 				s_LeftRightSubs, true, ItemDomain.Asset, null, "net,anarchy"),
-			new ToolItemDef(kGeneral, 11, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, true,
+			new ToolItemDef(kGeneral, 11, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
 				null, true, ItemDomain.Asset, null, "net,anarchy"),
 			// 物件高度（v0.8.0 新增）：Anarchy 注入在摆件工具面板上的**一排**高度控件。
 			// owner 2026-10-20：锁定变换 / 高度 / 高度变化范围 / 抬高降低幅度「这4项是同一项」，
@@ -490,15 +506,23 @@ namespace ToolModeMemory
 			// 证据：anarchy_rows.md A 块（ElevationValue 0f / ElevationStep 1f /
 			// ElevationVariance 0f / LockElevation=Settings.ElevationLock），
 			// 门 = 摆件工具 actualMode∈{Create,Brush,Stamp,Line,Curve} 且非建筑且 ShowElevationToolOption。
-			new ToolItemDef(kObjectElevation, 12, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Group, true,
+			new ToolItemDef(kObjectElevation, 12, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
 				s_ObjectElevationSubs, false, ItemDomain.Asset, null, "object,anarchy"),
 		};
 
 		/// <summary>
 		/// 功能页：4 个功能区、3 个区域工具、所有路线工具、9 个地形改造工具、
-		/// 5 个空间与区域工具、所有标记与预制对象。行集合按 FuncKind 归组（「同类」这一档）。
+		/// 5 个空间与区域工具、所有标记与预制对象。
 		///
 		/// v0.8.0 按反查表补齐并拆行：老版只有 5 项，漏了笔刷类型 / 目标高度 / 距离 / 配色 / 主题 / 数据包。
+		/// v0.9.0 owner 需求 4：**本页与道具页全部无推荐、出厂全关，一律按原版行为。**
+		/// 理由（已核查 research/round4/vanilla_rows.md + NetToolPreferences）：
+		///  * 原版的记忆实现只有 NetToolSystem 一处，且只按 m_Group（=分类）记；
+		///  * 功能型工具（Zone/Area/Route/Terrain/Bulldoze/Marker）**原版一个都不记**，
+		///    所以「原版档」对它们无意义，剩下的四档全是自定义行为；
+		///  * 这些工具的模式枚举与行集合差别极大（见反查表），按「同类」归组共用
+		///    等于把不同枚举的值塞进同一把键，会写下玩家设不出来的组合。
+		/// 因此本页不提供推荐，玩家想改共用范围自己改，出厂保持原版。
 		/// </summary>
 		public static readonly ToolItemDef[] FunctionItems = new ToolItemDef[]
 		{
@@ -508,31 +532,31 @@ namespace ToolModeMemory
 			new ToolItemDef(kFPacks, 2, ItemSource.Toolbar, (int)MemoryScope.Group, kNoRecommendation, false,
 				null, false, ItemDomain.Function, null, "zone,area,route,terrain"),
 			// 功能型工具的模式枚举各不相同（Zone 填充/滚动/刷涂、Area 编辑/生成、Bulldoze 主要/附属/全部），
-			// 家族键把它们隔开，所以「同组」是安全默认；推荐「同类」= 6 大类归组（owner 定案）。
-			new ToolItemDef(kFToolMode, 3, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+			// 原版一个都不记；v0.9.0 起本页无推荐，出厂关 = 原版行为。
+			new ToolItemDef(kFToolMode, 3, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_FToolModeSubs, false, ItemDomain.Function, null, "zone,area,bulldoze,object"),
-			new ToolItemDef(kFSnap, 4, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+			new ToolItemDef(kFSnap, 4, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_FSnapSubs, false, ItemDomain.Function, null, "zone,area,object"),
-			new ToolItemDef(kFUnderground, 5, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Group, false,
+			new ToolItemDef(kFUnderground, 5, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_FUndergroundSubs, true, ItemDomain.Function, null, "area,route,bulldoze,object"),
 			// 等高线：游戏里全局只有一份值（UndergroundViewSystem.globalContourLinesOn）。
 			// owner 2026-10-19 明确选「三页各一份，按当前工具所属页读写」，所以功能页也有一行。
-			new ToolItemDef(kFTopography, 6, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.GlobalShared, false,
+			new ToolItemDef(kFTopography, 6, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, kNoRecommendation, false,
 				s_FTopographySubs, true, ItemDomain.Function, null, "zone,terrain,water,object"),
 			// ---- v0.8.0 拆出来的笔刷家族：种类 / 粗细 / 强度 各自独立一项（owner：不要合一起）----
 			// 值都住在 ToolBaseSystem 上，地形工具与摆件工具（Brushable 资产）共用这两行。
-			new ToolItemDef(kFBrushType, 7, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+			new ToolItemDef(kFBrushType, 7, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_FBrushTypeSubs, false, ItemDomain.Function, null, "terrain,object"),
-			new ToolItemDef(kFBrushSize, 8, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+			new ToolItemDef(kFBrushSize, 8, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_FBrushSizeSubs, false, ItemDomain.Function, null, "terrain,object"),
-			new ToolItemDef(kFBrushStrength, 9, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+			new ToolItemDef(kFBrushStrength, 9, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_FBrushStrengthSubs, false, ItemDomain.Function, null, "terrain,object"),
 			// 目标高度：**只有地形工具的 Level（平整）/ Slope（斜坡）**有这一行（ToolUISystem L184），
 			// 其余 7 个地形资产与摆件刷涂都没有。写回时游戏存的是 height + SeaLevel（:657-660）。
-			new ToolItemDef(kFBrushHeight, 10, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+			new ToolItemDef(kFBrushHeight, 10, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_FBrushHeightSubs, false, ItemDomain.Function, null, "terrain"),
 			// 距离：摆件工具的线/曲线模式下的子行（ToolUISystem L149-150）。功能页的标记工具也吃它。
-			new ToolItemDef(kFDistance, 11, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+			new ToolItemDef(kFDistance, 11, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_FDistanceSubs, false, ItemDomain.Function, null, "object,lineCurve"),
 			// 配色（v0.8.0 从建筑与服务页移来）：IColored 唯一实现者是 RoutePrefab -> 只有路线工具有这行。
 			new ToolItemDef(kFColor, 12, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
@@ -548,6 +572,12 @@ namespace ToolModeMemory
 		/// 年龄 / 保留年代 / 对齐 / 地形 / 地下模式。**没有「高度」** —— 老版道具页看到的「高度」
 		/// 与「高度变化范围」其实是 Anarchy 注入的那一排（见 Anarchy 板块的「物件高度」），
 		/// 原版 ObjectToolSystem 根本没有高度行（vanilla_rows.md 第 5 节：高度只有 Net Tool）。
+		///
+		/// v0.9.0 owner 需求 4：**本页全部无推荐、出厂全关，一律按原版行为。**
+		/// 理由与功能页相同：原版只给 NetToolSystem 记偏好（按 m_Group），
+		/// 摆件工具**原版一个值都不记**（ObjectToolSystem.ResetToolPreferences 只重置、不落盘），
+		/// 所以「原版档」对本页无意义；而道具的模式枚举（摆放/刷涂/印章/直线/曲线）
+		/// 与功能页、资产页各不相同，按「同类」共用没有原版依据。
 		/// </summary>
 		public static readonly ToolItemDef[] ItemItems = new ToolItemDef[]
 		{
@@ -555,38 +585,38 @@ namespace ToolModeMemory
 				null, false, ItemDomain.Item, null, "object"),
 			new ToolItemDef(kIPacks, 2, ItemSource.Toolbar, (int)MemoryScope.Group, kNoRecommendation, false,
 				null, false, ItemDomain.Item, null, "object"),
-			new ToolItemDef(kIToolMode, 3, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+			new ToolItemDef(kIToolMode, 3, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_IToolModeSubs, false, ItemDomain.Item, null, "object"),
 			// 距离：只有线/曲线模式的道具才有这一行（刷涂/印章模式没有）
-			new ToolItemDef(kIDistance, 4, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+			new ToolItemDef(kIDistance, 4, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_IDistanceSubs, false, ItemDomain.Item, null, "object,lineCurve"),
 			// 笔刷家族：只有可刷涂（Brushable）/ 可印章（Stampable）的道具才有，普通静态道具没有
-			new ToolItemDef(kIBrushType, 5, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+			new ToolItemDef(kIBrushType, 5, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_IBrushTypeSubs, false, ItemDomain.Item, null, "object,brushable"),
 			// 道具刷涂的粗细/强度 = 物体密度与范围（与地形笔刷的位移量不是一回事，原版自己也是两份值）
-			new ToolItemDef(kIBrushSize, 6, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+			new ToolItemDef(kIBrushSize, 6, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_IBrushSizeSubs, false, ItemDomain.Item, null, "object,brushable"),
-			new ToolItemDef(kIBrushStrength, 7, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+			new ToolItemDef(kIBrushStrength, 7, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_IBrushStrengthSubs, false, ItemDomain.Item, null, "object,brushable"),
 			// 年龄 / 保留年代：只有树（带 TreeData 的资产）且游戏模式下才有这两行
-			new ToolItemDef(kIAgeMask, 8, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+			new ToolItemDef(kIAgeMask, 8, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_IAgeMaskSubs, false, ItemDomain.Item, null, "object,tree"),
-			new ToolItemDef(kIDecoration, 9, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+			new ToolItemDef(kIDecoration, 9, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_IDecorationSubs, false, ItemDomain.Item, null, "object,tree"),
-			new ToolItemDef(kISnap, 10, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Category, true,
+			new ToolItemDef(kISnap, 10, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_ISnapSubs, false, ItemDomain.Item, null, "object"),
-			new ToolItemDef(kITopography, 11, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.GlobalShared, false,
+			new ToolItemDef(kITopography, 11, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, kNoRecommendation, false,
 				s_ITopographySubs, true, ItemDomain.Item, null, "object,stampable"),
-			new ToolItemDef(kIUnderground, 12, ItemSource.Vanilla, kVanillaNone, (int)MemoryScope.Group, false,
+			new ToolItemDef(kIUnderground, 12, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_IUndergroundSubs, true, ItemDomain.Item, null, "object"),
 
 			// ---- Anarchy 板块（13..14）----
 			// Anarchy 主开关在摆件工具上出现（白名单含 "Object Tool"），道具正是摆件工具放的
-			new ToolItemDef(kIAnarchy, 13, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Category, false,
+			new ToolItemDef(kIAnarchy, 13, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
 				null, true, ItemDomain.Item, null, "anarchy"),
 			// 物件高度：与建筑与服务页同一排控件，但owner 定的「三页互不共用」要求本页也有自己的一份
 			// （独立开关 + 独立共用范围 + I| 前缀，玩家在道具页调的高度不会覆盖建筑页的）。
-			new ToolItemDef(kIObjectElevation, 14, ItemSource.AnarchyMod, kVanillaNone, (int)MemoryScope.Group, true,
+			new ToolItemDef(kIObjectElevation, 14, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
 				s_IObjectElevationSubs, false, ItemDomain.Item, null, "object,anarchy"),
 		};
 
