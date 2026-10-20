@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--Tool Mode Memory 发布元数据（ModId 160529，线上 Private）。
     历次发版记录（v0.1.2 ~ v0.6.0）已精简：完整过程见仓库「开发笔记.md」，本文件改动前的
     历史版本在 git 里（git show <commit>:Properties/PublishConfiguration.xml）。
@@ -24,7 +24,7 @@
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
 	<ModId Value="160529" />
-	<ModVersion Value="0.9.0" />
+	<ModVersion Value="0.9.1" />
 	<GameVersion Value="1.6.*" />
 	<!--Private = 不公开（用户要求）。若平台拒绝此值再改 Unlisted。-->
 	<AccessLevel Value="Private" />
@@ -37,25 +37,21 @@
 	<ExternalLink Type="github" Url="https://github.com/yuexian7/ToolModeMemory" />
 	<ExternalLink Type="kofi" Url="https://ko-fi.com/yuexian7" />
 	<ExternalLink Type="x" Url="https://x.com/yuexian777/status/2101942150447702427?s=20" />
-	<ChangeLog>
-v0.9.0
+<ChangeLog>
+v0.9.1
 
-*   The mod now starts switched off, so a fresh install changes nothing until you turn it on. The three per-page switches start on, so once you enable the mod it simply works.
-*   The two kinds of switch now do clearly different things. The per-page switches control memory: on means settings are recorded as you work and restored when you load a save, off means nothing is recorded or restored. The per-item switches only control the sharing scope, so turning one off just greys out its scope dropdown and leaves that row to vanilla.
-*   Every description has been rewritten to be short and readable, with line breaks where the meaning splits. Implementation detail that players do not need is gone.
-*   Sharing scope no longer offers "Same type" on the Functions and Items pages. Vanilla only remembers NetTool settings, and it buckets them by the asset category, so on those two pages the "vanilla" option did not mean anything and the grouping mixed unrelated tool modes. Buildings & Services keeps it, since grouping by what an asset serves is what vanilla effectively does.
-*   Functions and Items pages no longer carry recommendations at all: every item there starts off and follows vanilla. On the Buildings & Services page Tool Mode now recommends "Same type", Elevation is unchanged, and Parallel Mode no longer recommends anything.
-*   Fixed the Colour item: it was reading the road custom colour, which the panel never shows, while the Color row belongs to route tools. It now remembers the colour row that route tools actually display.
-*   Your existing memories are kept: every memory bucket keeps its old name, so values recorded by earlier versions are read back unchanged.
+*   The Same group examples no longer contradict the option. The Functions page now describes the real grouping: every residential zone type is one group, and switching to Commercial is another group inside the same menu, exactly like Buildings & Services.
+*   Examples are written per page and per tool family, so the Functions and Items pages no longer show examples about roads and small roads.
+*   Items whose tools all sit in a single group no longer pretend another group exists: terraforming and trees now say plainly that Same group and Same menu pick the same tools.
+*   Fixed several row descriptions that named the wrong panel or the wrong row: underground mode, topography, colour and tool mode.
+*   The remark about brackets showing vanilla behaviour is gone from the Functions and Items pages, where no option carries such a tag.
 
 中文
 
-*   模组出厂改为关闭：刚装好时什么都不改变，你主动打开才生效。三个分页开关出厂是打开的，所以一旦启用模组就能直接用。
-*   两类开关的分工现在很清楚。分页开关管记忆：打开就实时记录、读档自动恢复；关掉就不记录也不恢复。每一项自己的开关只管共用范围，关掉只是把它的共用范围灰掉，这一行交回原版。
-*   所有说明文本重写，短、好读，该换行的地方都换行，去掉玩家不需要的实现细节。
-*   共用范围在功能页与道具页不再提供「同类」。原版只记忆道路工具的设置，而且是按资产分类分组的，所以在功能页与道具页「原版」这一档没有意义，按同类归组还会把不同工具的模式混在一起。建筑与服务页保留它，因为「按这件资产服务谁」正是原版实际在做的事。
-*   功能页与道具页不再有推荐：那一页每一项都出厂关闭、按原版行为走。建筑与服务页里工具模式改为推荐「同类」，高度不变，并列模式去掉推荐。
-*   修复「颜色」一项：以前读的是道路的自定义配色，而面板上根本不显示那一行；「颜色」这一行属于路线工具。现在记忆路线工具真正显示的那个颜色。
-*   以前的记忆不丢：每个记忆桶的名字一个都没改，旧版本记下的值照旧读得回。
+*   「同组」的例子不再和选项本身矛盾：功能页现在按真实分组说明——住宅区里各种住宅类型算一组，切到商业区就是同一菜单里的另一组，跟建筑与服务页同一套规则。
+*   例子改为按页、按工具类别写，功能页与道具页不会再出现道路、小型道路这类属于别的页的东西。
+*   只有一个分组的工具项不再假装有「另一组」：地形改造与树木直接说明「同组」和「同菜单」选出来的是同一批工具。
+*   修正了几处说错面板、说错行的说明：地下模式、地形、颜色、工具模式。
+*   功能页与道具页的下拉没有（原版）标签，所以那句「括号里标出原版」从这两页去掉。
 </ChangeLog>
 </PublishConfiguration>

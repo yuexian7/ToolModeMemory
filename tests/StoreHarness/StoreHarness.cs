@@ -726,8 +726,11 @@ namespace ToolModeMemory.Tests
 			Check(ToolItemCatalog.Find("other.color0") != null
 				&& ToolItemCatalog.Find("other.color0").Id == ToolItemCatalog.kFColor,
 				"配色桶 other.color* 认回「颜色」（桶名不变，玩家记过的配色不丢）");
-			Check(ToolItemCatalog.Find(ToolItemCatalog.kFColor).LocaleAlias == ToolItemCatalog.kRetiredOther,
-				"「颜色」的文案沿用旧「其它」那一份（12 语言已写好的句子不重写）");
+			// v0.9.1：颜色行只出现在路线工具上，旧「其它」那份文案讲的是道路配色（另一个页）。
+			// 所以不再沿用别名：它有 item.color.desc，例子取 ex.route.*。
+			Check(string.IsNullOrEmpty(ToolItemCatalog.Find(ToolItemCatalog.kFColor).LocaleAlias)
+				&& ToolItemCatalog.Find(ToolItemCatalog.kFColor).ExampleFamily == "route",
+				"「颜色」不再沿用「其它」文案，例子取路线这一类（v0.9.1 跨页修正）");
 
 			// ---- 桶名：三域共用同一批名字，靠域前缀隔离（不是靠改桶名）----
 			// 每个桶都必须 Find 得回一个认识的项：MemoryStore 读档时就是靠 Find() 决定
@@ -808,7 +811,7 @@ namespace ToolModeMemory.Tests
 				&& !ToolItemCatalog.Find(ToolItemCatalog.kUnderground).DefaultEnabled,
 				"地下模式推荐 == 原版 -> 出厂不开");
 			Check(ToolItemCatalog.Find(ToolItemCatalog.kFColor).VanillaScope == ToolItemCatalog.kVanillaNone,
-				"「颜色」（道路配色）原版不记忆");
+				"「颜色」（线路颜色）原版不记忆");
 			Check(ToolItemCatalog.Find(ToolItemCatalog.kFColor).RecommendedScope == ToolItemCatalog.kNoRecommendation
 				&& ToolItemCatalog.Find(ToolItemCatalog.kFColor).EffectiveRecommendedScope() == (int)MemoryScope.Group,
 				"「颜色」无推荐 -> 出厂退到同组");

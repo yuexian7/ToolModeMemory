@@ -58,13 +58,22 @@ ITEM_IDS = ["themes", "packs", "toolMode", "elevation", "parallel", "snap", "top
 # 删掉就等于把 12 种语言已经写对的句子清空。
 RETIRED = ["elevationStep", "brush"]
 
-# 换了名字的项：id → 文案沿用哪一份旧 id（对应 ToolItemDef.LocaleAlias）。
-# 「颜色」就是 0.6.2 的「其它」，12 种语言的 desc/ex.* 内容本来就全是讲道路颜色。
-# v0.8.0 起颜色归功能页（f.color），别名链要跟着走：f.color → other。
-TEXT_ALIAS = {"f.color": "other"}
+# v0.9.1：颜色（f.color）不再沿用「其它」的文案 —— 那一份讲的是道路配色，而颜色行
+# 只出现在路线工具上（IColored 的唯一实现者是 RoutePrefab），属于另一个页。
+# 现在它有自己的 item.color.desc，所以别名表为空；再有别名就必须同时登记在这里。
+TEXT_ALIAS = {}
 
 # 三个标签页与每项归属（v0.7.0）：不手抄，全部从 ToolItemCatalog.cs 里解析，见 parse_catalog。
 DOMAIN_LABEL = {"Asset": "资产", "Function": "功能", "Item": "道具"}
+
+# v0.9.1：每条例子归哪个工具类别（ToolItemDef.ExampleFamily）。功能页只会用
+# zone / route / terrain，道具页只会用 prop / tree，建筑与服务页才用本项自己的例子。
+# 这一条就是 owner 0.9.1 需求 1 的钉子：功能页 / 道具页上再出现「道路 / 小型道路」这类
+# 别的页的词，脚本会当场拦下。
+FAMILY_KEYS = ["ex.%s.%s" % (f, s) for f in ("net", "zone", "route", "terrain", "prop", "tree")
+               for s in ("group", "menu")] + ["ex.net.category"]
+PAGE_FAMILIES = {"Asset": {"net", ""}, "Function": {"zone", "route", "terrain", "none"},
+                 "Item": {"prop", "tree"}}
 
 SCALAR_KEYS = [
     "mod.name",
@@ -290,7 +299,8 @@ def parse_catalog():
     所以目录本身就是唯一事实来源，这里只做形状校验（编号、分域、别名）。
     构造函数签名（见 ToolItemDef..ctor）：
       id, number, source, vanillaScope, recommendedScope, defaultEnabled,
-      subs = null, familyFreeScope = false, domain = Asset, localeAlias = null
+      subs = null, familyFreeScope = false, domain = Asset, localeAlias = null,
+      places = "", exampleFamily = null
     """
     src = io.open(os.path.join(ROOT, "ToolItemCatalog.cs"), encoding="utf-8-sig").read()
     consts = dict(re.findall(r'const string\s+(\w+)\s*=\s*"([^"]*)"', src))
@@ -303,6 +313,7 @@ def parse_catalog():
         source = args[2].split(".")[-1]
         domain = "Asset"
         alias = None
+        family = ""
         for idx, a in enumerate(args[3:], start=3):
             m = re.match(r"^ItemDomain\.(\w+)$", a)
             if m:
@@ -311,7 +322,10 @@ def parse_catalog():
                 # 第 10 个形参才是 localeAlias（见 ToolItemDef..ctor），别的位置上是
                 # MemoryScope / s_*Subs 之类，不能当别名
                 alias = consts.get(a, a)
-        rows.append((number, item_id, domain, source, alias))
+            elif idx == 11 and a.strip().startswith('"'):
+                # 第 12 个形参是 exampleFamily（v0.9.1）
+                family = a.strip().strip('"')
+        rows.append((number, item_id, domain, source, alias, family))
     return rows
 
 
@@ -322,15 +336,15 @@ def check_catalog_shape(rows):
     for row in rows:
         by_domain.setdefault(row[2], []).append(row)
     for domain, items in sorted(by_domain.items()):
-        nums = [n for n, _i, _d, _s, _a in items]
+        nums = [n for n, _i, _d, _s, _a, _f in items]
         want = sorted(nums)
         if nums != want or want != list(range(1, len(items) + 1)):
             bad.append("%s 页编号不是 1..%d 连续：%s" % (DOMAIN_LABEL.get(domain, domain), len(items), nums))
-        seq = [s for _n, _i, _d, s, _a in items]
+        seq = [s for _n, _i, _d, s, _a, _f in items]
         if "AnarchyMod" in seq and seq.index("AnarchyMod") != len(seq) - seq.count("AnarchyMod"):
             bad.append("%s 页的第三方（Anarchy）项没有排在最后：%s"
                        % (DOMAIN_LABEL.get(domain, domain), seq))
-    for num, item_id, domain, source, alias in rows:
+    for num, item_id, domain, source, alias, family in rows:
         # 别名指向的旧 id 本来就不在目录里（它是被改名/合并掉的项），
         # 所以这里对的是「检查表里登记的别名」，两边不一致说明有一边漏改。
         if alias and TEXT_ALIAS.get(item_id) != alias:
@@ -339,6 +353,10 @@ def check_catalog_shape(rows):
         if alias is None and item_id in TEXT_ALIAS:
             bad.append("%d.%s 检查表登记了文案别名 %r，但目录里没有 LocaleAlias（运行时会查错键）"
                        % (num, item_id, TEXT_ALIAS[item_id]))
+        if family not in PAGE_FAMILIES.get(domain, set()):
+            bad.append("%d.%s 的 ExampleFamily=%r 不属于 %s 页（%s）"
+                       % (num, item_id, family, DOMAIN_LABEL.get(domain, domain),
+                          ", ".join(sorted(PAGE_FAMILIES.get(domain, set())))))
     return bad
 
 
@@ -359,7 +377,7 @@ def main():
     if not rows:
         print("FAIL 没从 ToolItemCatalog.cs 解析到任何项（构造调用格式变了，检查器要跟着改）")
         return 1
-    catalog_ids = [i for _n, i, _d, _s, _a in rows]
+    catalog_ids = [i for _n, i, _d, _s, _a, _f in rows]
     stale = sorted(set(ITEM_IDS) - set(catalog_ids))
     new = sorted(set(catalog_ids) - set(ITEM_IDS))
     if stale or new:
@@ -371,7 +389,7 @@ def main():
         for msg in bad_shape:
             print("FAIL 目录形状 %s" % msg)
         return 1
-    print("OK   目录 %d 项：%s（每页内编号连续、Anarchy 在资产页最后）"
+    print("OK   目录 %d 项：%s（每页内编号连续、Anarchy 在资产页最后、例子归页正确）"
           % (len(rows), " / ".join("%s%d项" % (DOMAIN_LABEL[d], sum(1 for r in rows if r[2] == d))
                                    for d in ("Asset", "Function", "Item"))))
 
@@ -385,11 +403,18 @@ def main():
     #   3) item.<去掉 f./i. 前缀>.<slot>    —— 功能页 / 道具页的同名行沿用资产页那份
     # 有 2)/3) 可依赖的键组成「可选组」：本项键与回退键至少有一个存在即可，
     # 两个都没有才算缺（漏写的表现正是设置页上那一项说明空白）。
+    # v0.9.1：例子按工具类别取（ex.<family>.*），只有 ExampleFamily 为空的项
+    # （建筑与服务页）才要求 item.<id>.ex.*；别的页不再允许用本项的例子，
+    # 因为那正是「功能页/道具页出现道路词」的来源。
+    fam_of = {i: f for _n, i, _d, _s, _a, f in rows}
     groups = []
     for item in ITEM_IDS:
         alias = TEXT_ALIAS.get(item)
         base = item.split(".", 1)[1] if item.startswith(("f.", "i.")) else None
-        for sfx in ("label", "desc", "ex.group", "ex.menu", "ex.category"):
+        slots = ["label", "desc"]
+        if not fam_of.get(item):
+            slots += ["ex.group", "ex.menu", "ex.category"]
+        for sfx in slots:
             own = "item.%s.%s" % (item, sfx)
             fb = ("item.%s.%s" % (alias, sfx)) if alias else (
                 ("item.%s.%s" % (base, sfx)) if base else None)
@@ -397,6 +422,8 @@ def main():
                 required.append(own)
             else:
                 groups.append((own, fb))
+    for k in FAMILY_KEYS:
+        required.append(k)
     for lang in sorted(LANGS.values()):
         d = tables.get(lang)
         if d is None:
@@ -440,7 +467,7 @@ def main():
             for k in cjk:
                 print("   非中文语言含中日韩字 %s" % k)
         else:
-            print("OK   %s：%d 键，%d 项例子齐全" % (lang, len(d), len(ITEM_IDS) * 3))
+            print("OK   %s：%d 键" % (lang, len(d)))
 
     # 结构检查：语言函数体里不该出现别的语句（改坏了编译就靠这条先发现）
     for msg in check_shape(text):

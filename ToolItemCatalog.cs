@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace ToolModeMemory
 {
@@ -124,9 +124,32 @@ namespace ToolModeMemory
 		/// </summary>
 		public readonly string Places;
 
+		/// <summary>
+		/// 共用范围说明里「同组 / 同菜单」两句举例用哪个工具类别（v0.9.1）。
+		/// 空 = 用本项自己的 <c>item.&lt;id&gt;.ex.*</c>（只有建筑与服务页这么写）；
+		/// 非空 = 到 <c>ex.&lt;family&gt;.&lt;slot&gt;</c> 取该类别的一句例，**不再回落到本项**。
+		///
+		/// 0.9.1 修的就是这一件事：0.9.0 之前功能页 / 道具页的项没有自己的例子时，
+		/// ItemText() 会回落到「去掉 f./i. 前缀」的建筑与服务页文案 ——
+		/// 于是功能页和道具页上出现了「道路 / 小型道路」这种根本不在这一页的东西。
+		/// 例子改成按类别取之后，功能页最多出现功能区 / 路线 / 地形改造，
+		/// 道具页最多出现城市美化菜单下的道具分类，跨页取词在结构上就不可能再发生。
+		///
+		/// 类别清单（与 <c>ex.&lt;family&gt;.*</c> 的键一一对应）：
+		///   net    = 建筑与服务页的道路/轨道等（唯一保留「本项自己举例子」的页）
+		///   zone   = 功能区（住宅区里的各种住宅类型算一组，商业区是另一组）
+		///   route  = 路线工具（按交通工具分组）
+		///   terrain= 地形改造（整个菜单只有一个分组 → 同组与同菜单是同一批工具）
+		///   prop   = 道具（城市美化菜单下的 8 类 + 植被）
+		///   tree   = 树（植被只有一个分组 → 同组与同菜单是同一批树）
+		/// 判据与证据见 research/round4/vanilla_rows.md 第 3、6 节与本文件各项注释。
+		/// </summary>
+		public readonly string ExampleFamily;
+
 		public ToolItemDef(string id, int number, ItemSource source, int vanillaScope,
 			int recommendedScope, bool defaultEnabled, string[] subs = null, bool familyFreeScope = false,
-			ItemDomain domain = ItemDomain.Asset, string localeAlias = null, string places = "")
+			ItemDomain domain = ItemDomain.Asset, string localeAlias = null, string places = "",
+			string exampleFamily = null)
 		{
 			Id = id;
 			Number = number;
@@ -139,6 +162,7 @@ namespace ToolModeMemory
 			Domain = domain;
 			LocaleAlias = localeAlias;
 			Places = places ?? string.Empty;
+			ExampleFamily = exampleFamily ?? string.Empty;
 		}
 
 		/// <summary>Places 允许的标记全集。门禁据此拒绝拼错的标记。</summary>
@@ -507,7 +531,7 @@ namespace ToolModeMemory
 			// ElevationVariance 0f / LockElevation=Settings.ElevationLock），
 			// 门 = 摆件工具 actualMode∈{Create,Brush,Stamp,Line,Curve} 且非建筑且 ShowElevationToolOption。
 			new ToolItemDef(kObjectElevation, 12, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
-				s_ObjectElevationSubs, false, ItemDomain.Asset, null, "object,anarchy"),
+				s_ObjectElevationSubs, false, ItemDomain.Asset, null, "object,anarchy", "net"),
 		};
 
 		/// <summary>
@@ -528,39 +552,39 @@ namespace ToolModeMemory
 		{
 			// 主题/数据包：功能区、区域工具、路线工具、地形工具面板上都有这两行（视资产库而定）
 			new ToolItemDef(kFThemes, 1, ItemSource.Toolbar, (int)MemoryScope.GlobalShared, kNoRecommendation, false,
-				null, false, ItemDomain.Function, null, "zone,area,route,terrain"),
+				null, false, ItemDomain.Function, null, "zone,area,route,terrain", "zone"),
 			new ToolItemDef(kFPacks, 2, ItemSource.Toolbar, (int)MemoryScope.Group, kNoRecommendation, false,
-				null, false, ItemDomain.Function, null, "zone,area,route,terrain"),
+				null, false, ItemDomain.Function, null, "zone,area,route,terrain", "zone"),
 			// 功能型工具的模式枚举各不相同（Zone 填充/滚动/刷涂、Area 编辑/生成、Bulldoze 主要/附属/全部），
 			// 原版一个都不记；v0.9.0 起本页无推荐，出厂关 = 原版行为。
 			new ToolItemDef(kFToolMode, 3, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_FToolModeSubs, false, ItemDomain.Function, null, "zone,area,bulldoze,object"),
+				s_FToolModeSubs, false, ItemDomain.Function, null, "zone,area,bulldoze,object", "zone"),
 			new ToolItemDef(kFSnap, 4, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_FSnapSubs, false, ItemDomain.Function, null, "zone,area,object"),
+				s_FSnapSubs, false, ItemDomain.Function, null, "zone,area,object", "zone"),
 			new ToolItemDef(kFUnderground, 5, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_FUndergroundSubs, true, ItemDomain.Function, null, "area,route,bulldoze,object"),
+				s_FUndergroundSubs, true, ItemDomain.Function, null, "area,route,bulldoze,object", "route"),
 			// 等高线：游戏里全局只有一份值（UndergroundViewSystem.globalContourLinesOn）。
 			// owner 2026-10-19 明确选「三页各一份，按当前工具所属页读写」，所以功能页也有一行。
 			new ToolItemDef(kFTopography, 6, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, kNoRecommendation, false,
-				s_FTopographySubs, true, ItemDomain.Function, null, "zone,terrain,water,object"),
+				s_FTopographySubs, true, ItemDomain.Function, null, "zone,terrain,water,object", "zone"),
 			// ---- v0.8.0 拆出来的笔刷家族：种类 / 粗细 / 强度 各自独立一项（owner：不要合一起）----
 			// 值都住在 ToolBaseSystem 上，地形工具与摆件工具（Brushable 资产）共用这两行。
 			new ToolItemDef(kFBrushType, 7, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_FBrushTypeSubs, false, ItemDomain.Function, null, "terrain,object"),
+				s_FBrushTypeSubs, false, ItemDomain.Function, null, "terrain,object", "terrain"),
 			new ToolItemDef(kFBrushSize, 8, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_FBrushSizeSubs, false, ItemDomain.Function, null, "terrain,object"),
+				s_FBrushSizeSubs, false, ItemDomain.Function, null, "terrain,object", "terrain"),
 			new ToolItemDef(kFBrushStrength, 9, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_FBrushStrengthSubs, false, ItemDomain.Function, null, "terrain,object"),
+				s_FBrushStrengthSubs, false, ItemDomain.Function, null, "terrain,object", "terrain"),
 			// 目标高度：**只有地形工具的 Level（平整）/ Slope（斜坡）**有这一行（ToolUISystem L184），
 			// 其余 7 个地形资产与摆件刷涂都没有。写回时游戏存的是 height + SeaLevel（:657-660）。
 			new ToolItemDef(kFBrushHeight, 10, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_FBrushHeightSubs, false, ItemDomain.Function, null, "terrain"),
+				s_FBrushHeightSubs, false, ItemDomain.Function, null, "terrain", "terrain"),
 			// 距离：摆件工具的线/曲线模式下的子行（ToolUISystem L149-150）。功能页的标记工具也吃它。
 			new ToolItemDef(kFDistance, 11, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_FDistanceSubs, false, ItemDomain.Function, null, "object,lineCurve"),
+				s_FDistanceSubs, false, ItemDomain.Function, null, "object,lineCurve", "none"),
 			// 配色（v0.8.0 从建筑与服务页移来）：IColored 唯一实现者是 RoutePrefab -> 只有路线工具有这行。
 			new ToolItemDef(kFColor, 12, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_FColorSubs, false, ItemDomain.Function, kRetiredOther, "route"),
+				s_FColorSubs, false, ItemDomain.Function, null, "route", "route"),
 		};
 
 		/// <summary>
@@ -582,42 +606,42 @@ namespace ToolModeMemory
 		public static readonly ToolItemDef[] ItemItems = new ToolItemDef[]
 		{
 			new ToolItemDef(kIThemes, 1, ItemSource.Toolbar, (int)MemoryScope.GlobalShared, kNoRecommendation, false,
-				null, false, ItemDomain.Item, null, "object"),
+				null, false, ItemDomain.Item, null, "object", "prop"),
 			new ToolItemDef(kIPacks, 2, ItemSource.Toolbar, (int)MemoryScope.Group, kNoRecommendation, false,
-				null, false, ItemDomain.Item, null, "object"),
+				null, false, ItemDomain.Item, null, "object", "prop"),
 			new ToolItemDef(kIToolMode, 3, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_IToolModeSubs, false, ItemDomain.Item, null, "object"),
+				s_IToolModeSubs, false, ItemDomain.Item, null, "object", "prop"),
 			// 距离：只有线/曲线模式的道具才有这一行（刷涂/印章模式没有）
 			new ToolItemDef(kIDistance, 4, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_IDistanceSubs, false, ItemDomain.Item, null, "object,lineCurve"),
+				s_IDistanceSubs, false, ItemDomain.Item, null, "object,lineCurve", "prop"),
 			// 笔刷家族：只有可刷涂（Brushable）/ 可印章（Stampable）的道具才有，普通静态道具没有
 			new ToolItemDef(kIBrushType, 5, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_IBrushTypeSubs, false, ItemDomain.Item, null, "object,brushable"),
+				s_IBrushTypeSubs, false, ItemDomain.Item, null, "object,brushable", "prop"),
 			// 道具刷涂的粗细/强度 = 物体密度与范围（与地形笔刷的位移量不是一回事，原版自己也是两份值）
 			new ToolItemDef(kIBrushSize, 6, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_IBrushSizeSubs, false, ItemDomain.Item, null, "object,brushable"),
+				s_IBrushSizeSubs, false, ItemDomain.Item, null, "object,brushable", "prop"),
 			new ToolItemDef(kIBrushStrength, 7, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_IBrushStrengthSubs, false, ItemDomain.Item, null, "object,brushable"),
+				s_IBrushStrengthSubs, false, ItemDomain.Item, null, "object,brushable", "prop"),
 			// 年龄 / 保留年代：只有树（带 TreeData 的资产）且游戏模式下才有这两行
 			new ToolItemDef(kIAgeMask, 8, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_IAgeMaskSubs, false, ItemDomain.Item, null, "object,tree"),
+				s_IAgeMaskSubs, false, ItemDomain.Item, null, "object,tree", "tree"),
 			new ToolItemDef(kIDecoration, 9, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_IDecorationSubs, false, ItemDomain.Item, null, "object,tree"),
+				s_IDecorationSubs, false, ItemDomain.Item, null, "object,tree", "tree"),
 			new ToolItemDef(kISnap, 10, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_ISnapSubs, false, ItemDomain.Item, null, "object"),
+				s_ISnapSubs, false, ItemDomain.Item, null, "object", "prop"),
 			new ToolItemDef(kITopography, 11, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, kNoRecommendation, false,
-				s_ITopographySubs, true, ItemDomain.Item, null, "object,stampable"),
+				s_ITopographySubs, true, ItemDomain.Item, null, "object,stampable", "prop"),
 			new ToolItemDef(kIUnderground, 12, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_IUndergroundSubs, true, ItemDomain.Item, null, "object"),
+				s_IUndergroundSubs, true, ItemDomain.Item, null, "object", "prop"),
 
 			// ---- Anarchy 板块（13..14）----
 			// Anarchy 主开关在摆件工具上出现（白名单含 "Object Tool"），道具正是摆件工具放的
 			new ToolItemDef(kIAnarchy, 13, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
-				null, true, ItemDomain.Item, null, "anarchy"),
+				null, true, ItemDomain.Item, null, "anarchy", "prop"),
 			// 物件高度：与建筑与服务页同一排控件，但owner 定的「三页互不共用」要求本页也有自己的一份
 			// （独立开关 + 独立共用范围 + I| 前缀，玩家在道具页调的高度不会覆盖建筑页的）。
 			new ToolItemDef(kIObjectElevation, 14, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
-				s_IObjectElevationSubs, false, ItemDomain.Item, null, "object,anarchy"),
+				s_IObjectElevationSubs, false, ItemDomain.Item, null, "object,anarchy", "prop"),
 		};
 
 		/// <summary>全表（三域拼接）。设置页、捕获/写回、回归测试都按域过滤后使用。</summary>

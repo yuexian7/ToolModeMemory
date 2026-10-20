@@ -23,7 +23,11 @@ CATALOG = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 
 
 def load_pages():
-    """{domain: [(number, id, source)]}，按源码顺序取三段数组。"""
+    """{domain: [(number, id, source, family)]}，按源码顺序取三段数组。
+
+    v0.9.1：例子按 ToolItemDef.ExampleFamily 取（ex.<family>.*），
+    预览必须和 LocaleTable.Example() 完全一致，否则预览里看到的还是旧的跨页例子。
+    """
     cat = io.open(CATALOG, encoding="utf-8-sig").read()
     consts = dict(re.findall(r'const string\s+(\w+)\s*=\s*"([^"]*)"', cat))
     # 三段数组的名字与顺序（ToolItemCatalog.cs）
@@ -42,6 +46,19 @@ def load_pages():
         rows = []
         for m in re.finditer(r"new ToolItemDef\((\w+),\s*(\d+),\s*ItemSource\.(\w+)", seg):
             rows.append((int(m.group(2)), consts.get(m.group(1), m.group(1)), m.group(3)))
+        # 每条构造调用末尾的 exampleFamily（第 12 个形参，只有写了引号字面量才取）
+        fams = []
+        for call in re.finditer(r"new ToolItemDef\((.*?)\)\s*,", seg, re.S):
+            pass
+        for m in re.finditer(r"new ToolItemDef\((.*?)\),", seg, re.S):
+            args = m.group(1)
+            tail = re.findall(r'"([^"]*)"', args)
+            fam = ""
+            # 倒数第二个字符串是 places，最后一个是 exampleFamily（有就取）
+            if len(tail) >= 2:
+                fam = tail[-1]
+            fams.append(fam)
+        rows = [(n, i, s2, fams[k] if k < len(fams) else "") for k, (n, i, s2) in enumerate(rows)]
         pages[name] = rows
     return pages
 
@@ -78,6 +95,8 @@ def main():
     def fill(tpl, ex):
         if not tpl:
             return ""
+        if not ex:
+            return tpl.replace("{0}", "").rstrip()
         return tpl.replace("{0}", ex)
 
     def nl(text):
@@ -87,8 +106,8 @@ def main():
 
     ALIAS = {"color": "other"}
 
-    def txt(item_id, slot, domain):
-        """ItemText 三级回退：本项键 -> LocaleAlias 键（color -> other）-> 去掉 f./i. 的同名键。"""
+    def txt(item_id, slot, domain, family=""):
+        """ItemText 三级回退：本项键 -> LocaleAlias 键 -> 去掉 f./i. 的同名键。"""
         base = item_id[2:] if item_id[:2] in ("f.", "i.") else item_id
         cands = [item_id]
         if item_id in ALIAS:
@@ -100,6 +119,14 @@ def main():
                 return d[k]
         return d.get("item.%s.%s" % (base, slot), "")
 
+    def example(item_id, slot, family):
+        """与 LocaleTable.Example() 一致：有 family 就只取 ex.<family>.<slot>，不再回落到本项。"""
+        if family:
+            if family == "none":
+                return ""
+            return d.get("ex.%s.%s" % (family, slot), "")
+        return txt(item_id, "ex." + slot, "", family)
+
     pages = load_pages()
     total_items = sum(len(v) for v in pages.values())
     if not total_items:
@@ -107,11 +134,11 @@ def main():
         return 1
     # 每页编号必须各自 1..n（v0.7.0 起不再跨页连续）
     for name, rows in pages.items():
-        nums = [n for n, _i, _s in rows]
+        nums = [n for n, _i, _s, _f in rows]
         if nums != list(range(1, len(rows) + 1)):
             print("FAIL %s 编号不是 1..%d 连续：%s" % (name, len(rows), nums))
             return 1
-        for _n, i, s in rows:
+        for _n, i, s, _f in rows:
             if s not in ("Vanilla", "Toolbar", "AnarchyMod"):
                 print("FAIL %s 里 %s 的 ItemSource 不认识：%s" % (name, i, s))
                 return 1
@@ -143,8 +170,8 @@ def main():
     # ---- 三页 ----
     for name, rows in pages.items():
         suffix, group_key, _ = DOMAIN_OF[name]
-        official = [(n, i) for n, i, s in rows if s in ("Vanilla", "Toolbar")]
-        anarchy = [(n, i) for n, i, s in rows if s == "AnarchyMod"]
+        official = [(n, i, f) for n, i, s, f in rows if s in ("Vanilla", "Toolbar")]
+        anarchy = [(n, i, f) for n, i, s, f in rows if s == "AnarchyMod"]
         cat_key = "scope.category" if suffix == "asset" else "scope.category." + suffix
         line_cat = "scope.line.category" if suffix == "asset" else "scope.line.category." + suffix
         tab_key = {"asset": "tab.assets", "function": "tab.functions", "item": "tab.items"}[suffix]
@@ -154,7 +181,7 @@ def main():
         def emit(title_key, page_rows):
             out.append("")
             out.append("【板块】" + d[title_key])
-            for num, item_id in page_rows:
+            for num, item_id, family in page_rows:
                 label = "%d. %s" % (num, txt(item_id, "label", suffix) or item_id)
                 out.append("")
                 out.append("── %s" % label)
@@ -179,12 +206,12 @@ def main():
                 # v0.9.0 需求 4：功能页与道具页不再提供「同类」这一档
                 # （LocaleTable.BuildScopeDropdown 只给建筑与服务页列它），
                 # 所以预览也要少一行，否则看到的下拉说明比游戏里多一项。
-                scope = [d["scope.desc"],
-                         fill(d["scope.line.group"], txt(item_id, "ex.group", suffix)),
-                         fill(d["scope.line.menu"], txt(item_id, "ex.menu", suffix))]
+                scope = [d.get("scope.desc." + suffix, d["scope.desc"]),
+                         fill(d["scope.line.group"], example(item_id, "group", family)),
+                         fill(d["scope.line.menu"], example(item_id, "menu", family))]
                 if suffix == "asset":
                     scope.append(fill(d["scope.line.category"],
-                                      txt(item_id, "ex.category", suffix)))
+                                      example(item_id, "category", family)))
                 scope.append(shared_line)
                 scope.append(by_domain("scope.line.unique"))
                 scope.append(d["scope.note"])
