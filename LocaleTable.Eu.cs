@@ -26,7 +26,7 @@ namespace ToolModeMemory
 			d["group.about"] = "Informationen und Links";
 
 			d["scope.label"] = "Gemeinsamer Bereich";
-			d["scope.desc"] = "Wie weit der Wert dieses Punkts geteilt wird. Die Klammern in der Dropdown-Liste zeigen, was das Original tut, und markieren die vorgesehene Stufe.";
+			d["scope.desc"] = "Wie weit der Wert dieses Punkts geteilt wird. Die Klammern zeigen, was das Spiel von sich aus macht (Original).";
 			d["scope.line.group"] = "Selbe Gruppe: {0}";
 			d["scope.line.menu"] = "Selbes Menü: {0}";
 			d["scope.line.category"] = "Selber Typ: gruppiert nach dem, was ein Werkzeug tatsächlich bedient, sodass Zahl der Spuren, Größe, Stufe und die Kategorie in der Werkzeugleiste keinen Unterschied machen (ein kleiner Parkplatz und ein großer Parkplatz sind derselbe Typ), aber Brücken, Kais und Kreuzungen bilden jeweils einen eigenen Typ, getrennt von den Straßen, also {0}";
@@ -156,9 +156,9 @@ namespace ToolModeMemory
 		d["tab.items"] = "Requisiten";
 		d["group.domain"] = "Schalter pro Seite";
 		d["enabled.label"] = "Mod aktivieren";
-		d["enabled.desc"] = "Standardmäßig aus: frisch installiert tut der Mod nichts, alles läuft wie im Original.\nEingeschaltet wird jedes Werkzeugpanel aufgezeichnet und beim Laden des Spielstands zurückgegeben. Er schaltet sich von selbst ein, sobald einer der drei Seitenschalter unten an ist.";
+		d["enabled.desc"] = "Schaltet den ganzen Mod ein oder aus.\nIst er an, wirken die drei Schalter darunter: jede Werkzeugeinstellung wird beim Arbeiten gemerkt und beim Laden eines Spielstands zurückgegeben.\nIst er aus, hält sich der Mod ganz heraus und jedes Werkzeug verhält sich wie im Original.";
 		d["domain.asset.label"] = "Werkzeugpunkte der Seite „Assets“ merken";
-		d["domain.asset.desc"] = "An: die Werkzeugeinstellungen dieser Seite werden laufend aufgezeichnet und kehren beim Laden des Spielstands zurück.\nAus: von dieser Seite wird nichts aufgezeichnet und nichts wiederhergestellt; die Seite wird ausgegraut und die Werkzeuge laufen wie im Original.";
+		d["domain.asset.desc"] = "Steuert, ob die Punkte dieser Seite gemerkt werden:\nAn - die Einstellungen werden beim Arbeiten aufgezeichnet und beim Laden eines Spielstands zurückgegeben;\nAus - nichts wird aufgezeichnet oder zurückgegeben, dann gibt es auch keinen gemeinsamen Bereich einzustellen.\nDiese Seite enthält Straßen, Bauwerke und städtische Dienste.";
 		d["domain.function.label"] = "Werkzeugpunkte der Seite „Funktionen“ merken";
 		d["domain.function.desc"] = "An: die Werkzeugeinstellungen dieser Seite werden laufend aufgezeichnet und kehren beim Laden des Spielstands zurück.\nAus: von dieser Seite wird nichts aufgezeichnet und nichts wiederhergestellt; die Seite wird ausgegraut und die Werkzeuge laufen wie im Original.";
 		d["domain.item.label"] = "Werkzeugpunkte der Seite „Requisiten“ merken";
@@ -169,7 +169,7 @@ namespace ToolModeMemory
 			d["scope.note"] = "Hinweis: Jede Stufe oben gilt nur innerhalb dieser Seite.";
 		d["item.color.label"] = "Farbe";
 		d["item.decoration.label"] = "Alter beibehalten";
-		d["item.decoration.desc"] = "Merkt den Schalter „Alter beibehalten“: ist er an, wachsen die Bäume, die du anmalst oder setzt, nicht weiter und sterben auch nicht mehr an Altersschwäche.\nDie Zeile erscheint nur bei Assets mit Baumdaten, also beim Malen von Bäumen im Menü „Vegetation“.";
+		d["item.decoration.desc"] = "Merkt den Schalter „Alter beibehalten“: ist er an, wachsen die Bäume, die du anmalst, nicht weiter und sterben auch nicht mehr an Altersschwäche.\nDiese Zeile haben nur Bäume.";
 		d["item.decoration.ex.group"] = "zum Beispiel schaltest du „Alter beibehalten“ beim Malen von Bäumen ein, die anderen Bäume derselben Gruppe sind ebenfalls an, in einer anderen Gruppe dagegen nicht";
 		d["item.decoration.ex.menu"] = "jeder Baum im Menü „Vegetation“ behält den Schalter an, in einem anderen Menü dagegen nicht";
 		d["item.decoration.ex.category"] = "wechselst du zu einer anderen Baumart, bleibt er an, doch diese Zeile gibt es nur bei Assets mit Baumdaten – beim Malen von Markierungen fehlt sie ganz";
@@ -200,7 +200,7 @@ namespace ToolModeMemory
 		d["item.distance.ex.menu"] = "jedes Asset, das im selben Menü entlang einer Linie gesetzt werden kann, nutzt dieselbe Distanz, in einem anderen Menü dagegen nicht";
 		d["item.distance.ex.category"] = "wechselst du zu einer anderen Kategorie, gilt deren eigene Distanz, auch wenn beide entlang einer Linie gesetzt werden können";
 		d["item.ageMask.label"] = "Alter";
-		d["item.ageMask.desc"] = "Merkt, welche Altersstufen in der Zeile „Alter“ angehakt sind: Setzling, Jung, Ausgewachsen und Alt, wobei mehrere gleichzeitig angehakt sein können.\nDie Zeile gibt es nur bei Baum-Assets, also beim Malen oder Setzen von Bäumen im Menü „Vegetation“.";
+		d["item.ageMask.desc"] = "Merkt, welche Altersstufen in der Zeile „Alter“ angehakt sind: Setzling, Jung, Ausgewachsen und Alt, auch mehrere gleichzeitig.\nDiese Zeile haben nur Bäume.";
 		d["item.ageMask.ex.group"] = "zum Beispiel haken Sie beim Malen von Bäumen nur Ausgewachsen an, die anderen Bäume derselben Gruppe erzeugen dann ebenfalls nur ausgewachsene, die einer anderen Gruppe dagegen nicht";
 		d["item.ageMask.ex.menu"] = "jeder Baum im Menü „Vegetation“ nutzt dieselben Altersstufen, in einem anderen Menü dagegen nicht";
 		d["item.ageMask.ex.category"] = "wechselst du zu einer anderen Baumart, bleiben diese Stufen erhalten, doch die Zeile gibt es nur bei Baum-Assets – beim Malen von Markierungen fehlt sie ganz";
@@ -259,7 +259,7 @@ namespace ToolModeMemory
 			d["group.about"] = "Información y enlaces";
 
 			d["scope.label"] = "Ámbito compartido";
-			d["scope.desc"] = "Hasta qué punto se comparte el valor de este elemento. Los paréntesis de la lista desplegable indican qué hace el juego original y marcan el nivel previsto.";
+			d["scope.desc"] = "Hasta qué punto se comparte el valor de este elemento. Los paréntesis indican qué hace el juego de forma predeterminada (original).";
 			d["scope.line.group"] = "Mismo grupo: {0}";
 			d["scope.line.menu"] = "Mismo menú: {0}";
 			d["scope.line.category"] = "Mismo tipo: se agrupa según a quién sirve de verdad la herramienta, así que el número de carriles, el tamaño, el nivel y la categoría de la barra de herramientas no suponen ninguna diferencia (un aparcamiento pequeño y uno grande son el mismo tipo), pero los puentes, los atracaderos y los intercambiadores forman cada uno su propio tipo, aparte de las carreteras, es decir {0}";
@@ -384,18 +384,18 @@ namespace ToolModeMemory
 
 		// ==================== v0.7.0 新增 / 重写（es-ES）====================
 		d["enabled.label"] = "Activar el mod";
-			d["enabled.desc"] = "Desactivado por defecto: recién instalado, el mod no hace nada y todo funciona como el juego original.\nAl activarlo se registran los paneles de herramienta y vuelven al cargar una partida. Se activa solo en cuanto uno de los tres interruptores por página de abajo está activado.";
+			d["enabled.desc"] = "Activa o desactiva todo el mod.\nActivado, los tres interruptores de abajo surten efecto: cada ajuste de herramienta se recuerda mientras trabajas y se repone al cargar una partida.\nDesactivado, el mod no interviene y cada herramienta se comporta como en el juego original.";
 		d["scope.line.sharedSingle"] = "Global: todas las herramientas de esta página que admiten este elemento usan un mismo valor";
 			d["scope.note"] = "Nota: cada nivel de arriba solo se aplica dentro de esta página.";
-		d["domain.asset.desc"] = "Activado: los ajustes de herramienta de esta página se registran en tiempo real y vuelven al cargar una partida.\nDesactivado: de esta página no se registra nada ni se restaura nada; la página queda en gris y las herramientas se comportan como en el juego original.";
+		d["domain.asset.desc"] = "Controla si se recuerdan los elementos de esta página:\nActivado: los ajustes se registran mientras trabajas y se reponen al cargar una partida;\nDesactivado: no se registra ni se repone nada, así que tampoco hay ámbito compartido que configurar.\nEsta página contiene carreteras, edificios y servicios urbanos.";
 		d["domain.asset.label"] = "Recordar los elementos de herramienta de los activos";
-		d["domain.function.desc"] = "Activado: los ajustes de herramienta de esta página se registran en tiempo real y vuelven al cargar una partida.\nDesactivado: de esta página no se registra nada ni se restaura nada; la página queda en gris y las herramientas se comportan como en el juego original.";
+		d["domain.function.desc"] = "Controla si se recuerdan los elementos de esta página:\nActivado: los ajustes se registran mientras trabajas y se reponen al cargar una partida;\nDesactivado: no se registra ni se repone nada, así que tampoco hay ámbito compartido que configurar.\nEsta página contiene zonas, áreas, rutas y herramientas de terreno.";
 		d["domain.function.label"] = "Recordar los elementos de herramienta de las funciones";
-		d["domain.item.desc"] = "Activado: los ajustes de herramienta de esta página se registran en tiempo real y vuelven al cargar una partida.\nDesactivado: de esta página no se registra nada ni se restaura nada; la página queda en gris y las herramientas se comportan como en el juego original.";
+		d["domain.item.desc"] = "Controla si se recuerdan los elementos de esta página:\nActivado: los ajustes se registran mientras trabajas y se reponen al cargar una partida;\nDesactivado: no se registra ni se repone nada, así que tampoco hay ámbito compartido que configurar.\nEsta página contiene los objetos del menú Paisajismo, árboles incluidos.";
 		d["domain.item.label"] = "Recordar los elementos de herramienta de los objetos";
 		d["group.domain"] = "Interruptores por página";
 		d["item.color.label"] = "Color";
-		d["item.decoration.desc"] = "Recuerda el interruptor «Preservar edad»: mientras esté activado, los árboles que pinta o coloca dejan de crecer y dejan de morir de viejos.\nLa fila solo aparece en los activos con datos de árbol, es decir al pintar árboles del menú Vegetación.";
+		d["item.decoration.desc"] = "Recuerda el interruptor «Preservar edad»: mientras esté activado, los árboles que pinta dejan de crecer y de morir de viejos.\nEsta fila solo la tienen los árboles.";
 		d["item.decoration.ex.category"] = "al cambiar a otro tipo de árbol sigue activado, pero la fila solo existe en los activos con datos de árbol, de modo que pintar una calcomanía no tiene esa fila en absoluto (necesita su propio ajuste)";
 		d["item.i.anarchy.label"] = "Anarchy";
 		d["item.brushType.label"] = "Tipo de pincel";
@@ -424,7 +424,7 @@ namespace ToolModeMemory
 		d["item.distance.ex.menu"] = "todos los activos que se pueden colocar a lo largo de una línea en un mismo menú usan esta misma distancia, pero al pasar a otro menú no";
 		d["item.distance.ex.category"] = "al cambiar a otra categoría se usa la distancia propia de esa categoría (necesita su propio ajuste), aunque ambos se puedan colocar a lo largo de una línea";
 		d["item.ageMask.label"] = "Edad";
-		d["item.ageMask.desc"] = "Recuerda qué etapas de edad están marcadas en la fila «Edad»: brote, joven, maduro y anciano, y se pueden marcar varias a la vez.\nLa fila solo existe en los activos de árboles, es decir al pintar o colocar árboles del menú Vegetación.";
+		d["item.ageMask.desc"] = "Recuerda qué etapas de edad están marcadas en la fila «Edad»: brote, joven, maduro y anciano, y varias a la vez.\nEsta fila solo la tienen los árboles.";
 		d["item.ageMask.ex.group"] = "por ejemplo, si marca solo maduro al pintar árboles, los demás árboles del mismo grupo también generan solo ejemplares maduros, mientras que los de otro grupo no";
 		d["item.ageMask.ex.menu"] = "todos los árboles del menú Vegetación usan estas mismas etapas de edad, pero al pasar a otro menú no";
 		d["item.ageMask.ex.category"] = "al cambiar a otro tipo de árbol se mantienen estas etapas, pero la fila solo existe en los activos de árboles, así que pintar calcomanías y cosas parecidas no la tiene en absoluto (necesita su propio ajuste)";
@@ -493,7 +493,7 @@ namespace ToolModeMemory
 			d["group.about"] = "Informations et liens";
 
 			d["scope.label"] = "Portée de partage";
-			d["scope.desc"] = "Dans quelle mesure la valeur de cet élément est partagée. Les parenthèses de la liste déroulante indiquent le comportement d'origine et marquent le niveau prévu.";
+			d["scope.desc"] = "Dans quelle mesure la valeur de cet élément est partagée. Les parenthèses indiquent ce que fait le jeu par défaut (d'origine).";
 			d["scope.line.group"] = "Même groupe : {0}";
 			d["scope.line.menu"] = "Même menu : {0}";
 			d["scope.line.category"] = "Même type : classé d'après ce à quoi sert réellement l'outil, donc le nombre de voies, la taille, le niveau et la catégorie de la barre d'outils ne font aucune différence (un petit et un grand parc de stationnement sont du même type), mais les ponts, les quais et les croisements forment chacun leur propre type, à part les routes, c'est-à-dire {0}";
@@ -623,14 +623,14 @@ namespace ToolModeMemory
 		d["tab.items"] = "Accessoires";
 		d["group.domain"] = "Interrupteurs par page";
 		d["domain.asset.label"] = "Mémoriser les éléments d'outil des assets";
-		d["domain.asset.desc"] = "Activé : les réglages d'outil de cette page sont enregistrés en continu et reviennent au chargement d'une sauvegarde.\nCoupé : rien de cette page n'est enregistré ni restauré ; la page est grisée et chaque outil retrouve son comportement d'origine.";
+		d["domain.asset.desc"] = "Détermine si les éléments de cette page sont mémorisés :\nActivé - les réglages sont mémorisés pendant que vous travaillez et remis au chargement d'une sauvegarde ;\nCoupé - rien n'est mémorisé ni remis, il n'y a donc aucune portée de partage à régler.\nCette page contient les routes, les bâtiments et les services urbains.";
 		d["domain.function.label"] = "Mémoriser les éléments d'outil des fonctions";
-		d["domain.function.desc"] = "Activé : les réglages d'outil de cette page sont enregistrés en continu et reviennent au chargement d'une sauvegarde.\nCoupé : rien de cette page n'est enregistré ni restauré ; la page est grisée et chaque outil retrouve son comportement d'origine.";
+		d["domain.function.desc"] = "Détermine si les éléments de cette page sont mémorisés :\nActivé - les réglages sont mémorisés pendant que vous travaillez et remis au chargement d'une sauvegarde ;\nCoupé - rien n'est mémorisé ni remis, il n'y a donc aucune portée de partage à régler.\nCette page contient les zones, les périmètres, les tracés et les outils de terrain.";
 		d["domain.item.label"] = "Mémoriser les éléments d'outil des accessoires";
-		d["domain.item.desc"] = "Activé : les réglages d'outil de cette page sont enregistrés en continu et reviennent au chargement d'une sauvegarde.\nCoupé : rien de cette page n'est enregistré ni restauré ; la page est grisée et chaque outil retrouve son comportement d'origine.";
+		d["domain.item.desc"] = "Détermine si les éléments de cette page sont mémorisés :\nActivé - les réglages sont mémorisés pendant que vous travaillez et remis au chargement d'une sauvegarde ;\nCoupé - rien n'est mémorisé ni remis, il n'y a donc aucune portée de partage à régler.\nCette page contient les accessoires du menu Aménagement paysager, arbres compris.";
 		d["item.color.label"] = "Couleur";
 		d["item.decoration.label"] = "Préserver l'âge";
-		d["item.decoration.desc"] = "Mémorise l'interrupteur « Préserver l'âge » : une fois coché, les arbres que vous brossez cessent de grandir comme de vieillir et ne tombent plus.\nCette ligne n'apparaît que sur les assets qui portent des données d'arbres, c'est-à-dire en brossant des arbres depuis le menu Végétation.";
+		d["item.decoration.desc"] = "Mémorise l'interrupteur « Préserver l'âge » : une fois coché, les arbres que vous brossez cessent de grandir et de vieillir.\nSeuls les arbres ont cette ligne.";
 		d["item.decoration.ex.group"] = "par exemple, cochez « Préserver l'âge » en brossant des arbres et les autres arbres du même groupe l'ont activé eux aussi, mais un autre groupe ne l'est pas";
 		d["item.decoration.ex.menu"] = "tous les arbres du menu Végétation gardent cette ligne activée, mais en changeant de menu ce n'est plus le cas";
 		d["item.decoration.ex.category"] = "passer à une autre sorte d'arbre laisse aussi cette ligne activée, mais elle n'existe que sur les assets portant des données d'arbres, donc brosser des décalcomanies n'a pas du tout cette ligne (réglage séparé nécessaire)";
@@ -661,7 +661,7 @@ namespace ToolModeMemory
 		d["item.distance.ex.menu"] = "tous les assets qui peuvent être placés le long d'une ligne dans un même menu utilisent cette même distance, mais en changeant de menu ce n'est plus le cas";
 		d["item.distance.ex.category"] = "passer à une autre catégorie utilise la distance propre à cette catégorie (réglage séparé nécessaire), même quand les deux peuvent être placés le long d'une ligne";
 		d["item.ageMask.label"] = "Âge";
-		d["item.ageMask.desc"] = "Mémorise les stades d'âge cochés dans la ligne « Âge » : jeune arbre, jeune, adulte et âgé, plusieurs pouvant être cochés à la fois.\nCette ligne n'existe que sur les assets d'arbres, c'est-à-dire en brossant ou plaçant des arbres du menu Végétation.";
+		d["item.ageMask.desc"] = "Mémorise les stades d'âge cochés dans la ligne « Âge » : jeune arbre, jeune, adulte et âgé, plusieurs à la fois si vous voulez.\nSeuls les arbres ont cette ligne.";
 		d["item.ageMask.ex.group"] = "par exemple, ne cochez que adulte en brossant des arbres et les autres arbres du même groupe ne produisent eux aussi que des adultes, mais un autre groupe non";
 		d["item.ageMask.ex.menu"] = "tous les arbres du menu Végétation utilisent ces mêmes stades d'âge, mais en changeant de menu ce n'est plus le cas";
 		d["item.ageMask.ex.category"] = "passer à une autre sorte d'arbre garde ces stades, mais la ligne n'existe que sur les assets d'arbres, donc brosser des décalcomanies et autres n'a pas du tout cette ligne (réglage séparé nécessaire)";
@@ -706,7 +706,7 @@ namespace ToolModeMemory
 		d["scope.category.function"] = "Même type";
 		d["scope.category.item"] = "Même type d'accessoire";
 		d["enabled.label"] = "Activer le mod";
-		d["enabled.desc"] = "Coupé par défaut : fraîchement installé, le mod ne fait rien et tout se comporte comme dans le jeu d'origine.\nUne fois activé, les panneaux d'outil sont enregistrés et reviennent au chargement d'une sauvegarde. Il se réactive dès qu'un des trois interrupteurs par page ci-dessous est activé.";
+		d["enabled.desc"] = "Active ou coupe tout le mod.\nActivé, les trois interrupteurs ci-dessous prennent effet : chaque réglage d'outil est mémorisé pendant que vous travaillez et remis en place au chargement d'une sauvegarde.\nCoupé, le mod reste en retrait et chaque outil se comporte comme dans le jeu d'origine.";
 		d["scope.line.sharedSingle"] = "Global : tous les outils de cette page qui prennent en charge cet élément partagent une seule valeur";
 			d["scope.note"] = "Remarque : chaque niveau ci-dessus ne vaut qu'à l'intérieur de cette page.";
 			return d;
@@ -727,7 +727,7 @@ namespace ToolModeMemory
 			d["group.about"] = "Informazioni e collegamenti";
 
 			d["scope.label"] = "Ambito di condivisione";
-			d["scope.desc"] = "Quanto viene condiviso il valore di questa voce. Le parentesi nel menu a tendina mostrano cosa fa l'originale e segnano il livello previsto.";
+			d["scope.desc"] = "Quanto viene condiviso il valore di questa voce. Le parentesi mostrano cosa fa il gioco di suo (originale).";
 			d["scope.line.group"] = "Stesso gruppo: {0}";
 			d["scope.line.menu"] = "Stesso menu: {0}";
 			d["scope.line.category"] = "Stesso tipo: raggruppati in base a ciò a cui lo strumento serve davvero, quindi numero di corsie, dimensione, livello e categoria della barra degli strumenti non fanno alcuna differenza (un parcheggio piccolo e uno grande sono lo stesso tipo), ma ponti, banchine e incroci formano ognuno un tipo a sé, separato dalle strade, cioè {0}";
@@ -857,20 +857,20 @@ namespace ToolModeMemory
 		d["tab.items"] = "Oggetti";
 		d["group.domain"] = "Interruttori per pagina";
 		d["domain.asset.label"] = "Ricorda le voci degli strumenti nella pagina Asset";
-		d["domain.asset.desc"] = "Attivo: le impostazioni degli strumenti di questa pagina vengono registrate in tempo reale e tornano al caricamento di un salvataggio.\nSpento: di questa pagina non viene registrato né ripristinato nulla; la pagina viene oscurata e gli strumenti tornano al comportamento originale.";
+		d["domain.asset.desc"] = "Decide se le voci di questa pagina vengono ricordate:\nAttivo: le impostazioni vengono registrate mentre lavori e rimesse al caricamento di un salvataggio;\nSpento: non viene registrato né rimesso nulla, quindi non c'è alcun ambito di condivisione da impostare.\nQuesta pagina contiene strade, edifici e servizi cittadini.";
 		d["domain.function.label"] = "Ricorda le voci degli strumenti nella pagina Funzioni";
-		d["domain.function.desc"] = "Attivo: le impostazioni degli strumenti di questa pagina vengono registrate in tempo reale e tornano al caricamento di un salvataggio.\nSpento: di questa pagina non viene registrato né ripristinato nulla; la pagina viene oscurata e gli strumenti tornano al comportamento originale.";
+		d["domain.function.desc"] = "Decide se le voci di questa pagina vengono ricordate:\nAttivo: le impostazioni vengono registrate mentre lavori e rimesse al caricamento di un salvataggio;\nSpento: non viene registrato né rimesso nulla, quindi non c'è alcun ambito di condivisione da impostare.\nQuesta pagina contiene zone, aree, percorsi e strumenti del terreno.";
 		d["domain.item.label"] = "Ricorda le voci degli strumenti nella pagina Oggetti";
-		d["domain.item.desc"] = "Attivo: le impostazioni degli strumenti di questa pagina vengono registrate in tempo reale e tornano al caricamento di un salvataggio.\nSpento: di questa pagina non viene registrato né ripristinato nulla; la pagina viene oscurata e gli strumenti tornano al comportamento originale.";
+		d["domain.item.desc"] = "Decide se le voci di questa pagina vengono ricordate:\nAttivo: le impostazioni vengono registrate mentre lavori e rimesse al caricamento di un salvataggio;\nSpento: non viene registrato né rimesso nulla, quindi non c'è alcun ambito di condivisione da impostare.\nQuesta pagina contiene gli oggetti del menu Architettura del paesaggio, alberi compresi.";
 		d["enabled.label"] = "Abilita la mod";
-		d["enabled.desc"] = "Spento per impostazione predefinita: appena installato, il mod non fa nulla e tutto funziona come nel gioco originale.\nUna volta acceso, i pannelli degli strumenti vengono registrati e tornano al caricamento di un salvataggio. Si accende da solo non appena uno dei tre interruttori per pagina qui sotto è attivo.";
+		d["enabled.desc"] = "Accende o spegne tutto il mod.\nAcceso, i tre interruttori qui sotto hanno effetto: ogni impostazione degli strumenti viene ricordata mentre lavori e rimessa al caricamento di un salvataggio.\nSpento, il mod resta in disparte e ogni strumento si comporta come nel gioco originale.";
 		d["scope.line.sharedSingle"] = "Globale: ogni strumento di questa pagina che supporta questa voce usa un unico valore";
 			d["scope.note"] = "Nota: ogni livello qui sopra vale solo all'interno di questa pagina.";
 		d["scope.category.function"] = "Stesso tipo";
 		d["scope.category.item"] = "Stesso tipo di oggetto";
 		d["item.color.label"] = "Colore";
 		d["item.decoration.label"] = "Mantieni età";
-		d["item.decoration.desc"] = "Ricorda l'interruttore Mantieni età: quando è attivo, gli alberi pennellati o posizionati smettono di crescere e di morire di vecchiaia.\nLa riga compare solo sugli asset con dati sugli alberi, cioè quando si pennellano o posizionano alberi dal menu Vegetazione.";
+		d["item.decoration.desc"] = "Ricorda l'interruttore Mantieni età: quando è attivo, gli alberi che pennelli smettono di crescere e di morire di vecchiaia.\nQuesta riga ce l'hanno solo gli alberi.";
 		d["item.decoration.ex.group"] = "per esempio, attivando Mantieni età mentre si pennellano alberi, anche gli altri modi di pennellare la vegetazione dello stesso gruppo risultano attivi, mentre un altro gruppo no";
 		d["item.decoration.ex.menu"] = "tutti gli asset del menu Vegetazione lo mantengono attivo, ma passando a un altro menu no";
 		d["item.decoration.ex.category"] = "passando a un altro tipo di albero resta attivo, ma la riga esiste solo sugli asset con dati sugli alberi, quindi pennellando una decalcomania non c'è affatto (serve un'impostazione propria)";
@@ -901,7 +901,7 @@ namespace ToolModeMemory
 		d["item.distance.ex.menu"] = "tutti gli asset che possono essere posizionati lungo una linea in uno stesso menu usano questa stessa distanza, ma passando a un altro menu no";
 		d["item.distance.ex.category"] = "passando a un'altra categoria si usa la distanza di quella categoria (serve un'impostazione propria), anche quando entrambe possono essere posizionate lungo una linea";
 		d["item.ageMask.label"] = "Età";
-		d["item.ageMask.desc"] = "Ricorda quali fasi di età sono spuntate nella riga Età: arbusto, giovane, adulto e anziano, e se ne possono spuntare più di una insieme.\nLa riga esiste solo sugli asset di alberi, cioè pennellando o posizionando alberi nel menu Vegetazione.";
+		d["item.ageMask.desc"] = "Ricorda quali fasi di età sono spuntate nella riga Età: arbusto, giovane, adulto e anziano, anche più di una insieme.\nQuesta riga ce l'hanno solo gli alberi.";
 		d["item.ageMask.ex.group"] = "per esempio, spuntando solo adulto mentre pennelli alberi, anche gli altri alberi dello stesso gruppo generano solo esemplari adulti, mentre un altro gruppo no";
 		d["item.ageMask.ex.menu"] = "tutti gli alberi del menu Vegetazione usano queste stesse fasi di età, ma passando a un altro menu no";
 		d["item.ageMask.ex.category"] = "passando a un altro tipo di albero queste fasi restano, ma la riga esiste solo sugli asset di alberi, quindi pennellando decalcomanie e simili non c'è affatto (serve un'impostazione propria)";

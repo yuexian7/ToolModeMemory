@@ -101,36 +101,29 @@ namespace ToolModeMemory
 			return key;
 		}
 
-		/// <summary>范围下拉：短标签 + 按工具项标注（原版）（推荐）（推荐原版）。</summary>
+		/// <summary>
+		/// 范围下拉：短标签 + 按工具项标注（原版）（推荐）（推荐原版）。
+		///
+		/// v0.9.0 需求 4：**功能页与道具页不提供「同类」这一档** —— 原版只给 NetToolSystem
+		/// 记偏好（按 m_Group = 资产分类，即我们的「同组」），功能型与摆件工具原版一个值都不记，
+		/// 「原版档」对它们无意义；而它们彼此的模式枚举差别极大，按「同类」归组共用
+		/// 等于把不同枚举的值塞进同一把键，会写下玩家设不出来的组合。
+		/// 所以那两页只列 同组 / 同菜单 / 全局共用 / 全部不共用 四项，
+		/// 「同类」只在建筑与服务页出现（那里的归类 = 资产服务谁，与 m_Group 之外多一档才有增益）。
+		/// </summary>
 		public static DropdownItem<int>[] BuildScopeDropdown(ToolItemDef def)
 		{
 			Dictionary<string, string> d = Table(_activeLocale);
-			return new DropdownItem<int>[]
+			bool hasCategory = def == null || def.Domain == ItemDomain.Asset;
+			var list = new List<DropdownItem<int>>
 			{
 				Item(0, kScopeGroup, def, d),
 				Item(1, kScopeMenu, def, d),
-				Item(2, CategoryLabelKey(def), def, d),
-				Item(3, kScopeGlobalShared, def, d),
-				Item(4, kScopeGlobalUnique, def, d),
 			};
-		}
-
-		/// <summary>
-		/// 「同类」这一档的显示名。owner 需求 2：把「同类资产」统一改叫「同类」，
-		/// **但资产与道具两页保留带宾语的写法** —— 那两页说的确实是「同一类资产」
-		/// 「同一类道具」，只写「同类」反而看不出同类的是什么。
-		/// 所以：资产页沿用已有的 scope.category（同类资产），功能页查 scope.category.function
-		/// （同类），道具页查 scope.category.item（同类道具）；缺句由 FillGaps 回落 en-US。
-		/// </summary>
-		private static string CategoryLabelKey(ToolItemDef def)
-		{
-			if (def == null) return kScopeCategory;
-			switch (def.Domain)
-			{
-				case ItemDomain.Function: return kScopeCategory + ".function";
-				case ItemDomain.Item: return kScopeCategory + ".item";
-				default: return kScopeCategory;
-			}
+			if (hasCategory) list.Add(Item(2, kScopeCategory, def, d));
+			list.Add(Item(3, kScopeGlobalShared, def, d));
+			list.Add(Item(4, kScopeGlobalUnique, def, d));
+			return list.ToArray();
 		}
 
 		private static DropdownItem<int> Item(int value, string baseKey, ToolItemDef def, Dictionary<string, string> d)
@@ -316,9 +309,9 @@ namespace ToolModeMemory
 			// （scope.line.X.<域后缀>），本语言没写过专用键时 Line() 自动退回不带后缀的通用句
 			// （资产页用的就是通用句，所以只有功能页/道具页需要额外的两把键）。
 			string suffix = "." + DomainSuffix(def.Domain);
-			string categoryKey = def.Domain == ItemDomain.Asset
-				? kScopeLineCategory
-				: kScopeLineCategory + suffix;
+			// v0.9.0 需求 4：功能页与道具页不再提供「同类」这一档
+			// （见 BuildScopeDropdown 的说明），所以这两页的说明里也不该出现那一行。
+			bool hasCategory = def.Domain == ItemDomain.Asset;
 			// 「游戏里只有一份设置」的项（等高线 / 地下模式 / Anarchy 三项）走 sharedSingle：
 			// 那句说的是「本页所有支持这项的工具共用一份」，三页通用，不用按域换名词。
 			string sharedKey = def.FamilyFreeScope
@@ -333,8 +326,11 @@ namespace ToolModeMemory
 			sb.Append(Line(d, kScopeLineGroup, Example(d, def, "group")));
 			sb.Append('\n');
 			sb.Append(Line(d, kScopeLineMenu, Example(d, def, "menu")));
-			sb.Append('\n');
-			sb.Append(Line(d, categoryKey, Example(d, def, "category")));
+			if (hasCategory)
+			{
+				sb.Append('\n');
+				sb.Append(Line(d, kScopeLineCategory, Example(d, def, "category")));
+			}
 			sb.Append('\n');
 			// 这两句没有例子可填，但仍要走按域回退：Line(d, key, "") 有域专用键就用它，
 			// 没有就剥掉最后的域后缀用通用句（与 category 行同一套机制）。
@@ -590,8 +586,6 @@ namespace ToolModeMemory
 			// v0.8.0 需求 4/5：范围说明只写「共用给谁」，不再罗列分类成员，
 			// 也不再做跨页对比（三页已经完全分开，玩家在本页下拉里看到别的页只会绕）。
 			d[kScopeLineCategory] = "同类：按本页工具服务的对象归成群组，同一群共用一份：{0}";
-			d[kScopeLineCategory + ".function"] = "同类：按功能所属的分类归成群组，同一群共用一份：{0}";
-			d[kScopeLineCategory + ".item"] = "同类道具：按道具所属的分类归成群组，同一群共用一份：{0}";
 			d[kScopeLineShared] = "全局共用：本页内所有支持这一项的建筑与服务都共用一份";
 			d[kScopeLineSharedSingle] = "全局共用：本页内所有支持这一项的工具都共用一份";
 			// v0.8.0 需求 4：三页完全分开，范围说明只说当前这一页的名词，不做跨页对比。
@@ -874,8 +868,6 @@ namespace ToolModeMemory
 			d[kScopeLineGroup] = "同組：{0}";
 			d[kScopeLineMenu] = "同選單：{0}";
 			d[kScopeLineCategory] = "同類：按本頁工具服務的對象歸成群組，同一群共用一份：{0}";
-			d[kScopeLineCategory + ".function"] = "同類：按功能所屬的分類歸成群組，同一群共用一份：{0}";
-			d[kScopeLineCategory + ".item"] = "同類道具：按道具所屬的分類歸成群組，同一群共用一份：{0}";
 			d[kScopeLineShared] = "全域共用：本頁內所有支援這一項的建築與服務都共用一份";
 			d[kScopeLineSharedSingle] = "全域共用：本頁內所有支援這一項的工具都共用一份";
 			d[kScopeLineShared + ".function"] = "全域共用：本頁內所有支援這一項的功能工具都共用一份";
@@ -1158,8 +1150,6 @@ namespace ToolModeMemory
 			d[kScopeLineGroup] = "Same group: {0}";
 			d[kScopeLineMenu] = "Same menu: {0}";
 			d[kScopeLineCategory] = "Same type: the tools on this page are put into groups by what each one actually serves, and one group shares one value: {0}";
-			d[kScopeLineCategory + ".function"] = "Same type: tools are put into groups by which function category they belong to, and one group shares one value: {0}";
-			d[kScopeLineCategory + ".item"] = "Same prop type: props are put into groups by which prop category they belong to, and one group shares one value: {0}";
 			d[kScopeLineShared] = "Shared globally: every building or service on this page that supports this item uses one value";
 			d[kScopeLineSharedSingle] = "Shared globally: every tool on this page that supports this item uses one value";
 			// v0.8.0 requirement 4: the sharing lines name the page you are on and nothing else.

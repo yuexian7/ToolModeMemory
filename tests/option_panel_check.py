@@ -456,6 +456,27 @@ def main():
     check(re.search(r"private bool m_Enabled\s*=\s*false", s) is not None,
           "字段初值也是关（没有存档文件时没人调用 SetDefaults，靠字段初值）")
 
+    # ---- 8. v0.9.0 需求 4：共用范围下拉的档位数按页不同 ----
+    # 只查目录不够：BuildScopeDropdown / ScopeDescription 是渲染逻辑，曾经因为
+    # `git checkout -- LocaleTable.cs` 回退文件而退回 0.8.0 —— 目录仍然合规、
+    # 门禁仍然全绿，但游戏里功能页照样会多出「同类」这一档。所以在这里直接
+    # 对着渲染逻辑的源码形状断言一次。
+    dd = body_of(loc, "public static DropdownItem<int>[] BuildScopeDropdown(ToolItemDef def)")
+    check(dd is not None, "BuildScopeDropdown 存在")
+    if dd:
+        check("ItemDomain.Asset" in dd and "hasCategory" in dd,
+              "共用范围下拉按域决定是否列「同类」（只有建筑与服务页列）")
+    sd = body_of(loc, "private static string ScopeDescription(ToolItemDef def, Dictionary<string, string> d)")
+    check(sd is not None, "ScopeDescription 存在")
+    if sd:
+        check("hasCategory" in sd, "说明文本按域决定是否拼「同类」那一行")
+        check(re.search(r"if \(hasCategory\)", sd) is not None,
+              "「同类」那一行被 if (hasCategory) 包住")
+        # 反过来确认：拼 category 行的语句必须在 if 里，不能无条件执行
+        m = re.search(r"if \(hasCategory\)\s*\{(.{0,400}?)\}", sd, re.S)
+        check(m is not None and "kScopeLineCategory" in m.group(1),
+              "kScopeLineCategory 只在 if (hasCategory) 分支内被拼接")
+
     print()
     print("ALL PASS" if not fails else "FAILURES=%d" % len(fails))
     return 0 if not fails else 1
