@@ -756,10 +756,18 @@ namespace ToolModeMemory.Tests
 					buckets++;
 					if (ToolItemCatalog.Find(fieldId) == null) resolvable = false;
 					if (!inPage.Add(fieldId)) resolvable = false;   // 同一项内部两个桶重名
-					// 同一页（同域）里别的项不许用同一个桶名 —— 那才会真的串档
+					// 同一页（同域）里别的项不许用同一个桶名 —— 那才会真的串档。
+					// v0.9.2 例外：按工具类别拆出来的行（工具模式（道路）/（建筑））**故意**
+					// 共用同一个桶名，它们的隔离靠键里的家族段（$net / $obj），
+					// 且两行各自只在自己那一类工具上读写（见 ToolMemorySystem.FamilyMatches）。
+					// 所以这里放行的条件是：两项都带 Family 且不同 —— 那才是一对拆行。
 					for (int k = 0; k < items.Length; k++)
 					{
 						if (k == i || items[k].Domain != items[i].Domain) continue;
+						bool splitPair = !string.IsNullOrEmpty(items[i].Family)
+							&& !string.IsNullOrEmpty(items[k].Family)
+							&& items[i].Family != items[k].Family;
+						if (splitPair) continue;
 						string[] os = items[k].Subs;
 						int oc = os == null ? 1 : os.Length;
 						for (int m = 0; m < oc; m++)
@@ -781,6 +789,34 @@ namespace ToolModeMemory.Tests
 				"跨页共用的桶确实存在（" + buckets + " 个桶位 / " + bucketNames.Count
 				+ " 个不同桶名）：隔离靠键的域前缀，不靠改桶名");
 			Check(itemIds.Count == items.Length, "项 id 全局唯一（" + items.Length + " 个）");
+			// v0.9.2：拆出来的行必须能沿着 TextId 找回基项，否则老存档的设置传不下来。
+			string[] splitIds = new string[]
+			{
+				ToolItemCatalog.kToolModeNet, ToolItemCatalog.kToolModeObj,
+				ToolItemCatalog.kSnapNet, ToolItemCatalog.kSnapObj,
+				ToolItemCatalog.kFSnapZone, ToolItemCatalog.kFSnapArea, ToolItemCatalog.kFSnapObj,
+				ToolItemCatalog.kFToolMode
+			};
+			// TextId 指向的是**老存档设置里的键**（toolMode / snap / f.snap），
+			// 那几个基项在目录里可能已经被拆没了（f.snap 就不在目录里了），
+			// 但设置字典是按字符串键读的，老存档里那条记录仍然查得到 —— 继承靠的是它。
+			// 所以这里只钉结构：拆行项必须带类别；同一基项的兄弟行必须指向同一个 TextId；
+			// TextId 不许指向自己。
+			bool splitOk = true;
+			System.Collections.Generic.Dictionary<string, string> baseOf =
+				new System.Collections.Generic.Dictionary<string, string>(StringComparer.Ordinal);
+			for (int i = 0; i < splitIds.Length; i++)
+			{
+				ToolItemDef d = ToolItemCatalog.Find(splitIds[i]);
+				if (d == null || string.IsNullOrEmpty(d.Family)) { splitOk = false; continue; }
+				if (string.IsNullOrEmpty(d.TextId)) continue;      // 自己就是基项
+				if (d.TextId == d.Id) { splitOk = false; continue; }
+				string seen;
+				if (baseOf.TryGetValue(d.TextId, out seen) && seen == d.Family) splitOk = false;
+				baseOf[d.TextId] = d.Family;
+			}
+			Check(splitOk && baseOf.Count >= 3,
+				"拆行项都带工具类别，同一基项的兄弟行类别互不相同（" + baseOf.Count + " 个基项）");
 
 			// ---- 三个域的记忆键必须真的互不相同（同一个桶名 + 同一个层级键）----
 			string level = MemoryKeys.Group("Roads", "SmallRoads");
@@ -920,9 +956,18 @@ namespace ToolModeMemory.Tests
 				"主子字段 id == 项 id（老记忆文件的 elevation 桶不换名）");
 			Check(ToolItemCatalog.Find("elevationStep").Id == ToolItemCatalog.kElevation,
 				"elevationStep 认回「高度」，不再是独立项");
-			Check(ToolItemCatalog.Find(ToolItemCatalog.kToolMode).Subs == null
-				&& ToolItemCatalog.Find(ToolItemCatalog.kSnap).Subs == null
-				&& ToolItemCatalog.Find(ToolItemCatalog.kThemes).Subs == null
+			// v0.9.2：工具模式 / 对齐按工具类别拆行，两个拆行项各带 Subs = { 基项桶名 }，
+			// 桶名仍是 toolMode / snap —— 老存档里这两桶的值照读，拆行只是把设置页的一行
+			// 拆成两行（道路 / 建筑），记忆键本来就带 $net / $obj 家族段。
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kToolModeNet).Subs[0] == ToolItemCatalog.kToolMode
+				&& ToolItemCatalog.Find(ToolItemCatalog.kToolModeObj).Subs[0] == ToolItemCatalog.kToolMode
+				&& ToolItemCatalog.Find(ToolItemCatalog.kSnapNet).Subs[0] == ToolItemCatalog.kSnap
+				&& ToolItemCatalog.Find(ToolItemCatalog.kSnapObj).Subs[0] == ToolItemCatalog.kSnap
+				&& ToolItemCatalog.Find(ToolItemCatalog.kToolModeNet).Family == "net"
+				&& ToolItemCatalog.Find(ToolItemCatalog.kToolModeObj).Family == "obj"
+				&& ToolItemCatalog.Find(ToolItemCatalog.kToolModeNet).TextId == ToolItemCatalog.kToolMode,
+				"工具模式 / 对齐拆成「道路」「建筑」两行：桶名不变、家族不同、文案取基项");
+			Check(ToolItemCatalog.Find(ToolItemCatalog.kThemes).Subs == null
 				&& ToolItemCatalog.Find(ToolItemCatalog.kPacks).Subs == null
 				&& ToolItemCatalog.Find(ToolItemCatalog.kAnarchy).Subs == null,
 				"单值项 Subs = null（值直接存项 id 下）");

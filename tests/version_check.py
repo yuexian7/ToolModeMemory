@@ -87,7 +87,9 @@ def main():
                      for dirpath, _dirs, files in os.walk(ROOT)
                      for f in files
                      if f.endswith(".cs") and os.sep + "research" + os.sep not in
-                        os.path.join(dirpath, f))
+                        os.path.join(dirpath, f)
+                     # 离线测试壳（tests/StoreHarness）不进游戏产物，改它不该判产物是陈货
+                     and os.sep + "StoreHarness" + os.sep not in os.path.join(dirpath, f))
         check(os.path.getmtime(DLL) >= newest,
               "产物不早于任何源码（本次判定用的是当前构建，不是上一次的陈货）")
     else:

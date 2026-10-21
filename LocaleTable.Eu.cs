@@ -30,12 +30,6 @@ namespace ToolModeMemory
 			d["scope.line.group"] = "Selbe Gruppe: Werkzeuge in derselben Gruppe der Menüleiste nutzen denselben Wert. {0}";
 			d["scope.line.menu"] = "Selbes Menü: alle Werkzeuge eines Menüs nutzen denselben Wert. {0}";
 			d["scope.line.category"] = "Selber Typ: Objekte werden danach gruppiert, wem sie dienen, und eine Gruppe nutzt denselben Wert. {0}";
-			d["scope.line.shared"] = "Global geteilt: jedes Werkzeug dieser Seite, das diesen Punkt unterstützt, nutzt denselben Wert";
-			d["scope.line.shared.function"] = "Global geteilt: jede Funktion dieser Seite, die diesen Punkt unterstützt, nutzt denselben Wert";
-			d["scope.line.shared.item"] = "Global geteilt: jedes Requisit dieser Seite, das diesen Punkt unterstützt, nutzt denselben Wert";
-			d["scope.line.unique"] = "Gar nicht geteilt: jedes Werkzeug dieser Seite, das diesen Punkt unterstützt, wird eigenständig eingestellt";
-			d["scope.line.unique.function"] = "Gar nicht geteilt: jede Funktion dieser Seite, die diesen Punkt unterstützt, wird eigenständig eingestellt";
-			d["scope.line.unique.item"] = "Gar nicht geteilt: jedes Requisit dieser Seite, das diesen Punkt unterstützt, wird eigenständig eingestellt";
 
 			d[kScopeGroup] = "Selbe Gruppe";
 			d[kScopeMenu] = "Selbes Menü";
@@ -85,7 +79,6 @@ namespace ToolModeMemory
 
 			// ---------- Werkzeugmodus ----------
 			d["item.toolMode.label"] = "Werkzeugmodus";
-			d["item.toolMode.desc"] = "Merkt den Modus jedes Werkzeugs; die Optionen unterscheiden sich: Straßen, Gleise und Leitungen bieten Gerade, Einfache Kurve, Komplexe Kurve, Durchgehend, Raster, Ersetzen, Punkt.\nDie Zeile erscheint nur, wenn das gewählte Werkzeug mehr als einen Modus hat.";
 			d["item.toolMode.ex.group"] = "zum Beispiel wählst du Einfache Kurve für eine zweispurige kleine Straße, andere kleine Straßen nutzen ebenfalls Einfache Kurve, eine große Straße dagegen nicht.";
 			d["item.toolMode.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, steht auf Einfache Kurve, im Menü Strom dagegen nicht.";
 			d["item.toolMode.ex.category"] = "wechselt man zu einer sechsspurigen Straße, bleibt es Einfache Kurve, aber eine Brücke oder doppelte U-Bahn-Gleise fallen auf ihren Standardmodus zurück und brauchen eine eigene Einstellung, obwohl alle im Menü Straßen liegen.";
@@ -160,8 +153,6 @@ namespace ToolModeMemory
 		d["domain.item.desc"] = "An: die Werkzeugeinstellungen dieser Seite werden laufend aufgezeichnet und kehren beim Laden des Spielstands zurück.\nAus: von dieser Seite wird nichts aufgezeichnet und nichts wiederhergestellt; die Seite wird ausgegraut und die Werkzeuge laufen wie im Original.";
 		d["scope.category.function"] = "Selber Typ";
 		d["scope.category.item"] = "Selbe Requisitenart";
-		d["scope.line.sharedSingle"] = "Global geteilt: jedes Werkzeug auf dieser Seite, das diesen Punkt unterstützt, nutzt denselben Wert";
-			d["scope.note"] = "Hinweis: Jede Stufe oben gilt nur innerhalb dieser Seite.";
 		d["item.color.label"] = "Farbe";
 		d["item.decoration.label"] = "Alter beibehalten";
 		d["item.decoration.desc"] = "Merkt den Schalter „Alter beibehalten“: ist er an, wachsen die Bäume, die du anmalst, nicht weiter und sterben auch nicht mehr an Altersschwäche.\nDiese Zeile haben nur Bäume.";
@@ -181,7 +172,6 @@ namespace ToolModeMemory
 		d["item.anarchyObjectElevation.label"] = "Objekthöhe";
 		d["item.anarchyObjectElevation.desc"] = "Merkt die Reihe von Höhensteuerelementen, die Anarchy an das Panel des Objektwerkzeugs anhängt: Transformationsfixierung, Höhe, Höhenvarianz und Höhenschritt.\nAlle vier stehen in einer Reihe und zählen als ein Punkt.";
 		d["item.f.snap.desc"] = "Merkt jeden Schalter der Zeile „Einrasten“ auf Funktionspanels: bei 90-Grad-Winkeln, an Zellenraster, an Straßen, an der Seite des Besitzers, nur Höhenlinien anzeigen und so weiter.\nWelche Schalter erscheinen, hängt vom Werkzeug ab; der Sammlerschalter für die ganze Liste wird selbst nicht gemerkt.";
-		d["item.f.toolMode.desc"] = "Merkt die Auswahl der Zeile „Werkzeugmodus“ auf Funktionspanels; die Optionen unterscheiden sich je Werkzeug: Zonentypen bieten Füllen, Auswahlrechteck und Farbe, Flächenwerkzeuge Bearbeiten und Kartenraster erstellen, jedes Terraforming-Werkzeug eigene Modi.";
 		d["item.f.topography.desc"] = "Merkt den Schalter der Zeile „Topographie“ auf Funktionspanels, also ob du beim Ziehen von Zonen die Höhenlinien des Geländes siehst.";
 		d["item.f.underground.desc"] = "Merkt den Schalter der Zeile „Untergrundmodus“ auf Funktionspanels.";
 		d["item.i.snap.desc"] = "Merkt jeden Schalter der Zeile „Einrasten“ auf Requisitenpanels: an der Oberfläche eines Objekts, an nahegelegener Geometrie, an Straßen, nur entsprechenden Typ entfernen und so weiter, je nach Requisite.\nWelche Schalter erscheinen, hängt von der Requisite ab.";
@@ -202,7 +192,6 @@ namespace ToolModeMemory
 			d["ex.tree.group"] = "Alle Bäume liegen in der Gruppe Vegetation im Menü Landschaftsbau, deshalb wählen „Selbe Gruppe“ und „Selbes Menü“ dieselben Bäume.";
 			d["ex.tree.menu"] = "Alle Bäume liegen in der Gruppe Vegetation im Menü Landschaftsbau, deshalb wählen „Selbes Menü“ und „Selbe Gruppe“ dieselben Bäume.";
 			d["item.color.desc"] = "Merkt sich die Zeile „Farbe“ bei Linienwerkzeugen: die Farbe, in der eine Linie gezeichnet wird.";
-			d["item.f.toolMode.desc"] = "Merkt sich die Zeile „Werkzeugmodus“ bei Funktionswerkzeugen: Füllen, Auswahlrechteck und Farbe bei Zonen; Bearbeiten bei Gebietswerkzeugen; Hauptelement, Unterelement und Alles beim Abrisswerkzeug.";
 			d["item.f.snap.desc"] = "Merkt sich alle Schalter der Zeile „Einrasten“ bei Funktionswerkzeugen; welche Schalter es gibt, hängt vom Werkzeug ab.\nDer Spieleigene Sammelschalter für alle Einrastpunkte wird nicht gemerkt.";
 			d["item.f.topography.desc"] = "Merkt sich die Zeile „Topographie“ bei Zonen-, Terraforming- und anderen Funktionswerkzeugen: ob Geländelinien sichtbar sind.";
 			d["item.f.underground.desc"] = "Merkt sich die Zeile „Untergrundmodus“ bei Gebiets-, Linien-, Abriss- und Objektwerkzeugen.";
@@ -210,6 +199,23 @@ namespace ToolModeMemory
 			d["item.anarchyObjectElevation.desc"] = "Merkt sich die Höhenregler, die Anarchy an die Werkzeugpanels hängt: Transformationssperre, Höhe, Höhenvarianz und die Schrittweite zum Anheben/Absenken.\nSie stehen in einer Reihe und werden daher gemeinsam gemerkt und geteilt.";
 			d["scope.desc.function"] = "Wie weit der Wert dieses Punkts geteilt wird.";
 			d["scope.desc.item"] = "Wie weit der Wert dieses Punkts geteilt wird.";
+			d["scope.line.shared"] = "Global geteilt: alle Gebäude und Dienste, die diesen Punkt anzeigen, nutzen dieselbe Einstellung.";
+			d["scope.line.shared.function"] = "Global geteilt: alle Funktionen, die diesen Punkt anzeigen, nutzen dieselbe Einstellung.";
+			d["scope.line.shared.item"] = "Global geteilt: alle Requisiten, die diesen Punkt anzeigen, nutzen dieselbe Einstellung.";
+			d["scope.line.unique"] = "Gar nicht geteilt: jedes Gebäude und jeder Dienst, der diesen Punkt anzeigt, wird einzeln eingestellt.";
+			d["scope.line.unique.function"] = "Gar nicht geteilt: jede Funktion, die diesen Punkt anzeigt, wird einzeln eingestellt.";
+			d["scope.line.unique.item"] = "Gar nicht geteilt: jedes Requisit, das diesen Punkt anzeigt, wird einzeln eingestellt.";
+			d["scope.note"] = "Die Geltungsbereiche für Gebäude und Dienste, Funktionen und Requisiten sind voneinander unabhängig.";
+			d["label.family"] = "{0} ({1})";
+			d["desc.family"] = "Diese Zeile gilt nur für {0}.";
+			d["fam.net.desc"] = "Die Straßenfamilie: Straßen, Gleise, Leitungen und Stromleitungen zählen alle dazu.";
+			d["fam.net"] = "Straßen";
+			d["fam.assetObj"] = "Gebäude";
+			d["fam.funcObj"] = "Marker";
+			d["fam.zone"] = "Zonen";
+			d["fam.area"] = "Gebietswerkzeuge";
+			d["item.toolMode.desc"] = "Merkt sich den Modus, der bei diesen Werkzeugen gewählt ist.";
+			d["item.f.toolMode.desc"] = "Merkt sich die Zeile Werkzeugmodus bei Zonenwerkzeugen: Füllen, Auswahlrahmen und Malen.";
 			return d;
 		}
 
@@ -232,12 +238,6 @@ namespace ToolModeMemory
 			d["scope.line.group"] = "Mismo grupo: las herramientas del mismo grupo de la barra de menús comparten un valor. {0}";
 			d["scope.line.menu"] = "Mismo menú: todas las herramientas de un menú comparten un valor. {0}";
 			d["scope.line.category"] = "Mismo tipo: los objetos se agrupan por a quién sirven y cada grupo comparte un valor. {0}";
-			d["scope.line.shared"] = "Global: cada herramienta de esta página que admite este elemento usa un mismo valor";
-			d["scope.line.shared.function"] = "Global: cada función de esta página que admite este elemento usa un mismo valor";
-			d["scope.line.shared.item"] = "Global: cada objeto de esta página que admite este elemento usa un mismo valor";
-			d["scope.line.unique"] = "Sin compartir: cada herramienta de esta página que admite este elemento se ajusta por separado";
-			d["scope.line.unique.function"] = "Sin compartir: cada función de esta página que admite este elemento se ajusta por separado";
-			d["scope.line.unique.item"] = "Sin compartir: cada objeto de esta página que admite este elemento se ajusta por separado";
 
 			d[kScopeGroup] = "Mismo grupo";
 			d[kScopeMenu] = "Mismo menú";
@@ -287,7 +287,6 @@ namespace ToolModeMemory
 
 			// ---------- Herramientas ----------
 			d["item.toolMode.label"] = "Herramientas";
-			d["item.toolMode.desc"] = "Recuerda el modo elegido para cada herramienta; las opciones cambian según la herramienta: carreteras, vías y tuberías ofrecen Recta, Curva sencilla, Curva compleja, Continua, Cuadrícula, Reemplazar y Punto.\nLa fila solo aparece cuando la herramienta elegida tiene más de un modo.";
 			d["item.toolMode.ex.group"] = "por ejemplo, eliges Curva sencilla en una carretera pequeña de dos carriles y las otras carreteras pequeñas también usan Curva sencilla, mientras que una carretera grande no.";
 			d["item.toolMode.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras están en Curva sencilla, pero al pasar al menú de Electricidad ya no.";
 			d["item.toolMode.ex.category"] = "cambiar a una carretera de seis carriles sigue dando Curva sencilla, pero un puente o unas vías de metro dobles vuelven a su modo predeterminado y necesitan su propio ajuste, aunque todos estén en el menú de Carreteras.";
@@ -349,8 +348,6 @@ namespace ToolModeMemory
 		// ==================== v0.7.0 新增 / 重写（es-ES）====================
 		d["enabled.label"] = "Activar el mod";
 			d["enabled.desc"] = "Activa o desactiva todo el mod.\nActivado, los tres interruptores de abajo surten efecto: cada ajuste de herramienta se recuerda mientras trabajas y se repone al cargar una partida.\nDesactivado, el mod no interviene y cada herramienta se comporta como en el juego original.";
-		d["scope.line.sharedSingle"] = "Global: todas las herramientas de esta página que admiten este elemento usan un mismo valor";
-			d["scope.note"] = "Nota: cada nivel de arriba solo se aplica dentro de esta página.";
 		d["domain.asset.desc"] = "Controla si se recuerdan los elementos de esta página:\nActivado: los ajustes se registran mientras trabajas y se reponen al cargar una partida;\nDesactivado: no se registra ni se repone nada, así que tampoco hay ámbito compartido que configurar.\nEsta página contiene carreteras, edificios y servicios urbanos.";
 		d["domain.asset.label"] = "Recordar los elementos de herramienta de los activos";
 		d["domain.function.desc"] = "Controla si se recuerdan los elementos de esta página:\nActivado: los ajustes se registran mientras trabajas y se reponen al cargar una partida;\nDesactivado: no se registra ni se repone nada, así que tampoco hay ámbito compartido que configurar.\nEsta página contiene zonas, áreas, rutas y herramientas de terreno.";
@@ -377,7 +374,6 @@ namespace ToolModeMemory
 		d["item.anarchyObjectElevation.desc"] = "Recuerda la fila de controles de altura que Anarchy añade al panel de la herramienta de objetos: bloqueo de transformación, elevación, variación de elevación y el paso de subida y bajada.\nLos cuatro están en una sola fila y cuentan como un solo elemento.";
 		d["item.decoration.label"] = "Preservar edad";
 		d["item.f.snap.desc"] = "Recuerda cada interruptor de la fila «Ajustar» de los paneles de las herramientas de función: a ángulos de 90 grados, a la cuadrícula, a las carreteras, al lado del propietario, mostrar las líneas de contorno y demás.\nQué interruptores aparecen depende de la herramienta; el interruptor por lotes de toda la lista no se recuerda.";
-		d["item.f.toolMode.desc"] = "Recuerda el modo de herramienta elegido en los paneles de las herramientas de función; las opciones cambian según la herramienta: los tipos de zona ofrecen Rellenar, Seleccionar y Pintar, las herramientas de área Editar y Generar cuadrícula de mapa, cada herramienta de terreno sus propios modos.";
 		d["item.f.topography.desc"] = "Recuerda el estado de la fila «Líneas de contorno» de los paneles de las herramientas de función, es decir, si se ven las líneas de contorno del terreno mientras dibuja zonas.";
 		d["item.f.underground.desc"] = "Recuerda el estado de la fila «Modo subterráneo» de los paneles de las herramientas de función.";
 		d["item.i.snap.desc"] = "Recuerda cada interruptor de la fila «Ajustar» de los paneles de los objetos: a la superficie del edificio, a las formas cercanas, a la carretera, eliminar solo el tipo coincidente y demás, dependiendo del objeto.\nQué interruptores aparecen depende del objeto.";
@@ -405,7 +401,6 @@ namespace ToolModeMemory
 			d["ex.tree.group"] = "Todos los árboles están en el grupo Vegetación del menú Paisajismo, así que Mismo grupo y Mismo menú eligen los mismos árboles.";
 			d["ex.tree.menu"] = "Todos los árboles están en el grupo Vegetación del menú Paisajismo, así que Mismo menú y Mismo grupo eligen los mismos árboles.";
 			d["item.color.desc"] = "Recuerda la fila Color de las herramientas de línea: el color con el que se dibuja la línea.";
-			d["item.f.toolMode.desc"] = "Recuerda la fila Herramientas: Rellenar, Seleccionar y Pintar en las zonas; Editar en las herramientas de área; Elemento principal, Subelemento y Todo en la herramienta de demolición.";
 			d["item.f.snap.desc"] = "Recuerda los interruptores de la fila Ajustar en las herramientas de función; las opciones dependen de la herramienta.\nEl botón del juego para activar o desactivar todos los ajustes es un interruptor global y no se recuerda.";
 			d["item.f.topography.desc"] = "Recuerda la fila Topografía en las herramientas de zonas, terraformación y otras: si se ven las curvas de nivel.";
 			d["item.f.underground.desc"] = "Recuerda la fila Modo subterráneo en las herramientas de área, línea, demolición y objetos.";
@@ -413,6 +408,23 @@ namespace ToolModeMemory
 			d["item.anarchyObjectElevation.desc"] = "Recuerda los controles de altura que Anarchy añade al panel: bloqueo de transformación, altura, variación de altura y el paso para subir o bajar.\nEstán en la misma fila, así que se recuerdan y comparten juntos.";
 			d["scope.desc.function"] = "Hasta qué punto se comparte el valor de este elemento.";
 			d["scope.desc.item"] = "Hasta qué punto se comparte el valor de este elemento.";
+			d["scope.line.shared"] = "Global: todos los edificios y servicios que muestran este elemento comparten un mismo ajuste.";
+			d["scope.line.shared.function"] = "Global: todas las funciones que muestran este elemento comparten un mismo ajuste.";
+			d["scope.line.shared.item"] = "Global: todos los objetos que muestran este elemento comparten un mismo ajuste.";
+			d["scope.line.unique"] = "Sin compartir: cada edificio y servicio que muestra este elemento se ajusta por separado.";
+			d["scope.line.unique.function"] = "Sin compartir: cada función que muestra este elemento se ajusta por separado.";
+			d["scope.line.unique.item"] = "Sin compartir: cada objeto que muestra este elemento se ajusta por separado.";
+			d["scope.note"] = "Los ámbitos de edificios y servicios, funciones y objetos son independientes entre sí.";
+			d["label.family"] = "{0} ({1})";
+			d["desc.family"] = "Esta fila solo se aplica a {0}.";
+			d["fam.net.desc"] = "La familia de carreteras: carreteras, vías, tuberías y líneas eléctricas cuentan todas.";
+			d["fam.net"] = "carreteras";
+			d["fam.assetObj"] = "edificios";
+			d["fam.funcObj"] = "marcadores";
+			d["fam.zone"] = "zonas";
+			d["fam.area"] = "herramientas de área";
+			d["item.toolMode.desc"] = "Recuerda el modo elegido en estas herramientas.";
+			d["item.f.toolMode.desc"] = "Recuerda la fila Modo de herramienta en las herramientas de zona: Relleno, Marco y Pintar.";
 			return d;
 		}
 
@@ -435,12 +447,6 @@ namespace ToolModeMemory
 			d["scope.line.group"] = "Même groupe : les outils d'un même groupe de la barre de menus partagent une valeur. {0}";
 			d["scope.line.menu"] = "Même menu : tous les outils d'un menu partagent une valeur. {0}";
 			d["scope.line.category"] = "Même type : les objets sont classés selon ce à quoi ils servent, et un même type partage une valeur. {0}";
-			d["scope.line.shared"] = "Global : tout outil de cette page compatible avec cet élément partage une seule valeur";
-			d["scope.line.shared.function"] = "Global : toute fonction de cette page compatible avec cet élément partage une seule valeur";
-			d["scope.line.shared.item"] = "Global : tout accessoire de cette page compatible avec cet élément partage une seule valeur";
-			d["scope.line.unique"] = "Aucun partage : chaque outil de cette page compatible avec cet élément se règle indépendamment";
-			d["scope.line.unique.function"] = "Aucun partage : chaque fonction de cette page compatible avec cet élément se règle indépendamment";
-			d["scope.line.unique.item"] = "Aucun partage : chaque accessoire de cette page compatible avec cet élément se règle indépendamment";
 
 			d[kScopeGroup] = "Même groupe";
 			d[kScopeMenu] = "Même menu";
@@ -490,7 +496,6 @@ namespace ToolModeMemory
 
 			// ---------- Mode Outil ----------
 			d["item.toolMode.label"] = "Mode Outil";
-			d["item.toolMode.desc"] = "Mémorise le mode choisi pour chaque outil ; les options varient : routes, rails et canalisations proposent Droit, Courbe simple, Courbe complexe, Continu, Grille, Remplacer et Point.\nCette ligne n'apparaît que lorsque l'outil choisi propose plus d'un mode.";
 			d["item.toolMode.ex.group"] = "par exemple, choisissez Courbe simple sur une petite route à deux voies, les autres petites routes utilisent aussi Courbe simple, mais une grande route non.";
 			d["item.toolMode.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes sont en Courbe simple, mais dans le menu Électricité ce n'est plus le cas.";
 			d["item.toolMode.ex.category"] = "passer à une route à six voies donne toujours Courbe simple, mais un pont ou une double voie de métro retombe sur son mode par défaut et réclame son propre réglage, bien que tous soient dans le menu Routes.";
@@ -580,7 +585,6 @@ namespace ToolModeMemory
 		d["item.anarchyObjectElevation.label"] = "Élévation de l'objet";
 		d["item.anarchyObjectElevation.desc"] = "Mémorise la rangée de contrôles de hauteur qu'Anarchy ajoute au panneau de l'outil Objet : verrouillage de transformation, élévation, variation d'altitude et pas d'augmentation et de diminution.\nCes quatre réglages tiennent sur une seule rangée et comptent donc comme un seul élément.";
 		d["item.f.snap.desc"] = "Mémorise chaque interrupteur de la ligne « Accrocher » des panneaux de fonctions : aux angles à 90 degrés, à la grille de zone, aux routes, au côté du propriétaire, afficher les lignes de contour et d'autres encore.\nQuels interrupteurs apparaissent dépendent de l'outil ; l'interrupteur groupé de toute la liste n'est pas mémorisé.";
-		d["item.f.toolMode.desc"] = "Mémorise le choix de la ligne « Mode Outil » des panneaux de fonctions ; les options varient selon l'outil : les zones proposent Remplissage, Sélection et Peinture, les outils de périmètre Modifier et Générer une grille de carte, chaque outil de terraformation ses propres modes.";
 		d["item.f.topography.desc"] = "Mémorise l'état de la ligne « Lignes de contour » des panneaux de fonctions, c'est-à-dire si vous voyez ou non les courbes de niveau du terrain en dessinant des zones.";
 		d["item.f.underground.desc"] = "Mémorise l'état de la ligne « Mode souterrain » des panneaux de fonctions.";
 		d["item.i.snap.desc"] = "Mémorise chaque interrupteur de la ligne « Accrocher » des panneaux d'accessoires : à la surface d'un bâtiment, à la géométrie à proximité, aux routes, supprimer uniquement le type correspondant et d'autres encore.\nQuels interrupteurs apparaissent dépendent de l'accessoire.";
@@ -592,8 +596,6 @@ namespace ToolModeMemory
 		d["scope.category.item"] = "Même type d'accessoire";
 		d["enabled.label"] = "Activer le mod";
 		d["enabled.desc"] = "Active ou coupe tout le mod.\nActivé, les trois interrupteurs ci-dessous prennent effet : chaque réglage d'outil est mémorisé pendant que vous travaillez et remis en place au chargement d'une sauvegarde.\nCoupé, le mod reste en retrait et chaque outil se comporte comme dans le jeu d'origine.";
-		d["scope.line.sharedSingle"] = "Global : tous les outils de cette page qui prennent en charge cet élément partagent une seule valeur";
-			d["scope.note"] = "Remarque : chaque niveau ci-dessus ne vaut qu'à l'intérieur de cette page.";
 			d["ex.net.group"] = "Par exemple, toutes les routes du groupe Petites routes partagent une valeur ; Grands axes routiers est un autre groupe.";
 			d["ex.net.menu"] = "Par exemple, toutes les routes du menu Routes partagent une valeur ; le menu Électricité non.";
 			d["ex.net.category"] = "Par exemple, les routes de tout nombre de voies forment un même type ; les ponts et les voies ferrées sont des types à part.";
@@ -608,7 +610,6 @@ namespace ToolModeMemory
 			d["ex.tree.group"] = "Tous les arbres sont dans le groupe Végétation du menu Aménagement paysager : Même groupe et Même menu choisissent donc les mêmes arbres.";
 			d["ex.tree.menu"] = "Tous les arbres sont dans le groupe Végétation du menu Aménagement paysager : Même menu et Même groupe choisissent donc les mêmes arbres.";
 			d["item.color.desc"] = "Retient la ligne Couleur des outils de ligne : la couleur avec laquelle la ligne est dessinée.";
-			d["item.f.toolMode.desc"] = "Retient la ligne Mode Outil : Remplissage, Sélection et Peinture pour les zones ; Modifier pour les outils de zone ; Élément principal, Sous-élément et Tout pour la démolition.";
 			d["item.f.snap.desc"] = "Retient les interrupteurs de la ligne Accrocher des outils de fonction ; les choix dépendent de l'outil.\nLe bouton du jeu pour tout accrocher ou non est un interrupteur global et n'est pas mémorisé.";
 			d["item.f.topography.desc"] = "Retient la ligne Topographie des outils de zones, de terraformation et autres : si les courbes de niveau sont visibles.";
 			d["item.f.underground.desc"] = "Retient la ligne Mode souterrain des outils de zone, de ligne, de démolition et d'objets.";
@@ -616,6 +617,23 @@ namespace ToolModeMemory
 			d["item.anarchyObjectElevation.desc"] = "Retient les contrôles de hauteur qu'Anarchy ajoute au panneau : verrouillage de transformation, hauteur, variation de hauteur et le pas de montée/descente.\nIls sont sur une même ligne, donc ils sont mémorisés et partagés ensemble.";
 			d["scope.desc.function"] = "Dans quelle mesure la valeur de cet élément est partagée.";
 			d["scope.desc.item"] = "Dans quelle mesure la valeur de cet élément est partagée.";
+			d["scope.line.shared"] = "Global : tous les bâtiments et services qui affichent cet élément partagent un même réglage.";
+			d["scope.line.shared.function"] = "Global : toutes les fonctions qui affichent cet élément partagent un même réglage.";
+			d["scope.line.shared.item"] = "Global : tous les accessoires qui affichent cet élément partagent un même réglage.";
+			d["scope.line.unique"] = "Aucun partage : chaque bâtiment et service qui affiche cet élément se règle séparément.";
+			d["scope.line.unique.function"] = "Aucun partage : chaque fonction qui affiche cet élément se règle séparément.";
+			d["scope.line.unique.item"] = "Aucun partage : chaque accessoire qui affiche cet élément se règle séparément.";
+			d["scope.note"] = "Les portées des bâtiments et services, des fonctions et des accessoires sont indépendantes.";
+			d["label.family"] = "{0} ({1})";
+			d["desc.family"] = "Cette ligne ne s'applique qu'à {0}.";
+			d["fam.net.desc"] = "La famille des routes : routes, voies, canalisations et lignes électriques en font partie.";
+			d["fam.net"] = "routes";
+			d["fam.assetObj"] = "bâtiments";
+			d["fam.funcObj"] = "marqueurs";
+			d["fam.zone"] = "zones";
+			d["fam.area"] = "outils de secteur";
+			d["item.toolMode.desc"] = "Mémorise le mode choisi sur ces outils.";
+			d["item.f.toolMode.desc"] = "Mémorise la ligne Mode d'outil des outils de zone : Remplissage, Sélection et Peinture.";
 			return d;
 		}
 
@@ -638,12 +656,6 @@ namespace ToolModeMemory
 			d["scope.line.group"] = "Stesso gruppo: gli strumenti dello stesso gruppo della barra dei menu condividono un valore. {0}";
 			d["scope.line.menu"] = "Stesso menu: tutti gli strumenti di un menu condividono un valore. {0}";
 			d["scope.line.category"] = "Stesso tipo: gli oggetti sono raggruppati in base a ciò a cui servono e ogni tipo condivide un valore. {0}";
-			d["scope.line.shared"] = "Globale: ogni strumento di questa pagina che supporta questa voce usa un unico valore";
-			d["scope.line.shared.function"] = "Globale: ogni funzione di questa pagina che supporta questa voce usa un unico valore";
-			d["scope.line.shared.item"] = "Globale: ogni oggetto di questa pagina che supporta questa voce usa un unico valore";
-			d["scope.line.unique"] = "Non condiviso: ogni strumento di questa pagina che supporta questa voce viene impostato in modo indipendente";
-			d["scope.line.unique.function"] = "Non condiviso: ogni funzione di questa pagina che supporta questa voce viene impostata in modo indipendente";
-			d["scope.line.unique.item"] = "Non condiviso: ogni oggetto di questa pagina che supporta questa voce viene impostato in modo indipendente";
 
 			d[kScopeGroup] = "Stesso gruppo";
 			d[kScopeMenu] = "Stesso menu";
@@ -693,7 +705,6 @@ namespace ToolModeMemory
 
 			// ---------- Modalità strumento ----------
 			d["item.toolMode.label"] = "Modalità strumento";
-			d["item.toolMode.desc"] = "Ricorda la modalità scelta per ogni strumento; le opzioni cambiano a seconda dello strumento: strade, binari e tubi offrono Rettilineo, Curva semplice, Curva complessa, Continua, Griglia, Sostituisci e Punto.\nLa riga compare solo quando lo strumento scelto ha più di una modalità.";
 			d["item.toolMode.ex.group"] = "per esempio, scegli Curva semplice su una piccola strada a due corsie e anche le altre piccole strade usano Curva semplice, mentre una strada grande no.";
 			d["item.toolMode.ex.menu"] = "tutti gli asset che clicchi nel menu Strade sono su Curva semplice, ma passando al menu Elettricità no.";
 			d["item.toolMode.ex.category"] = "passando a una strada a sei corsie resta Curva semplice, ma un ponte o un binario della metropolitana doppio ripartono dalla loro modalità predefinita e necessitano un'impostazione propria, benché tutti siano nel menu Strade.";
@@ -766,8 +777,6 @@ namespace ToolModeMemory
 		d["domain.item.desc"] = "Decide se le voci di questa pagina vengono ricordate:\nAttivo: le impostazioni vengono registrate mentre lavori e rimesse al caricamento di un salvataggio;\nSpento: non viene registrato né rimesso nulla, quindi non c'è alcun ambito di condivisione da impostare.\nQuesta pagina contiene gli oggetti del menu Architettura del paesaggio, alberi compresi.";
 		d["enabled.label"] = "Abilita la mod";
 		d["enabled.desc"] = "Accende o spegne tutto il mod.\nAcceso, i tre interruttori qui sotto hanno effetto: ogni impostazione degli strumenti viene ricordata mentre lavori e rimessa al caricamento di un salvataggio.\nSpento, il mod resta in disparte e ogni strumento si comporta come nel gioco originale.";
-		d["scope.line.sharedSingle"] = "Globale: ogni strumento di questa pagina che supporta questa voce usa un unico valore";
-			d["scope.note"] = "Nota: ogni livello qui sopra vale solo all'interno di questa pagina.";
 		d["scope.category.function"] = "Stesso tipo";
 		d["scope.category.item"] = "Stesso tipo di oggetto";
 		d["item.color.label"] = "Colore";
@@ -788,7 +797,6 @@ namespace ToolModeMemory
 		d["item.ageMask.desc"] = "Ricorda quali fasi di età sono spuntate nella riga Età: arbusto, giovane, adulto e anziano, anche più di una insieme.\nQuesta riga ce l'hanno solo gli alberi.";
 		d["item.anarchyObjectElevation.label"] = "Elevazione dell'oggetto";
 		d["item.anarchyObjectElevation.desc"] = "Ricorda la riga di controlli dell'altezza che Anarchy aggiunge al pannello dello strumento oggetti: blocco della trasformazione, elevazione, variazione di elevazione e step di aumento e diminuzione.\nTutti e quattro stanno su una sola riga e contano quindi come una sola voce.";
-		d["item.f.toolMode.desc"] = "Ricorda la riga Modalità strumento nei pannelli delle funzioni; le opzioni cambiano da strumento a strumento: i tipi di zona offrono Riempi, Seleziona e Pittura, gli strumenti area Modifica e Genera griglia mappa, ogni strumento di Terraformazione le proprie modalità.";
 		d["item.f.snap.desc"] = "Ricorda ogni interruttore della riga Aggancio nei pannelli delle funzioni: ad angoli di 90°, alla griglia della zona, alle strade, al lato del proprietario, mostra le linee di contorno e così via.\nQuali interruttori compaiono dipende dallo strumento; il pulsante collettivo di tutta la lista non viene ricordato.";
 		d["item.f.topography.desc"] = "Ricorda l'attivazione della riga Topografia nei pannelli delle funzioni, cioè se le linee di contorno del terreno sono visibili mentre si disegnano le zone.";
 		d["item.f.underground.desc"] = "Ricorda l'attivazione della riga Modalità sottosuolo nei pannelli delle funzioni.";
@@ -811,7 +819,6 @@ namespace ToolModeMemory
 			d["ex.tree.group"] = "Tutti gli alberi sono nel gruppo Vegetazione del menu Architettura del paesaggio, quindi Stesso gruppo e Stesso menu scelgono gli stessi alberi.";
 			d["ex.tree.menu"] = "Tutti gli alberi sono nel gruppo Vegetazione del menu Architettura del paesaggio, quindi Stesso menu e Stesso gruppo scelgono gli stessi alberi.";
 			d["item.color.desc"] = "Ricorda la riga Colore degli strumenti linea: il colore con cui viene disegnata la linea.";
-			d["item.f.toolMode.desc"] = "Ricorda la riga Modalità strumento: Riempi, Seleziona e Pittura per le zone; Modifica per gli strumenti area; Elemento principale, Elemento secondario e Tutto per la demolizione.";
 			d["item.f.snap.desc"] = "Ricorda gli interruttori della riga Aggancio degli strumenti funzione; le opzioni dipendono dallo strumento.\nIl pulsante del gioco per attivare o disattivare tutti gli agganci è un interruttore globale e non viene memorizzato.";
 			d["item.f.topography.desc"] = "Ricorda la riga Topografia degli strumenti zona, terraformazione e altri: se sono visibili le curve di livello.";
 			d["item.f.underground.desc"] = "Ricorda la riga Modalità sottosuolo degli strumenti area, linea, demolizione e oggetti.";
@@ -819,6 +826,23 @@ namespace ToolModeMemory
 			d["item.anarchyObjectElevation.desc"] = "Ricorda i controlli di altezza che Anarchy aggiunge al pannello: blocco trasformazione, altezza, variazione di altezza e il passo di alzata/abbassamento.\nSono sulla stessa riga, quindi vengono memorizzati e condivisi insieme.";
 			d["scope.desc.function"] = "Quanto viene condiviso il valore di questa voce.";
 			d["scope.desc.item"] = "Quanto viene condiviso il valore di questa voce.";
+			d["scope.line.shared"] = "Globale: tutti gli edifici e i servizi che mostrano questa voce condividono un'unica impostazione.";
+			d["scope.line.shared.function"] = "Globale: tutte le funzioni che mostrano questa voce condividono un'unica impostazione.";
+			d["scope.line.shared.item"] = "Globale: tutti gli oggetti che mostrano questa voce condividono un'unica impostazione.";
+			d["scope.line.unique"] = "Non condiviso: ogni edificio e servizio che mostra questa voce viene impostato separatamente.";
+			d["scope.line.unique.function"] = "Non condiviso: ogni funzione che mostra questa voce viene impostata separatamente.";
+			d["scope.line.unique.item"] = "Non condiviso: ogni oggetto che mostra questa voce viene impostato separatamente.";
+			d["scope.note"] = "Gli ambiti di edifici e servizi, funzioni e oggetti sono indipendenti tra loro.";
+			d["label.family"] = "{0} ({1})";
+			d["desc.family"] = "Questa riga vale solo per {0}.";
+			d["fam.net.desc"] = "La famiglia delle strade: strade, binari, condutture e linee elettriche sono tutte incluse.";
+			d["fam.net"] = "strade";
+			d["fam.assetObj"] = "edifici";
+			d["fam.funcObj"] = "marcatori";
+			d["fam.zone"] = "zone";
+			d["fam.area"] = "strumenti area";
+			d["item.toolMode.desc"] = "Ricorda la modalità scelta su questi strumenti.";
+			d["item.f.toolMode.desc"] = "Ricorda la riga Modalità strumento negli strumenti zona: Riempimento, Selezione e Pittura.";
 			return d;
 		}
 	}

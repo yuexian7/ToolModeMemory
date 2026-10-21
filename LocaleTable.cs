@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
@@ -40,7 +40,6 @@ namespace ToolModeMemory
 		/// 「游戏里只有一份设置」的那几项（地形 / 地下模式 / Anarchy 三项）专用：
 		/// 它们的「全局共用」连资产与功能都不分，用上面那句会把行为说错。
 		/// </summary>
-		public const string kScopeLineSharedSingle = "scope.line.sharedSingle";
 		public const string kScopeLineUnique = "scope.line.unique";
 		public const string kScopeNote = "scope.note";
 
@@ -219,8 +218,31 @@ namespace ToolModeMemory
 			{
 				ToolItemDef def = items[i];
 				string pascal = PascalCase(def.Id);
-				o[setting.GetOptionLabelLocaleID(pascal + "Enabled")] = def.Number.ToString() + ". " + ItemText(d, def, "label");
-				o[setting.GetOptionDescLocaleID(pascal + "Enabled")] = ItemText(d, def, "desc");
+				string label = def.Number.ToString() + ". " + ItemText(d, def, "label");
+				string desc = ItemText(d, def, "desc");
+				if (!string.IsNullOrEmpty(def.Family))
+				{
+					// v0.9.2：拆出来的行在行名后标出工具类别（工具模式（道路）），
+					// 说明末尾补一句「只对这一类工具生效」，不再让玩家猜它管哪些工具。
+					string fam = FamilyText(d, def);
+					if (!string.IsNullOrEmpty(fam))
+					{
+						label = Val(d, "label.family").Replace("{0}", label).Replace("{1}", fam);
+						desc = desc + "\n" + Val(d, "desc.family").Replace("{0}", fam);
+						// 行名只写「道路」是为了短，但这一类工具还包含轨道、管线、电线；
+						// 说明里补一句把范围说全，免得玩家以为管线工具不受这一行管。
+						if (def.Family == "net")
+						{
+							string extra = Val(d, "fam.net.desc");
+							if (!string.IsNullOrEmpty(extra) && !extra.StartsWith("fam.", StringComparison.Ordinal))
+							{
+								desc = desc + "\n" + extra;
+							}
+						}
+					}
+				}
+				o[setting.GetOptionLabelLocaleID(pascal + "Enabled")] = label;
+				o[setting.GetOptionDescLocaleID(pascal + "Enabled")] = desc;
 				o[setting.GetOptionLabelLocaleID(pascal + "Scope")] = Val(d, "scope.label");
 				o[setting.GetOptionDescLocaleID(pascal + "Scope")] = ScopeDescription(def, d);
 			}
@@ -238,6 +260,15 @@ namespace ToolModeMemory
 			string key = "item." + def.Id + "." + slot;
 			string value;
 			if (d.TryGetValue(key, out value)) return value;
+			// v0.9.2：按工具类别拆出来的行（toolMode.net …）没有自己的文案，
+			// 文案取基项（TextId = toolMode），行名后面再拼上工具类别（见 AddItems）。
+			if (!string.IsNullOrEmpty(def.TextId))
+			{
+				if (d.TryGetValue("item." + def.TextId + "." + slot, out value)) return value;
+				// 基项自己也可能只有「去掉域前缀」那份（f.snap 的文案写在 item.snap.*）
+				string textBase = BaseId(def.TextId);
+				if (textBase != def.TextId && d.TryGetValue("item." + textBase + "." + slot, out value)) return value;
+			}
 			if (!string.IsNullOrEmpty(def.LocaleAlias))
 			{
 				if (d.TryGetValue("item." + def.LocaleAlias + "." + slot, out value)) return value;
@@ -295,6 +326,25 @@ namespace ToolModeMemory
 			return dot > 0 ? id.Substring(dot + 1) : id;
 		}
 
+		/// <summary>
+		/// 拆行项的工具类别名（v0.9.2）：建筑与服务页的建筑与功能页的标记对象虽然都是 obj，
+		/// 行的意思却不一样，所以按域各取一条：fam.assetObj / fam.funcObj / fam.net / fam.zone / fam.area。
+		/// </summary>
+		private static string FamilyText(Dictionary<string, string> d, ToolItemDef def)
+		{
+			if (def == null || string.IsNullOrEmpty(def.Family)) return string.Empty;
+			string key;
+			if (def.Family == "net") key = "fam.net";
+			else if (def.Family == "zone") key = "fam.zone";
+			else if (def.Family == "area") key = "fam.area";
+			else if (def.Family == "obj") key = def.Domain == ItemDomain.Function ? "fam.funcObj" : "fam.assetObj";
+			else key = "fam." + def.Family;
+			string value;
+			if (d != null && d.TryGetValue(key, out value)) return value;
+			Dictionary<string, string> en = Table("en-US");
+			return en.TryGetValue(key, out value) ? value : string.Empty;
+		}
+
 		/// <summary>先查本键，没有再查回退键；两个都没有才原样返回**本键**（便于发现漏写）。</summary>
 		private static string Val2(Dictionary<string, string> d, string key, string fallbackKey)
 		{
@@ -337,11 +387,11 @@ namespace ToolModeMemory
 			// v0.9.0 需求 4：功能页与道具页不再提供「同类」这一档
 			// （见 BuildScopeDropdown 的说明），所以这两页的说明里也不该出现那一行。
 			bool hasCategory = def.Domain == ItemDomain.Asset;
-			// 「游戏里只有一份设置」的项（等高线 / 地下模式 / Anarchy 三项）走 sharedSingle：
-			// 那句说的是「本页所有支持这项的工具共用一份」，三页通用，不用按域换名词。
-			string sharedKey = def.FamilyFreeScope
-				? kScopeLineSharedSingle
-				: (def.Domain == ItemDomain.Asset ? kScopeLineShared : kScopeLineShared + suffix);
+			// v0.9.2：拆行之后每一行只对应一类工具，所以「全局共用」就是字面意思 ——
+			// 所有显示这一项的工具共用一份设置；「全部不共用」= 每一个显示这一项的工具单独设置。
+			// 两句都说本页自己的名词（建筑与服务 / 功能 / 道具），不再出现「本页内」这种
+			// 把页面当设置对象的话（owner 0.9.2：共用范围设的是建筑与服务、道具、功能，不是页）。
+			string sharedKey = def.Domain == ItemDomain.Asset ? kScopeLineShared : kScopeLineShared + suffix;
 			string uniqueKey = def.Domain == ItemDomain.Asset
 				? kScopeLineUnique
 				: kScopeLineUnique + suffix;
@@ -632,16 +682,8 @@ namespace ToolModeMemory
 			d["ex.prop.menu"] = "城市美化菜单下的所有道具和植被共用一份。";
 			d["ex.tree.group"] = "树都在城市美化菜单的植被分组里，所以同组和同菜单选出来的是同一批树。";
 			d["ex.tree.menu"] = "树都在城市美化菜单的植被分组里，所以同菜单和同组选出来的是同一批树。";
-			d[kScopeLineShared] = "全局共用：本页内所有支持这一项的建筑与服务都共用一份";
-			d[kScopeLineSharedSingle] = "全局共用：本页内所有支持这一项的工具都共用一份";
 			// v0.8.0 需求 4：三页完全分开，范围说明只说当前这一页的名词，不做跨页对比。
 			// 功能页/道具页各查一把专用键，本语言没写时 Line() 自动退回上面那句通用句。
-			d[kScopeLineShared + ".function"] = "全局共用：本页内所有支持这一项的功能工具都共用一份";
-			d[kScopeLineShared + ".item"] = "全局共用：本页内所有支持这一项的道具都共用一份";
-			d[kScopeLineUnique] = "全部不共用：本页内每一种建筑与服务都各自独立设置";
-			d[kScopeLineUnique + ".function"] = "全部不共用：本页内每一个功能工具都各自独立设置";
-			d[kScopeLineUnique + ".item"] = "全部不共用：本页内每一种道具都各自独立设置";
-			d[kScopeNote] = "上面每一档都只在当前这一页里生效。";
 
 			d[kScopeGroup] = "同组";
 			d[kScopeMenu] = "同菜单";
@@ -699,7 +741,6 @@ namespace ToolModeMemory
 			// ---------- 工具模式 ----------
 			d["item.toolMode.label"] = "工具模式";
 			// v0.9.0 文案
-			d["item.toolMode.desc"] = "记住每个工具所选的模式。\n这一页的可选值就是直线、简单曲线、复杂曲线、连续曲线、网格、替换、节点，以及建筑的放置方式。";
 			d["item.toolMode.ex.group"] = "比如给两车道小型道路选了简单曲线，切换到其它的小型道路，也是简单曲线，但切换到大型道路就不是了。";
 			d["item.toolMode.ex.menu"] = "点击道路菜单里面的所有资产，都是简单曲线，但切换到电力菜单就不是了。";
 			d["item.toolMode.ex.category"] = "切换到六车道道路也是简单曲线，但切换到桥梁或双向地铁轨道就回到默认模式（需单独设置），即使它们都在道路菜单下。";
@@ -809,7 +850,6 @@ namespace ToolModeMemory
 			// 需求 4：工具模式、对齐在三个页上各一套，互相独立；等高线/地下模式同样三页各一份，
 			// 按当前工具所在页读写；笔刷只出现在地形改造工具与刷涂类功能上。
 			// v0.9.0 文案
-			d["item.f.toolMode.desc"] = "记住功能工具面板上「工具模式」一行的选择：功能区为填充、滚动、刷涂；区域工具为编辑；拆除工具为主要部分、附属部分、全部。";
 			// v0.9.0 文案
 			d["item.f.snap.desc"] = "记住功能工具面板上「对齐」里各个开关的勾选状态，可选项随工具不同而不同。\n游戏自带的「开启／关闭所有对齐」是批量开关，本身不记忆。";
 			// v0.9.0 文案
@@ -829,6 +869,23 @@ namespace ToolModeMemory
 			d["scope.line.category"] = "同类：按资产服务的对象归成群组，同一群共用一份。{0}";
 			d["scope.desc.function"] = "这一项的数值在多大范围内共用。";
 			d["scope.desc.item"] = "这一项的数值在多大范围内共用。";
+			d["scope.line.shared"] = "全局共用：所有显示这一项的建筑与服务共用设置。";
+			d["scope.line.shared.function"] = "全局共用：所有显示这一项的功能共用设置。";
+			d["scope.line.shared.item"] = "全局共用：所有显示这一项的道具共用设置。";
+			d["scope.line.unique"] = "全部不共用：每一个显示这一项的建筑与服务单独设置。";
+			d["scope.line.unique.function"] = "全部不共用：每一个显示这一项的功能单独设置。";
+			d["scope.line.unique.item"] = "全部不共用：每一个显示这一项的道具单独设置。";
+			d["scope.note"] = "建筑与服务、功能、道具三处的共用范围互不影响。";
+			d["label.family"] = "{0}（{1}）";
+			d["desc.family"] = "这一行只对{0}生效。";
+			d["fam.net.desc"] = "道路这一类工具：道路、轨道、管线、电线都算。";
+			d["fam.net"] = "道路";
+			d["fam.assetObj"] = "建筑";
+			d["fam.funcObj"] = "标记与预制对象";
+			d["fam.zone"] = "功能区";
+			d["fam.area"] = "区域工具";
+			d["item.toolMode.desc"] = "记住这类工具所选的模式。";
+			d["item.f.toolMode.desc"] = "记住功能区工具面板上「工具模式」一行的选择：填充、滚动、刷涂。";
 			return d;
 		}
 
@@ -869,14 +926,6 @@ namespace ToolModeMemory
 			d[kScopeLineGroup] = "同組：{0}";
 			d[kScopeLineMenu] = "同選單：{0}";
 			d[kScopeLineCategory] = "同類：按本頁工具服務的對象歸成群組，同一群共用一份：{0}";
-			d[kScopeLineShared] = "全域共用：本頁內所有支援這一項的建築與服務都共用一份";
-			d[kScopeLineSharedSingle] = "全域共用：本頁內所有支援這一項的工具都共用一份";
-			d[kScopeLineShared + ".function"] = "全域共用：本頁內所有支援這一項的功能工具都共用一份";
-			d[kScopeLineShared + ".item"] = "全域共用：本頁內所有支援這一項的道具都共用一份";
-			d[kScopeLineUnique] = "全部不共用：本頁內每一種建築與服務都各自獨立設定";
-			d[kScopeLineUnique + ".function"] = "全部不共用：本頁內每一個功能工具都各自獨立設定";
-			d[kScopeLineUnique + ".item"] = "全部不共用：本頁內每一種道具都各自獨立設定";
-			d[kScopeNote] = "上面每一檔都只在當前這一頁裡生效。";
 
 			d[kScopeGroup] = "同組";
 			d[kScopeMenu] = "同選單";
@@ -934,7 +983,6 @@ namespace ToolModeMemory
 			// ---------- 工具模式 ----------
 			d["item.toolMode.label"] = "工具模式";
 			// v0.9.0 文案
-			d["item.toolMode.desc"] = "记住每个工具所选的模式。\n这一页的可选值就是直线、简单曲线、复杂曲线、连续曲线、网格、替换、节点，以及建筑的放置方式。";
 			d["item.toolMode.ex.group"] = "例如給兩車道小型道路選了簡單曲線，切換到其他小型道路也是簡單曲線，但切換到大型道路就不是了。";
 			d["item.toolMode.ex.menu"] = "點選道路選單裡面的所有資產，都是簡單曲線，但切換到電力選單就不是了。";
 			d["item.toolMode.ex.category"] = "切換到六車道道路也是簡單曲線，但切換到橋樑或雙線地鐵軌道就回到預設模式（需單獨設定），即使它們都在道路選單下。";
@@ -1037,7 +1085,6 @@ namespace ToolModeMemory
 
 			// ---------- 功能頁五項（f.*）----------
 			// v0.9.0 文案
-			d["item.f.toolMode.desc"] = "記住功能工具面板上「工具模式」一行的選擇：功能區為填充、選取方格、塗上；區域工具為編輯；拆除工具為主元素、子元素、全部。";
 			// v0.9.0 文案
 			d["item.f.snap.desc"] = "記住功能工具面板上「吸附」裡各個開關的勾選狀態，可選項隨工具不同而不同。\n遊戲自帶的「開啟／關閉所有吸附」是批次開關，本身不記憶。";
 			// v0.9.0 文案
@@ -1071,6 +1118,23 @@ namespace ToolModeMemory
 			d["item.color.desc"] = "記住路線工具面板上「顏色」一行的路線顏色。";
 			d["scope.desc.function"] = "這一項的數值在多大範圍內共用。";
 			d["scope.desc.item"] = "這一項的數值在多大範圍內共用。";
+			d["scope.line.shared"] = "全域共用：所有顯示這一項的建築與服務共用設定。";
+			d["scope.line.shared.function"] = "全域共用：所有顯示這一項的功能共用設定。";
+			d["scope.line.shared.item"] = "全域共用：所有顯示這一項的道具共用設定。";
+			d["scope.line.unique"] = "全部不共用：每一個顯示這一項的建築與服務單獨設定。";
+			d["scope.line.unique.function"] = "全部不共用：每一個顯示這一項的功能單獨設定。";
+			d["scope.line.unique.item"] = "全部不共用：每一個顯示這一項的道具單獨設定。";
+			d["scope.note"] = "建築與服務、功能、道具三處的共用範圍互不影響。";
+			d["label.family"] = "{0}（{1}）";
+			d["desc.family"] = "這一行只對{0}生效。";
+			d["fam.net.desc"] = "道路這一類工具：道路、軌道、管線、電線都算。";
+			d["fam.net"] = "道路";
+			d["fam.assetObj"] = "建築";
+			d["fam.funcObj"] = "標記與預製物件";
+			d["fam.zone"] = "功能區";
+			d["fam.area"] = "區域工具";
+			d["item.toolMode.desc"] = "記住這類工具所選的模式。";
+			d["item.f.toolMode.desc"] = "記住功能區工具面板上「工具模式」一行的選擇：填充、選取方格、塗上。";
 			return d;
 		}
 
@@ -1114,16 +1178,8 @@ namespace ToolModeMemory
 			d[kScopeLineGroup] = "Same group: {0}";
 			d[kScopeLineMenu] = "Same menu: {0}";
 			d[kScopeLineCategory] = "Same type: the tools on this page are put into groups by what each one actually serves, and one group shares one value: {0}";
-			d[kScopeLineShared] = "Shared globally: every building or service on this page that supports this item uses one value";
-			d[kScopeLineSharedSingle] = "Shared globally: every tool on this page that supports this item uses one value";
 			// v0.8.0 requirement 4: the sharing lines name the page you are on and nothing else.
 			// Function/Item pages look up their own key; missing ones fall back to the line above.
-			d[kScopeLineShared + ".function"] = "Shared globally: every function tool on this page that supports this item uses one value";
-			d[kScopeLineShared + ".item"] = "Shared globally: every prop on this page that supports this item uses one value";
-			d[kScopeLineUnique] = "Not shared at all: every building or service on this page is set independently";
-			d[kScopeLineUnique + ".function"] = "Not shared at all: every function tool on this page is set independently";
-			d[kScopeLineUnique + ".item"] = "Not shared at all: every prop on this page is set independently";
-			d[kScopeNote] = "Note: every level above only applies inside this page.";
 
 			d[kScopeGroup] = "Same group";
 			d[kScopeMenu] = "Same menu";
@@ -1181,7 +1237,6 @@ namespace ToolModeMemory
 			// ---------- Tool Mode ----------
 			d["item.toolMode.label"] = "Tool Mode";
 			// v0.9.0 文案
-			d["item.toolMode.desc"] = "Remembers the mode each tool is set to.\nOn this page that means straight, simple curve, complex curve, continuous curve, grid, replace and node, plus how buildings are placed.";
 			d["item.toolMode.ex.group"] = "for example, pick Simple Curve for a two-lane small road and the other small roads use Simple Curve too, while a large road does not.";
 			d["item.toolMode.ex.menu"] = "every asset you click in the Roads menu is on Simple Curve, but moving to the Electricity menu it is not.";
 			d["item.toolMode.ex.category"] = "switching to a six-lane road still gives Simple Curve, but a bridge or a double subway track falls back to its default mode and needs its own setting, even though they are all in the Roads menu.";
@@ -1285,7 +1340,6 @@ namespace ToolModeMemory
 
 			// ---------- Functions page (f.*): same panel rows, but grouped by the six function types ----------
 			// v0.9.0 文案
-			d["item.f.toolMode.desc"] = "Remembers the Tool Mode row on function tools: Fill, Marquee and Paint for zone tools; Edit for area tools; Main Element, Sub Element and Everything for the bulldoze tool.";
 			d["item.f.snap.desc"] = "Remembers every switch in the Snapping row on function tools; the available switches depend on the tool.\nThe game's own enable/disable all snapping button is a batch switch and is not remembered.";
 			d["item.f.topography.desc"] = "Remembers the Topography row on zone, terraforming and other function tools: whether terrain contour lines are visible.";
 			d["item.f.underground.desc"] = "Remembers the Underground Mode row on area, route, bulldoze and object tools.";
@@ -1312,6 +1366,23 @@ namespace ToolModeMemory
 			d["item.color.desc"] = "Remembers the Color row on route tools: the color a line is drawn in.";
 			d["scope.desc.function"] = "How widely this item's value is shared.";
 			d["scope.desc.item"] = "How widely this item's value is shared.";
+			d["scope.line.shared"] = "Shared globally: all buildings and services that show this item share one setting.";
+			d["scope.line.shared.function"] = "Shared globally: all functions that show this item share one setting.";
+			d["scope.line.shared.item"] = "Shared globally: all props that show this item share one setting.";
+			d["scope.line.unique"] = "Not shared at all: each building and service that shows this item is set on its own.";
+			d["scope.line.unique.function"] = "Not shared at all: each function that shows this item is set on its own.";
+			d["scope.line.unique.item"] = "Not shared at all: each prop that shows this item is set on its own.";
+			d["scope.note"] = "The scopes for buildings and services, functions and props are independent of each other.";
+			d["label.family"] = "{0} ({1})";
+			d["desc.family"] = "This row applies only to {0}.";
+			d["fam.net.desc"] = "The road family: roads, tracks, pipes and power lines all count.";
+			d["fam.net"] = "roads";
+			d["fam.assetObj"] = "buildings";
+			d["fam.funcObj"] = "markers";
+			d["fam.zone"] = "zones";
+			d["fam.area"] = "area tools";
+			d["item.toolMode.desc"] = "Remembers the mode selected on these tools.";
+			d["item.f.toolMode.desc"] = "Remembers the Tool Mode row on zone tools: Fill, Marquee and Paint.";
 			return d;
 		}
 

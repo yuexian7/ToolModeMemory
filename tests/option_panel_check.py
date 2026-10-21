@@ -339,11 +339,17 @@ def main():
     cat_official_all = [i for i, num, src in cat_items if src in ("Vanilla", "Toolbar")]
     anarchy_ids = [i for i, num, src in cat_items if src == "AnarchyMod"]
 
+    def pascal(id_):
+        """目录 id → 设置属性名主干（与 ToolItemDef.PascalId() 同一套规则）。"""
+        return "".join(p[:1].upper() + p[1:] for p in id_.replace(".", " ").split(" ") if p)
+
+    # v0.9.2：拆行后的 id 带点（toolMode.net），属性名是 ToolModeNet，所以改成
+    # 「目录 id → 属性名」反查表，不再从属性名倒推 id（倒推对带点的 id 会错）。
+    pascal_map = {pascal(i): i for i, _n, _s in cat_items}
+
     def pascal_to_id(name):
-        """属性名 → 目录 id。v0.7.0 的 FToolMode / IBrush 要还原成 f.toolMode / i.brush。"""
-        if len(name) > 1 and name[0] in "FI" and name[1].isupper():
-            return name[0].lower() + "." + name[1].lower() + name[2:]
-        return name[0].lower() + name[1:]
+        """属性名 → 目录 id。"""
+        return pascal_map.get(name, name[0].lower() + name[1:])
 
     page_asset_official = [pascal_to_id(n) for n, c, g in enabled_rows if g == "kGroupAssetOfficial"]
     page_asset_anarchy = [pascal_to_id(n) for n, c, g in enabled_rows if g == "kGroupAssetAnarchy"]
@@ -435,8 +441,9 @@ def main():
     # v0.9.0 owner 指定：工具模式 -> 同类；高度 -> 同组（不变）；并列模式 -> 无推荐。
     as_ = [d for d in cat_items if d["domain"] == "Asset"]
     by_id = {d["id"]: d for d in as_}
-    check(by_id["toolMode"]["recommendedScope"] == MEMORY_SCOPE_CATEGORY,
-          "建筑与服务：工具模式推荐改成「同类」")
+    check(by_id["toolMode.net"]["recommendedScope"] == MEMORY_SCOPE_CATEGORY
+          and by_id["toolMode.obj"]["recommendedScope"] == MEMORY_SCOPE_CATEGORY,
+          "建筑与服务：工具模式（道路）/（建筑）推荐都是「同类」")
     check(by_id["elevation"]["recommendedScope"] == MEMORY_SCOPE_GROUP,
           "建筑与服务：高度推荐仍是「同组」")
     check(by_id["parallel"]["recommendedScope"] < 0,

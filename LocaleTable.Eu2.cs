@@ -31,12 +31,6 @@ namespace ToolModeMemory
 			d["scope.line.group"] = "Ta sama grupa: narzędzia w tej samej grupie paska menu używają jednej wartości. {0}";
 			d["scope.line.menu"] = "To samo menu: wszystkie narzędzia w menu używają jednej wartości. {0}";
 			d[kScopeLineCategory] = "Ten sam typ zasobu: zasoby grupujemy według tego, komu służą, np. mały i duży parking to jeden typ, a most to typ osobny: {0}";
-			d["scope.line.shared"] = "Globalnie: każdy budynek i każda usługa na tej stronie, które obsługują tę pozycję, używają jednej wartości";
-			d["scope.line.unique"] = "Bez współdzielenia: każdy budynek i każda usługa na tej stronie są ustawiane zupełnie niezależnie";
-			d["scope.line.shared.function"] = "Globalnie: każde narzędzie funkcji na tej stronie, które obsługuje tę pozycję, używa jednej wartości";
-			d["scope.line.unique.function"] = "Bez współdzielenia: każde narzędzie funkcji na tej stronie jest ustawiane zupełnie niezależnie";
-			d["scope.line.shared.item"] = "Globalnie: każdy rekwizyt na tej stronie, który obsługuje tę pozycję, używa jednej wartości";
-			d["scope.line.unique.item"] = "Bez współdzielenia: każdy rekwizyt na tej stronie jest ustawiany zupełnie niezależnie";
 
 			d[kScopeGroup] = "Ta sama grupa";
 			d[kScopeMenu] = "To samo menu";
@@ -82,7 +76,6 @@ namespace ToolModeMemory
 			d["item.packs.ex.menu"] = "pakiety zaznaczone w menu Drogi i pakiety zaznaczone w menu Elektryczność są zapamiętywane osobno.";
 			d["item.packs.ex.category"] = "ten wiersz to stan samego panelu filtrowania, zapamiętywany pod aktualnym menu i grupą; oryginał czyści go przy każdej zmianie grupy.";
 			d["item.toolMode.label"] = "Narzędzia";
-			d["item.toolMode.desc"] = "Zapamiętuje tryb pracy narzędzia, np. Prosta, Jeden zakręt, Ciągła, Siatka czy Zastąp.\nDostępne tryby zależą od wybranego zasobu.";
 			d["item.toolMode.ex.group"] = "na przykład ustawisz Jeden zakręt dla małej dwupasmowej drogi i inne małe drogi też będą mieć Jeden zakręt, a duża droga nie.";
 			d["item.toolMode.ex.menu"] = "każdy zasób kliknięty w menu Drogi jest na trybie Jeden zakręt, ale po przejściu do menu Elektryczność już nie.";
 			d["item.toolMode.ex.category"] = "np. przejście na drogę sześciopasmową nadal daje Jeden zakręt, ale most albo tory metra wracają do swojego trybu domyślnego.";
@@ -151,7 +144,6 @@ namespace ToolModeMemory
 			d["item.anarchyObjectElevation.label"] = "Wzniesienie obiektu";
 			d["item.anarchyObjectElevation.desc"] = "Zapamiętuje regulatory wysokości, które Anarchy dodaje do panelu: blokada przekształceń, wysokość, zmienność wysokości i krok podnoszenia/opuszczania.\nSą w jednym rzędzie, więc są zapamiętywane i współdzielone razem.";
 		d["item.f.snap.desc"] = "Zapamiętuje przełączniki wiersza Przyciąganie w panelach funkcji, np. do kątów prostych, do siatki, do dróg czy linie konturów.\nKtóre przełączniki widać, zależy od narzędzia.";
-		d["item.f.toolMode.desc"] = "Zapamiętuje tryb narzędzia w panelach funkcji: strefy oferują Wypełnienie, Zaznaczanie obszarowe i Pędzel, obszary Edytuj.\nKażde narzędzie terraformowania ma własny zestaw.";
 		d["item.f.topography.desc"] = "Zapamiętuje, czy w panelach funkcji widać linie konturów terenu.";
 		d["item.f.underground.desc"] = "Zapamiętuje przełącznik Tryb podziemny w panelach funkcji.";
 		d["item.i.snap.desc"] = "Zapamiętuje przełączniki wiersza Przyciąganie na panelach rekwizytów, np. do powierzchni obiektu, do pobliskich kształtów czy Usuń tylko pasujący typ.\nKtóre widać, zależy od rekwizytu.";
@@ -166,8 +158,6 @@ namespace ToolModeMemory
 		d["tab.master"] = "Główny przełącznik";
 		d["enabled.label"] = "Włącz mod";
 		d["enabled.desc"] = "Fabrycznie wyłączony. Włączony: ustawienia poniżej działają, a ustawienia narzędzi są zapisywane i wracają po wczytaniu zapisu.\nWyłączony: mod nic nie robi i wszystko działa jak w grze.";
-		d["scope.line.sharedSingle"] = "Współdzielone globalnie: każde narzędzie tej strony obsługujące tę pozycję używa jednej wartości";
-			d["scope.note"] = "Uwaga: każdy poziom powyżej działa tylko w obrębie tej strony.";
 			d["scope.line.category"] = "Ten sam typ zasobu: zasoby grupujemy według tego, komu służą, i jedna grupa używa jednej wartości. {0}";
 			d["ex.net.group"] = "Na przykład wszystkie drogi z grupy Małe drogi używają jednej wartości, a Duże drogi to inna grupa.";
 			d["ex.net.menu"] = "Na przykład wszystkie drogi w menu Drogi używają jednej wartości, a w menu Energia już nie.";
@@ -183,13 +173,29 @@ namespace ToolModeMemory
 			d["ex.tree.group"] = "Wszystkie drzewa są w grupie Roślinność w menu Kształtowanie krajobrazu, więc Ta sama grupa i To samo menu wybierają te same drzewa.";
 			d["ex.tree.menu"] = "Wszystkie drzewa są w grupie Roślinność w menu Kształtowanie krajobrazu, więc To samo menu i Ta sama grupa wybierają te same drzewa.";
 			d["item.color.desc"] = "Zapamiętuje wiersz Kolor w narzędziach linii: kolor, którym rysowana jest linia.";
-			d["item.f.toolMode.desc"] = "Zapamiętuje wiersz Narzędzia w narzędziach funkcji: Wypełnienie, Zaznaczanie obszarowe i Pędzel w strefach; Edytuj w narzędziach obszaru; Główny element, Dodatek i Wszystko w narzędziu wyburzania.";
 			d["item.f.snap.desc"] = "Zapamiętuje przełączniki wiersza Przyciąganie w narzędziach funkcji; dostępne opcje zależą od narzędzia.\nPrzycisk gry do włączania i wyłączania wszystkich przyciągnięć to przełącznik zbiorczy i nie jest zapamiętywany.";
 			d["item.f.topography.desc"] = "Zapamiętuje wiersz Topografia w narzędziach stref, terraformowania i innych: czy widoczne są linie konturowe terenu.";
 			d["item.f.underground.desc"] = "Zapamiętuje wiersz Tryb podziemny w narzędziach obszaru, linii, wyburzania i obiektów.";
 			d["item.i.topography.desc"] = "Zapamiętuje wiersz Topografia w panelach obiektów.";
 			d["scope.desc.function"] = "Jak szeroko współdzielona jest wartość tej pozycji.";
 			d["scope.desc.item"] = "Jak szeroko współdzielona jest wartość tej pozycji.";
+			d["scope.line.shared"] = "Globalnie: wszystkie budynki i usługi, które pokazują tę pozycję, używają jednego ustawienia.";
+			d["scope.line.shared.function"] = "Globalnie: wszystkie funkcje, które pokazują tę pozycję, używają jednego ustawienia.";
+			d["scope.line.shared.item"] = "Globalnie: wszystkie rekwizyty, które pokazują tę pozycję, używają jednego ustawienia.";
+			d["scope.line.unique"] = "Bez współdzielenia: każdy budynek i każda usługa, które pokazują tę pozycję, są ustawiane osobno.";
+			d["scope.line.unique.function"] = "Bez współdzielenia: każda funkcja, która pokazuje tę pozycję, jest ustawiana osobno.";
+			d["scope.line.unique.item"] = "Bez współdzielenia: każdy rekwizyt, który pokazuje tę pozycję, jest ustawiany osobno.";
+			d["scope.note"] = "Zakresy dla budynków i usług, funkcji oraz rekwizytów są niezależne.";
+			d["label.family"] = "{0} ({1})";
+			d["desc.family"] = "Ten wiersz dotyczy tylko: {0}.";
+			d["fam.net.desc"] = "Rodzina dróg: drogi, tory, rury i linie energetyczne liczą się wszystkie.";
+			d["fam.net"] = "drogi";
+			d["fam.assetObj"] = "budynki";
+			d["fam.funcObj"] = "znaczniki";
+			d["fam.zone"] = "strefy";
+			d["fam.area"] = "narzędzia obszaru";
+			d["item.toolMode.desc"] = "Zapamiętuje tryb wybrany w tych narzędziach.";
+			d["item.f.toolMode.desc"] = "Zapamiętuje wiersz Tryb narzędzia w narzędziach stref: Wypełnianie, Zaznaczanie i Malowanie.";
 			return d;
 		}
 
@@ -212,12 +218,6 @@ namespace ToolModeMemory
 			d["scope.line.group"] = "Mesmo grupo: as ferramentas do mesmo grupo da barra de menus partilham um valor. {0}";
 			d["scope.line.menu"] = "Mesmo menu: todas as ferramentas de um menu partilham um valor. {0}";
 			d[kScopeLineCategory] = "Mesmo tipo de ativo: agrupamos pelo que o ativo atende, então um estacionamento pequeno e um grande são o mesmo tipo, mas uma ponte é um tipo à parte: {0}";
-			d["scope.line.shared"] = "Global: cada ativo desta página que suporta este item usa um único valor";
-			d["scope.line.unique"] = "Sem partilhar: cada ativo desta página é definido de forma totalmente independente";
-			d["scope.line.shared.function"] = "Global: cada ferramenta de função desta página que suporta este item usa um único valor";
-			d["scope.line.unique.function"] = "Sem partilhar: cada ferramenta de função desta página é definida de forma totalmente independente";
-			d["scope.line.shared.item"] = "Global: cada acessório desta página que suporta este item usa um único valor";
-			d["scope.line.unique.item"] = "Sem partilhar: cada acessório desta página é definido de forma totalmente independente";
 
 			d[kScopeGroup] = "Mesmo grupo";
 			d[kScopeMenu] = "Mesmo menu";
@@ -263,7 +263,6 @@ namespace ToolModeMemory
 			d["item.packs.ex.menu"] = "os pacotes marcados no menu Vias e os marcados no menu Eletricidade são lembrados à parte.";
 			d["item.packs.ex.category"] = "esta linha é o estado do painel de filtros, guardado pelo menu e grupo atuais.";
 			d["item.toolMode.label"] = "Ferramentas";
-			d["item.toolMode.desc"] = "Lembra o modo de trabalho da ferramenta, por exemplo Reta, Curva simples, Contínuo, Grade ou Substituir.\nOs modos disponíveis dependem do ativo escolhido.";
 			d["item.toolMode.ex.group"] = "você escolhe Curva simples numa rua pequena e as outras ruas pequenas também usam.";
 			d["item.toolMode.ex.menu"] = "todo ativo que você clica no menu Vias está em Curva simples, mas ao mudar para o menu Eletricidade já não.";
 			d["item.toolMode.ex.category"] = "por exemplo, mudar para uma via de 6 faixas ainda dá Curva simples, mas uma ponte ou um trilho de metrô voltam ao modo padrão.";
@@ -308,8 +307,6 @@ namespace ToolModeMemory
 		// ==================== v0.7.0 新增 / 重写（pt-BR）====================
 		d["enabled.label"] = "Ativar o mod";
 		d["enabled.desc"] = "Desligado de fábrica. Ligado: as definições abaixo valem, e as das ferramentas são gravadas e voltam ao carregar um jogo.\nDesligado: o mod não faz nada e tudo funciona como no jogo.";
-		d["scope.line.sharedSingle"] = "Global: todas as ferramentas desta página que suportam este item usam um único valor";
-			d["scope.note"] = "Nota: cada nível acima vale apenas dentro desta página.";
 		d["domain.asset.desc"] = "Ligado: as definições das ferramentas desta página são gravadas em tempo real e voltam ao carregar um jogo.\nDesligado: nada é gravado nem restaurado, e o âmbito de partilha não pode ser definido.";
 		d["domain.asset.label"] = "Lembrar as ferramentas da página Ativos";
 		d["domain.function.desc"] = "Ligado: as definições das ferramentas desta página são gravadas em tempo real e voltam ao carregar um jogo.\nDesligado: nada é gravado nem restaurado, e o âmbito de partilha não pode ser definido.";
@@ -336,7 +333,6 @@ namespace ToolModeMemory
 			d["item.anarchyObjectElevation.desc"] = "Guarda os controles de altura que o Anarchy acrescenta ao painel: bloqueio de transformação, altura, variação de altura e o passo para subir ou descer.\nFicam na mesma fila, por isso são guardados e partilhados em conjunto.";
 		d["item.decoration.label"] = "Preservar idade";
 		d["item.f.snap.desc"] = "Lembra os interruptores da linha Aderir nos painéis de funções, por exemplo a ângulos de 90 graus, à grade, a vias ou as linhas de contorno.\nQuais aparecem depende da ferramenta.";
-		d["item.f.toolMode.desc"] = "Lembra o modo da ferramenta nos painéis de funções: as zonas oferecem Preencher, Marcar e Pintar, as áreas Editar.\nCada ferramenta de Terraformação tem o próprio conjunto.";
 		d["item.f.topography.desc"] = "Lembra se os painéis de funções exibem as linhas de contorno do terreno.";
 		d["item.f.underground.desc"] = "Lembra o interruptor Modo Subterrâneo nos painéis de funções.";
 		d["item.i.snap.desc"] = "Lembra os interruptores da linha Aderir nos painéis de acessórios, por exemplo à superfície de um objeto, à geometria próxima ou Remover apenas o tipo correspondente.\nQuais aparecem depende do acessório.";
@@ -364,13 +360,29 @@ namespace ToolModeMemory
 			d["ex.tree.group"] = "Todas as árvores estão no grupo Vegetação do menu Paisagismo, por isso Mesmo grupo e Mesmo menu escolhem as mesmas árvores.";
 			d["ex.tree.menu"] = "Todas as árvores estão no grupo Vegetação do menu Paisagismo, por isso Mesmo menu e Mesmo grupo escolhem as mesmas árvores.";
 			d["item.color.desc"] = "Guarda a fila Cor das ferramentas de linha: a cor com que a linha é desenhada.";
-			d["item.f.toolMode.desc"] = "Guarda a fila Ferramentas: Preencher, Marcar e Pintar nas zonas; Edição nas ferramentas de área; Elemento principal, Elemento secundário e Tudo na ferramenta de demolição.";
 			d["item.f.snap.desc"] = "Guarda os interruptores da fila Aderir nas ferramentas de função; as opções dependem da ferramenta.\nO botão do jogo para ligar ou desligar todos os ajustes é um interruptor global e não é guardado.";
 			d["item.f.topography.desc"] = "Guarda a fila Topografia nas ferramentas de zonas, terraformação e outras: se as curvas de nível são visíveis.";
 			d["item.f.underground.desc"] = "Guarda a fila Modo Subterrâneo nas ferramentas de área, linha, demolição e objetos.";
 			d["item.i.topography.desc"] = "Guarda a fila Topografia nos painéis de objetos.";
 			d["scope.desc.function"] = "Até que ponto o valor deste item é partilhado.";
 			d["scope.desc.item"] = "Até que ponto o valor deste item é partilhado.";
+			d["scope.line.shared"] = "Global: todos os edifícios e serviços que mostram este item usam a mesma definição.";
+			d["scope.line.shared.function"] = "Global: todas as ferramentas de função que mostram este item usam a mesma definição.";
+			d["scope.line.shared.item"] = "Global: todos os acessórios que mostram este item usam a mesma definição.";
+			d["scope.line.unique"] = "Sem partilhar: cada edifício e serviço que mostra este item é definido em separado.";
+			d["scope.line.unique.function"] = "Sem partilhar: cada ferramenta de função que mostra este item é definida em separado.";
+			d["scope.line.unique.item"] = "Sem partilhar: cada acessório que mostra este item é definido em separado.";
+			d["scope.note"] = "Os âmbitos de edifícios e serviços, funções e acessórios são independentes.";
+			d["label.family"] = "{0} ({1})";
+			d["desc.family"] = "Esta linha aplica-se apenas a {0}.";
+			d["fam.net.desc"] = "A família das estradas: estradas, vias, tubagens e linhas elétricas contam todas.";
+			d["fam.net"] = "estradas";
+			d["fam.assetObj"] = "edifícios";
+			d["fam.funcObj"] = "marcadores";
+			d["fam.zone"] = "zonas";
+			d["fam.area"] = "ferramentas de área";
+			d["item.toolMode.desc"] = "Memoriza o modo escolhido nestas ferramentas.";
+			d["item.f.toolMode.desc"] = "Memoriza a linha Modo da ferramenta nas ferramentas de zona: Preenchimento, Seleção e Pintura.";
 			return d;
 		}
 
@@ -393,12 +405,6 @@ namespace ToolModeMemory
 			d["scope.line.group"] = "Та же группа: инструменты в одной группе панели меню используют одно значение. {0}";
 			d["scope.line.menu"] = "То же меню: все инструменты меню используют одно значение. {0}";
 			d[kScopeLineCategory] = "Тот же тип объекта: группируем по тому, кому служит объект, поэтому маленькая и большая парковка — один тип, а мост — отдельный: {0}";
-			d["scope.line.shared"] = "Глобально: каждый актив на этой странице, поддерживающий этот пункт, использует одно значение";
-			d["scope.line.unique"] = "Без разделения: каждый актив на этой странице настраивается совершенно независимо";
-			d["scope.line.shared.function"] = "Глобально: каждый инструмент функций на этой странице, поддерживающий этот пункт, использует одно значение";
-			d["scope.line.unique.function"] = "Без разделения: каждый инструмент функций на этой странице настраивается совершенно независимо";
-			d["scope.line.shared.item"] = "Глобально: каждый объект на этой странице, поддерживающий этот пункт, использует одно значение";
-			d["scope.line.unique.item"] = "Без разделения: каждый объект на этой странице настраивается совершенно независимо";
 
 			d[kScopeGroup] = "Та же группа";
 			d[kScopeMenu] = "То же меню";
@@ -444,7 +450,6 @@ namespace ToolModeMemory
 			d["item.packs.ex.menu"] = "наборы, отмеченные в меню «Дороги», и наборы, отмеченные в меню «Электричество», запоминаются раздельно.";
 			d["item.packs.ex.category"] = "эта строка — состояние самой панели фильтров, она запоминается по текущему меню и группе; оригинал очищает её при каждой смене группы.";
 			d["item.toolMode.label"] = "Режим инструмента";
-			d["item.toolMode.desc"] = "Запоминает режим работы инструмента, например Прямая, Простая кривая, Непрерывная, Сетка или Заменить.\nДоступные режимы зависят от выбранного актива.";
 			d["item.toolMode.ex.group"] = "вы выбираете простую кривую для небольшой дороги, и другие небольшие дороги тоже.";
 			d["item.toolMode.ex.menu"] = "у любого объекта, выбранного в меню «Дороги», стоит режим «Простая кривая», но в меню «Электричество» уже нет.";
 			d["item.toolMode.ex.category"] = "например, переход на шестиполосную дорогу тоже даёт простую кривую, но мост или тоннель метро возвращаются к своему режиму по умолчанию.";
@@ -517,7 +522,6 @@ namespace ToolModeMemory
 			d["item.anarchyObjectElevation.label"] = "Высота объекта";
 			d["item.anarchyObjectElevation.desc"] = "Запоминает регуляторы высоты, которые Anarchy добавляет на панель: блокировка трансформации, высота, разброс высоты и шаг подъёма/опускания.\nОни стоят в одном ряду, поэтому запоминаются и используются вместе.";
 		d["item.f.snap.desc"] = "Запоминает переключатели строки «Привязка» на панелях функций: к прямым углам, к сетке, к дорогам, контурные линии и другие.\nКакие видны, зависит от инструмента.";
-		d["item.f.toolMode.desc"] = "Запоминает режим инструмента на панелях функций: зоны предлагают «Заливку», «Рамку» и «Кисть», области — «Изменить».\nУ каждого инструмента терраформирования свой набор.";
 		d["item.f.topography.desc"] = "Запоминает, показывают ли панели функций контурные линии рельефа.";
 		d["item.f.underground.desc"] = "Запоминает переключатель «Режим тоннеля» на панелях функций.";
 		d["item.i.snap.desc"] = "Запоминает переключатели строки «Привязка» на панелях объектов: к поверхности объекта, к ближайшим формам, «Удалить только определенный тип» и другие.\nКакие видны, зависит от объекта.";
@@ -528,8 +532,6 @@ namespace ToolModeMemory
 		d["scope.category.item"] = "Тот же тип объекта";
 		d["enabled.label"] = "Включить мод";
 		d["enabled.desc"] = "По умолчанию выключен. Включён: настройки ниже действуют, а настройки инструментов записываются и возвращаются при загрузке.\nВыключен: мод ничего не делает, всё работает как в игре.";
-		d["scope.line.sharedSingle"] = "Глобально: все инструменты на этой странице, поддерживающие данный пункт, используют одно значение";
-			d["scope.note"] = "Примечание: каждый уровень выше действует только внутри этой страницы.";
 			d["scope.line.category"] = "Тот же тип объекта: объекты группируются по тому, кому служат, и одна группа использует одно значение. {0}";
 			d["ex.net.group"] = "Например, все дороги группы Небольшие дороги используют одно значение; Большие дороги — это другая группа.";
 			d["ex.net.menu"] = "Например, все дороги меню Дороги используют одно значение; в меню «Электричество» это не так.";
@@ -545,13 +547,29 @@ namespace ToolModeMemory
 			d["ex.tree.group"] = "Все деревья находятся в группе Флора меню Ландшафтный дизайн, поэтому «Та же группа» и «То же меню» выбирают одни и те же деревья.";
 			d["ex.tree.menu"] = "Все деревья находятся в группе Флора меню Ландшафтный дизайн, поэтому «То же меню» и «Та же группа» выбирают одни и те же деревья.";
 			d["item.color.desc"] = "Запоминает строку «Цвет» у инструментов линий: цвет, которым рисуется линия.";
-			d["item.f.toolMode.desc"] = "Запоминает строку «Режим инструмента» у функциональных инструментов: заливка, рамка и кисть у зон; «Изменить» у инструментов областей; основной, вспомогательный элемент и всё у сноса.";
 			d["item.f.snap.desc"] = "Запоминает переключатели строки «Привязка» у функциональных инструментов; набор переключателей зависит от инструмента.\nКнопка игры «включить/выключить все привязки» — это общий переключатель, он не запоминается.";
 			d["item.f.topography.desc"] = "Запоминает строку «Топография» у инструментов зон, терраформирования и других: видны ли контурные линии рельефа.";
 			d["item.f.underground.desc"] = "Запоминает строку «Режим тоннеля» у инструментов областей, линий, сноса и объектов.";
 			d["item.i.topography.desc"] = "Запоминает строку «Топография» на панелях объектов.";
 			d["scope.desc.function"] = "Насколько широко разделяется значение этого пункта.";
 			d["scope.desc.item"] = "Насколько широко разделяется значение этого пункта.";
+			d["scope.line.shared"] = "Глобально: все здания и службы, которые показывают этот пункт, используют одну настройку.";
+			d["scope.line.shared.function"] = "Глобально: все функции, которые показывают этот пункт, используют одну настройку.";
+			d["scope.line.shared.item"] = "Глобально: все объекты, которые показывают этот пункт, используют одну настройку.";
+			d["scope.line.unique"] = "Без разделения: каждое здание и каждая служба, которые показывают этот пункт, настраиваются отдельно.";
+			d["scope.line.unique.function"] = "Без разделения: каждая функция, которая показывает этот пункт, настраивается отдельно.";
+			d["scope.line.unique.item"] = "Без разделения: каждый объект, который показывает этот пункт, настраивается отдельно.";
+			d["scope.note"] = "Области для зданий и служб, функций и объектов независимы.";
+			d["label.family"] = "{0} ({1})";
+			d["desc.family"] = "Эта строка относится только к: {0}.";
+			d["fam.net.desc"] = "Семейство дорог: дороги, пути, трубы и линии электропередачи — всё это входит в него.";
+			d["fam.net"] = "дороги";
+			d["fam.assetObj"] = "здания";
+			d["fam.funcObj"] = "маркеры";
+			d["fam.zone"] = "зоны";
+			d["fam.area"] = "инструменты области";
+			d["item.toolMode.desc"] = "Запоминает режим, выбранный в этих инструментах.";
+			d["item.f.toolMode.desc"] = "Запоминает строку «Режим инструмента» у инструментов зон: Заливка, Выделение и Кисть.";
 			return d;
 		}
 	}

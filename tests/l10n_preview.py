@@ -44,21 +44,19 @@ def load_pages():
             decl = re.search(r"public static readonly ToolItemDef\[\]\s*%s" % name, cat)
         seg = cat[decl.end():cat.find(";", decl.end())]
         rows = []
-        for m in re.finditer(r"new ToolItemDef\((\w+),\s*(\d+),\s*ItemSource\.(\w+)", seg):
-            rows.append((int(m.group(2)), consts.get(m.group(1), m.group(1)), m.group(3)))
-        # 每条构造调用末尾的 exampleFamily（第 12 个形参，只有写了引号字面量才取）
-        fams = []
-        for call in re.finditer(r"new ToolItemDef\((.*?)\)\s*,", seg, re.S):
-            pass
-        for m in re.finditer(r"new ToolItemDef\((.*?)\),", seg, re.S):
-            args = m.group(1)
-            tail = re.findall(r'"([^"]*)"', args)
-            fam = ""
-            # 倒数第二个字符串是 places，最后一个是 exampleFamily（有就取）
-            if len(tail) >= 2:
-                fam = tail[-1]
-            fams.append(fam)
-        rows = [(n, i, s2, fams[k] if k < len(fams) else "") for k, (n, i, s2) in enumerate(rows)]
+        # v0.9.2：按参数位置取，不再猜「最后一个字符串」—— 拆行后多了 family / textId 两个形参。
+        for args in lc.catalog_calls(seg):
+            if len(args) < 3:
+                continue
+            item_id = consts.get(args[0], args[0].strip('"'))
+            number = int(args[1])
+            source = args[2].split(".")[-1]
+            places = args[10].strip().strip('"') if len(args) > 10 and args[10].startswith('"') else ""
+            fam = args[11].strip().strip('"') if len(args) > 11 and args[11].startswith('"') else ""
+            fname = args[12].strip().strip('"') if len(args) > 12 and args[12].startswith('"') else ""
+            tid = args[13].strip() if len(args) > 13 else ""
+            text_id = consts.get(tid, tid.strip('"')) if tid else ""
+            rows.append((number, item_id, source, fam, fname, text_id))
         pages[name] = rows
     return pages
 
@@ -106,10 +104,14 @@ def main():
 
     ALIAS = {"color": "other"}
 
-    def txt(item_id, slot, domain, family=""):
-        """ItemText 三级回退：本项键 -> LocaleAlias 键 -> 去掉 f./i. 的同名键。"""
+    def txt(item_id, slot, domain, family="", text_id=""):
+        """ItemText 四级回退：本项键 -> TextId 基项键 -> LocaleAlias 键 -> 去掉 f./i. 的同名键。"""
         base = item_id[2:] if item_id[:2] in ("f.", "i.") else item_id
         cands = [item_id]
+        if text_id:
+            cands.append(text_id)
+            tb = text_id[2:] if text_id[:2] in ("f.", "i.") else text_id
+            cands.append(tb)
         if item_id in ALIAS:
             cands.append(ALIAS[item_id])
         cands.append(base)
@@ -134,11 +136,11 @@ def main():
         return 1
     # 每页编号必须各自 1..n（v0.7.0 起不再跨页连续）
     for name, rows in pages.items():
-        nums = [n for n, _i, _s, _f in rows]
+        nums = [r[0] for r in rows]
         if nums != list(range(1, len(rows) + 1)):
             print("FAIL %s 编号不是 1..%d 连续：%s" % (name, len(rows), nums))
             return 1
-        for _n, i, s, _f in rows:
+        for _n, i, s, _f, _fn, _t in rows:
             if s not in ("Vanilla", "Toolbar", "AnarchyMod"):
                 print("FAIL %s 里 %s 的 ItemSource 不认识：%s" % (name, i, s))
                 return 1
@@ -170,8 +172,8 @@ def main():
     # ---- 三页 ----
     for name, rows in pages.items():
         suffix, group_key, _ = DOMAIN_OF[name]
-        official = [(n, i, f) for n, i, s, f in rows if s in ("Vanilla", "Toolbar")]
-        anarchy = [(n, i, f) for n, i, s, f in rows if s == "AnarchyMod"]
+        official = [(n, i, f, fn, t) for n, i, s, f, fn, t in rows if s in ("Vanilla", "Toolbar")]
+        anarchy = [(n, i, f, fn, t) for n, i, s, f, fn, t in rows if s == "AnarchyMod"]
         cat_key = "scope.category" if suffix == "asset" else "scope.category." + suffix
         line_cat = "scope.line.category" if suffix == "asset" else "scope.line.category." + suffix
         tab_key = {"asset": "tab.assets", "function": "tab.functions", "item": "tab.items"}[suffix]
@@ -181,11 +183,24 @@ def main():
         def emit(title_key, page_rows):
             out.append("")
             out.append("【板块】" + d[title_key])
-            for num, item_id, family in page_rows:
-                label = "%d. %s" % (num, txt(item_id, "label", suffix) or item_id)
+            for num, item_id, family, fname, text_id in page_rows:
+                label = "%d. %s" % (num, txt(item_id, "label", suffix, "", text_id) or item_id)
+                if fname:
+                    key = {"net": "fam.net", "zone": "fam.zone", "area": "fam.area"}.get(
+                        fname, "fam.funcObj" if suffix == "function" else "fam.assetObj")
+                    fam_text = d.get(key, "")
+                    if fam_text:
+                        label = d["label.family"].replace("{0}", label).replace("{1}", fam_text)
                 out.append("")
                 out.append("── %s" % label)
-                out.append("   说明: " + nl(txt(item_id, "desc", suffix)))
+                desc = nl(txt(item_id, "desc", suffix, "", text_id))
+                if fname and d.get("desc.family"):
+                    key = {"net": "fam.net", "zone": "fam.zone", "area": "fam.area"}.get(
+                        fname, "fam.funcObj" if suffix == "function" else "fam.assetObj")
+                    desc = desc + "\n" + d["desc.family"].replace("{0}", d.get(key, ""))
+                    if fname == "net" and d.get("fam.net.desc"):
+                        desc = desc + "\n" + d["fam.net.desc"]
+                out.append("   说明: " + desc)
                 # v0.8.0：与 LocaleTable.ScopeDescription 完全对齐 ——
                 # 「同类 / 全局共用 / 全部不共用」三句都按当前项的域取专用键
                 # （scope.line.X.<asset|function|item>），本语言没写专用键时剥掉最后一段
@@ -198,11 +213,7 @@ def main():
                     k = base_key + "." + suffix
                     return d.get(k, d.get(base_key, k))
 
-                shared_key = "scope.line.sharedSingle" if item_id in single else "scope.line.shared"
-                if item_id in single:
-                    shared_line = d[shared_key]          # 本页共用一份，三页通用
-                else:
-                    shared_line = by_domain("scope.line.shared")
+                shared_line = by_domain("scope.line.shared")
                 # v0.9.0 需求 4：功能页与道具页不再提供「同类」这一档
                 # （LocaleTable.BuildScopeDropdown 只给建筑与服务页列它），
                 # 所以预览也要少一行，否则看到的下拉说明比游戏里多一项。

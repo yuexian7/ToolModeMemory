@@ -39,9 +39,11 @@ FRAMES_KEYS = {"frame.locale", "item.anarchy.label", "scope.group.none"}
 # 编号在每个页内各自从 1 数）。
 # 这份表**只是文档**：真正的一致性由下面对着 ToolItemCatalog.cs 解析出来的目录核对，
 # 手抄错了会被 "目录与 ITEM_IDS 不一致" 直接拦下。
-ITEM_IDS = ["themes", "packs", "toolMode", "elevation", "parallel", "snap", "topography",
-            "underground", "anarchy", "leftRight", "general", "anarchyObjectElevation",
-            "f.themes", "f.packs", "f.toolMode", "f.snap", "f.underground", "f.topography",
+ITEM_IDS = ["themes", "packs", "toolMode.net", "toolMode.obj", "elevation", "parallel",
+            "snap.net", "snap.obj", "topography", "underground", "anarchy", "leftRight",
+            "general", "anarchyObjectElevation",
+            "f.themes", "f.packs", "f.toolMode", "f.snap.zone", "f.snap.area", "f.snap.obj",
+            "f.underground", "f.topography",
             "f.brushType", "f.brushSize", "f.brushStrength", "f.brushHeight", "f.distance", "f.color",
             "i.themes", "i.packs", "i.toolMode", "i.distance", "i.brushType", "i.brushSize",
             "i.brushStrength", "i.ageMask", "i.decoration", "i.snap", "i.topography",
@@ -72,8 +74,9 @@ DOMAIN_LABEL = {"Asset": "资产", "Function": "功能", "Item": "道具"}
 # 别的页的词，脚本会当场拦下。
 FAMILY_KEYS = ["ex.%s.%s" % (f, s) for f in ("net", "zone", "route", "terrain", "prop", "tree")
                for s in ("group", "menu")] + ["ex.net.category"]
-PAGE_FAMILIES = {"Asset": {"net", ""}, "Function": {"zone", "route", "terrain", "none"},
-                 "Item": {"prop", "tree"}}
+# v0.9.2：拆行后建筑/标记那几行没有合适的例子族，用 "none" 表示「不举例」。
+PAGE_FAMILIES = {"Asset": {"net", "none", ""}, "Function": {"zone", "route", "terrain", "none"},
+                 "Item": {"prop", "tree", "none"}}
 
 SCALAR_KEYS = [
     "mod.name",
@@ -87,7 +90,10 @@ SCALAR_KEYS = [
     "domain.item.label", "domain.item.desc",
     "scope.label", "scope.desc",
     "scope.line.group", "scope.line.menu", "scope.line.category",
-    "scope.line.shared", "scope.line.sharedSingle", "scope.line.unique", "scope.note",
+    "scope.line.shared", "scope.line.unique", "scope.note",
+    # v0.9.2：按工具类别拆行后，行名后缀与「只对这一类生效」那句
+    "label.family", "desc.family",
+    "fam.net", "fam.net.desc", "fam.assetObj", "fam.funcObj", "fam.zone", "fam.area",
     "scope.group", "scope.menu", "scope.category",
     "scope.globalShared", "scope.globalUnique",
     "tag.vanilla", "tag.recommended", "tag.recVanilla",
@@ -407,8 +413,29 @@ def main():
     # （建筑与服务页）才要求 item.<id>.ex.*；别的页不再允许用本项的例子，
     # 因为那正是「功能页/道具页出现道路词」的来源。
     fam_of = {i: f for _n, i, _d, _s, _a, f in rows}
+    # v0.9.2：按工具类别拆出来的行（toolMode.net …）文案取基项（TextId），
+    # 行名在运行时拼上工具类别（label.family），所以只需要基项的 label / desc 存在。
+    text_of = {}
+    src = io.open(os.path.join(ROOT, "ToolItemCatalog.cs"), encoding="utf-8-sig").read()
+    src_consts = dict(re.findall(r'const string\s+(\w+)\s*=\s*"([^"]*)"', src))
+    for args in catalog_calls(src):
+        if len(args) < 14:
+            continue
+        tid = args[13].strip()
+        if tid.startswith("k") and tid in src_consts:
+            text_of[src_consts.get(args[0], args[0].strip('"'))] = src_consts[tid]
     groups = []
     for item in ITEM_IDS:
+        if item in text_of:
+            base_text = text_of[item]
+            # 基项可能只写了「去掉域前缀」那一份（f.snap -> snap），两种都算数
+            short = base_text.split(".", 1)[1] if base_text.startswith(("f.", "i.")) else None
+            for sfx in ("label", "desc"):
+                if short:
+                    groups.append(("item.%s.%s" % (base_text, sfx), "item.%s.%s" % (short, sfx)))
+                else:
+                    required.append("item.%s.%s" % (base_text, sfx))
+            continue
         alias = TEXT_ALIAS.get(item)
         base = item.split(".", 1)[1] if item.startswith(("f.", "i.")) else None
         slots = ["label", "desc"]

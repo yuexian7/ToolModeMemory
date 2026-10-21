@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Colossal.Logging;
 using Game;
@@ -295,6 +295,16 @@ namespace ToolModeMemory.Systems
 
 		public bool MasterEnabled { get { return base.Enabled; } }
 
+		/// <summary>
+		/// 拆行后的项是否适用于当前工具（v0.9.2）。Family 为空 = 不限；
+		/// 否则要求 <see cref="ToolMemoryBridge.Family"/> 完全一致（net / obj / zone / area …）。
+		/// </summary>
+		private static bool FamilyMatches(ToolItemDef def, ToolBaseSystem tool)
+		{
+			if (def == null || string.IsNullOrEmpty(def.Family)) return true;
+			return string.Equals(def.Family, ToolMemoryBridge.Family(tool), StringComparison.Ordinal);
+		}
+
 		private string KeyFor(ToolItemDef def, PrefabBase prefab, ToolBaseSystem tool, MemoryScope scope,
 			ItemDomain domain)
 		{
@@ -572,6 +582,9 @@ namespace ToolModeMemory.Systems
 				{
 					ToolItemDef def = items[i];
 					if (def.Domain != domain) continue;
+					// v0.9.2：按工具类别拆开的行（工具模式（道路）/（建筑）、对齐（功能区）…）
+					// 只对匹配的那一类工具读写，否则两行会各自去改同一份面板值。
+					if (!FamilyMatches(def, tool)) continue;
 					// 单项「是否恢复」的开关不拦记录，
 					// 否则关掉一项就等于丢掉它的历史，再打开时是空的。
 					// 一项可能覆盖多个游戏字段（Subs），每个字段一个独立记忆桶，
@@ -633,6 +646,7 @@ namespace ToolModeMemory.Systems
 				// 只恢复**本域**那几项：三域同名项共用桶名，写回也必须按域过滤，
 				// 否则「道具」页的一项会去改道路工具面板上的同一个字段。
 				if (def.Domain != domain) continue;
+				if (!FamilyMatches(def, tool)) continue;
 				if (!setting.IsItemEnabled(def.Id)) continue;
 				MemoryScope scope = setting.GetItemScope(def.Id);
 				string key = KeyFor(def, prefab, tool, scope, domain);
@@ -676,6 +690,7 @@ namespace ToolModeMemory.Systems
 			ToolItemDef[] items = ToolItemCatalog.Items;
 			for (int i = 0; i < items.Length; i++)
 			{
+				if (!FamilyMatches(items[i], tool)) continue;
 				string[] subs = items[i].Subs;
 				int count = subs == null ? 1 : subs.Length;
 				for (int j = 0; j < count; j++)

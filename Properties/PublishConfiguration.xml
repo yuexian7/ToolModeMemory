@@ -24,7 +24,7 @@
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
 	<ModId Value="160529" />
-	<ModVersion Value="0.9.1" />
+	<ModVersion Value="0.9.2" />
 	<GameVersion Value="1.6.*" />
 	<!--Private = 不公开（用户要求）。若平台拒绝此值再改 Unlisted。-->
 	<AccessLevel Value="Private" />
@@ -38,20 +38,30 @@
 	<ExternalLink Type="kofi" Url="https://ko-fi.com/yuexian7" />
 	<ExternalLink Type="x" Url="https://x.com/yuexian777/status/2101942150447702427?s=20" />
 <ChangeLog>
-v0.9.1
+v0.9.2
 
-*   The Same group examples no longer contradict the option. The Functions page now describes the real grouping: every residential zone type is one group, and switching to Commercial is another group inside the same menu, exactly like Buildings & Services.
-*   Examples are written per page and per tool family, so the Functions and Items pages no longer show examples about roads and small roads.
-*   Items whose tools all sit in a single group no longer pretend another group exists: terraforming and trees now say plainly that Same group and Same menu pick the same tools.
-*   Fixed several row descriptions that named the wrong panel or the wrong row: underground mode, topography, colour and tool mode.
-*   The remark about brackets showing vanilla behaviour is gone from the Functions and Items pages, where no option carries such a tag.
+This update rolls up everything since the version currently published (0.6.1).
+
+*   Settings rebuilt into five tabs: Mod, Buildings and Services, Functions, Props and About, with a separate memory switch for each of the three pages. The Mod switch ships off, the three page switches ship on, and switching all three pages off turns the Mod switch off by itself.
+*   Tool items are now split by what they actually act on: buildings and services, function tools, and props (Landscaping props and trees). Rows with the same name on different pages have independent switches and scopes.
+*   Panel rows follow the real game rows instead of a summary: brush type, brush size, brush strength, target height, age, keep-age, distance and the Anarchy object-height row are separate items, each with its own scope.
+*   Tool Mode and Snapping are now split per tool type, because the options themselves differ: Tool Mode (Roads) and Tool Mode (Buildings), Snapping (Roads) and Snapping (Buildings), Snapping (Zones), (Areas) and (Markers).
+*   Scope text rewritten in all 12 languages: each level states what it shares, examples are written per page and per tool type, and items whose tools sit in a single group (terraforming, trees) say so instead of inventing another group.
+*   Functions and Props ship with no recommendations and every item off, which is exactly vanilla behaviour. Buildings and Services keeps a recommendation only where it helps: Tool Mode to Same type and Height to Same group.
+*   Fixed the Colour row, which never worked: the game only shows it on route tools, so it now records and restores there.
+*   Fixed wrong row names and panel references in several descriptions (underground mode, topography, colour, tool mode), and the Anarchy block no longer appears when Anarchy is not installed.
 
 中文
 
-*   「同组」的例子不再和选项本身矛盾：功能页现在按真实分组说明——住宅区里各种住宅类型算一组，切到商业区就是同一菜单里的另一组，跟建筑与服务页同一套规则。
-*   例子改为按页、按工具类别写，功能页与道具页不会再出现道路、小型道路这类属于别的页的东西。
-*   只有一个分组的工具项不再假装有「另一组」：地形改造与树木直接说明「同组」和「同菜单」选出来的是同一批工具。
-*   修正了几处说错面板、说错行的说明：地下模式、地形、颜色、工具模式。
-*   功能页与道具页的下拉没有（原版）标签，所以那句「括号里标出原版」从这两页去掉。
+这次更新把线上已发布版本（0.6.1）之后的改动合并成一份。
+
+*   设置页重做成五个标签页：总开关、建筑与服务、功能、道具、关于；三个页各有一个记忆开关。总开关出厂关闭，三个分开关出厂打开，三个分页全关时总开关自动跟着关。
+*   工具项按实际作用对象分成三类：建筑与服务、功能工具、道具（城市美化道具与树木）。不同页的同名行各有独立的开关与共用范围。
+*   面板行改成与游戏真实行一一对应，不再合并：笔刷种类、笔刷粗细、笔刷强度、目标高度、年龄、保留年代、距离，以及 Anarchy 的物件高度一排，各是一项、各配一份共用范围。
+*   工具模式与对齐按工具类别拆开，因为可选值本来就不同：工具模式（道路）/（建筑），对齐（道路）/（建筑）、对齐（功能区）/（区域）/（标记与预制对象）。
+*   12 种语言的共用范围说明全部重写：每一档说清共用的是什么；例子按页、按工具类别写；只有一个分组的工具项（地形改造、树木）直接说明这一点，不再编出「另一组」。
+*   功能页与道具页不提供推荐、全部出厂关闭，就是完全原版的行为。建筑与服务页只在真有益处的地方保留推荐：工具模式推荐「同类」、高度推荐「同组」。
+*   修好了一直空转的「颜色」：游戏只在路线工具上显示这一行，现在就在那里记录与恢复。
+*   修正了几处说错行名、说错面板的说明（地下模式、地形、颜色、工具模式）；没装 Anarchy 时那一块不再出现。
 </ChangeLog>
 </PublishConfiguration>
