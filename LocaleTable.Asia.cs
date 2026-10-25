@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace ToolModeMemory
@@ -61,7 +61,7 @@ namespace ToolModeMemory
 			d["about.rainbow.desc"] = "Rainbow Series の公式サイトを開く。";
 
 			// ---------- Anarchy ----------
-			d["item.anarchy.desc"] = "Anarchy Mod のスイッチを記憶します。ゲーム全体で1つの値なので、共有範囲は「全体で共有」になります。\nAnarchy Mod がない場合は表示されません。";
+			d["item.anarchy.desc"] = "Anarchy Mod のスイッチを記憶します。\nそのスイッチが実際にあるツールでのみ記憶します。\nAnarchy Mod がない場合は表示されません。";
 			d["item.anarchy.ex.group"] = "たとえば、2車線の小型道路で Anarchy をオンにすると、他の小型道路もオンのままですが、大型道路ではそうなりません。";
 			d["item.anarchy.ex.menu"] = "道路メニュー内のすべてのアセットをクリックすると Anarchy はオンですが、電力メニューに切り替えるとそうはなりません。";
 			d["item.anarchy.ex.category"] = "6車線道路に切り替えてもオンのままですが、橋や二重地下鉄線路に切り替えるとオフになります（個別に設定が必要）、どちらも道路メニューに属していても同じです。";
@@ -267,7 +267,7 @@ namespace ToolModeMemory
 			d["about.rainbow.desc"] = "Rainbow Series 웹사이트를 엽니다.";
 
 			// ---------- Anarchy ----------
-			d["item.anarchy.desc"] = "Anarchy 모드의 스위치를 기억합니다. Anarchy 모드는 게임 전체에서 하나로 공유되는 스위치라서, 이 항목도 전역 공유로 취급됩니다. 항목을 켜면 공유 범위를 바꿀 수 있습니다. Anarchy 모드가 없으면 이 항목은 표시되지 않습니다.";
+			d["item.anarchy.desc"] = "Anarchy 모드의 스위치를 기억합니다.\n실제로 이 스위치가 있는 도구에서만 기억합니다.\nAnarchy 모드가 없으면 이 항목은 표시되지 않습니다.";
 			d["item.anarchy.ex.group"] = "예를 들어 2차로 소형 도로에 Anarchy를 켜면 다른 소형 도로도 켜진 상태로 남지만, 대형 도로는 그렇지 않습니다.";
 			d["item.anarchy.ex.menu"] = "도로 메뉴의 모든 에셋을 클릭하면 Anarchy가 켜져 있지만, 전기 메뉴로 바꾸면 그렇지 않습니다.";
 			d["item.anarchy.ex.category"] = "6차로 도로로 바꿔도 켜져 있지만, 다리나 이중 지하철 선로로 바꾸면 꺼진 상태로 돌아갑니다(따로 설정 필요). 둘 다 도로 메뉴에 속해도 마찬가지입니다.";

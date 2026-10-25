@@ -45,6 +45,7 @@ ITEM_IDS = ["themes", "packs", "toolMode.net", "toolMode.obj", "elevation", "par
             "f.themes", "f.packs", "f.toolMode", "f.snap.zone", "f.snap.area", "f.snap.obj",
             "f.underground", "f.topography",
             "f.brushType", "f.brushSize", "f.brushStrength", "f.brushHeight", "f.distance", "f.color",
+            "f.anarchy", "f.anarchyObjectElevation",
             "i.themes", "i.packs", "i.toolMode", "i.distance", "i.brushType", "i.brushSize",
             "i.brushStrength", "i.ageMask", "i.decoration", "i.snap", "i.topography",
             "i.underground", "i.anarchy", "i.anarchyObjectElevation"]

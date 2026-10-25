@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!--Tool Mode Memory 发布元数据（ModId 160529，线上 Private）。
     历次发版记录（v0.1.2 ~ v0.6.0）已精简：完整过程见仓库「开发笔记.md」，本文件改动前的
     历史版本在 git 里（git show <commit>:Properties/PublishConfiguration.xml）。
@@ -24,13 +24,13 @@
 <PublishConfiguration>
 	<!--首发成功（2026-09-24，Private）：ModId 160529。此后重传二进制一律用 PublishNewVersion。-->
 	<ModId Value="160529" />
-	<ModVersion Value="0.9.2" />
+	<ModVersion Value="0.10.0" />
 	<GameVersion Value="1.6.*" />
 	<!--Private = 不公开（用户要求）。若平台拒绝此值再改 Unlisted。-->
 	<AccessLevel Value="Private" />
 	<DisplayName Value="Tool Mode Memory" />
 	<ShortDescription Value="Remembers tool panel settings per savegame (tool mode, snapping, elevation...) with configurable sharing scope." />
-	<LongDescription Value="# **Tool Mode Memory**（中文在下面）&#xA;&#xA;The goal of **Tool Mode Memory** is simple: make tool operation smoother and more seamless, so that after switching assets or loading a save, you do not have to keep reconfiguring the same commonly used tool options over and over again.&#xA;&#xA;If you are getting annoyed because you keep toggling &quot;Snap to Road&quot; on and off while placing props and parks,  &#xA;if you are tired of constantly readjusting the height step precision when building interchanges,  &#xA;if you want every road to start in curve mode instead of having to click it every time,  &#xA;and if you are frustrated by having to set up all of these tools again every time you load a save,  &#xA;then this mod is your lifesaver.&#xA;&#xA;### **Features**&#xA;&#xA;1.  Supports real-time memory of each tool option’s shared scope based on configuration. Available scopes: **Same Group / Same Menu / Same Category / Global Shared / Completely Separate**&#xA;    &#xA;2.  Automatically saves by save name and restores settings on the next load&#xA;    &#xA;3.  Currently compatible with the 3 tool items added by the **ANARCHY** mod: the anarchy toggle, left/right road upgrade, and the general tool&#xA;    &#xA;&#xA;A simple example: in the vanilla game, **Height** is shared by menu. That means if you raise a two-lane road to 10 m, switching to a four-lane or eight-lane road will still keep it at 10 m. With this mod, you can change it to be shared only within the same group, so when you switch to a four-lane or eight-lane road, it stays at 0 m.&#xA;&#xA;### **How to Use**&#xA;&#xA;1.  Subscribe to and enable the mod.&#xA;    &#xA;2.  Enter the game and use roads, buildings, zones, and other tools as you normally would.&#xA;    &#xA;3.  If the behavior feels unfamiliar, adjust the shared scope in the mod settings to match your preference.&#xA;    &#xA;4.  If you only want settings to be restored from the last time you quit the game, and do not want to change the shared scope rules, you can set all tool items’ shared scope back to the vanilla behavior.&#xA;    &#xA;&#xA;Turning the master switch off = completely vanilla behavior. Functions such as **Reset Memory** and **Manage Memory Files for All Saves** can be found under the **About** section in the options menu.&#xA;&#xA;### **Compatibility**&#xA;&#xA;This mod does not change any in-game behavior, so it should not conflict with other mods. It currently supports memory for tool items added by the **ANARCHY** mod, and more mod support may be added in the future.&#xA;&#xA;If you run into any functional or performance issues, feel free to report them in the discussion area.&#xA;&#xA;Browse my other mods and support: [RAINBOW系列](https://rainbow-series-hvpma89wi25.qoder.zone/#top)&#xA;&#xA;## **中文**&#xA;&#xA;**Tool Mode Memory** 的目标很简单：把工具操作变得更连贯、更顺手，让你在切换资产、读档之后，不必反复把常用工具项重新调一遍。&#xA;&#xA;如果你在摆件和公园之间因为反复开关“对齐路边”而感到烦躁， 如果你修建立交时总是要来回调整高度变化的精度， 如果你希望所有道路都能直接按曲线模式摆放，而不是每次都要点一下， 如果你苦恼每次读档都要重头设置一遍这些工具， 那么这个模组是你的救星。&#xA;&#xA;### **功能**&#xA;&#xA;1、支持按配置 实时记忆每个工具项的共用范围，配置方式支持 同组 / 同菜单 / 同类资产 / 全局共用 / 全部不共用 2、按存档名称自动保存，下次读档自动恢复 3、目前已兼容ANARCHY模组的3个工具项（anarchy开关、左侧和右侧道路升级、常规工具）&#xA;&#xA;举个简单例子，原版游戏中，高度是同菜单共用的，也就是你摆放两车道道路抬高到10m，那么切换到四车道、八车道依然还是10m。而模组可以让你实现只在同组内共用，即切换到四车道、八车道还是0m。&#xA;&#xA;### **使用方法**&#xA;&#xA;1.  订阅并启用模组。&#xA;2.  进入游戏后像平时一样使用道路、建筑、区域等工具。&#xA;3.  如果感到不习惯，在模组选项界面按你的习惯调整共用范围。&#xA;4.  如果你只希望每次读档能恢复上次退出游戏时的设置，并不需要改写共用范围，可以将全部工具项的共用范围调整回原版。&#xA;&#xA;总开关关闭 = 完全原版行为。重置记忆、管理所有存档的记忆文件等功能都在选项界面的「关于」。&#xA;&#xA;### **兼容性**&#xA;&#xA;模组不改变游戏内的任何行为，所以不会和其它模组产生冲突。目前已支持记忆ANARCHY模组添加的工具项，未来会支持更多模组。&#xA;&#xA;如果你碰到功能或性能上的问题，可以在讨论区反馈。&#xA;&#xA;浏览我的其它模组并支持：[RAINBOW系列](https://rainbow-series-hvpma89wi25.qoder.zone/#top)" />
+	<LongDescription Value="# **Tool Mode Memory**（中文在下面）&#xA;&#xA;The goal of **Tool Mode Memory** is simple: make tool operation smoother and more seamless, so that after switching assets or loading a save, you do not have to keep reconfiguring the same commonly used tool options over and over again.&#xA;&#xA;If you are getting annoyed because you keep toggling &quot;Snap to Road&quot; on and off while placing props and parks,  &#xA;if you are tired of constantly readjusting the height step precision when building interchanges,  &#xA;if you want every road to start in curve mode instead of having to click it every time,  &#xA;and if you are frustrated by having to set up all of these tools again every time you load a save,  &#xA;then this mod is your lifesaver.&#xA;&#xA;### **Features**&#xA;&#xA;1.  Supports real-time memory of each tool option’s shared scope based on configuration. Available scopes: **Same Group / Same Menu / Same Category / Global Shared / Completely Separate**&#xA;    &#xA;2.  Automatically saves by save name and restores settings on the next load&#xA;    &#xA;3.  Currently compatible with the tool items added by the **ANARCHY** mod: the anarchy toggle, the object height row (height, step, variance, lock), left/right road upgrade, and the general tool&#xA;    &#xA;&#xA;A simple example: in the vanilla game, **Height** is shared by menu. That means if you raise a two-lane road to 10 m, switching to a four-lane or eight-lane road will still keep it at 10 m. With this mod, you can change it to be shared only within the same group, so when you switch to a four-lane or eight-lane road, it stays at 0 m.&#xA;&#xA;### **How to Use**&#xA;&#xA;1.  Subscribe to and enable the mod.&#xA;    &#xA;2.  Enter the game and use roads, buildings, zones, and other tools as you normally would.&#xA;    &#xA;3.  If the behavior feels unfamiliar, adjust the shared scope in the mod settings to match your preference.&#xA;    &#xA;4.  If you only want settings to be restored from the last time you quit the game, and do not want to change the shared scope rules, you can set all tool items’ shared scope back to the vanilla behavior.&#xA;    &#xA;&#xA;Turning the master switch off = completely vanilla behavior. Functions such as **Reset Memory** and **Manage Memory Files for All Saves** can be found under the **About** section in the options menu.&#xA;&#xA;### **Compatibility**&#xA;&#xA;This mod does not change any in-game behavior, so it should not conflict with other mods. It currently supports memory for tool items added by the **ANARCHY** mod, and more mod support may be added in the future.&#xA;&#xA;If you run into any functional or performance issues, feel free to report them in the discussion area.&#xA;&#xA;Browse my other mods and support: [RAINBOW系列](https://rainbow-series-hvpma89wi25.qoder.zone/#top)&#xA;&#xA;## **中文**&#xA;&#xA;**Tool Mode Memory** 的目标很简单：把工具操作变得更连贯、更顺手，让你在切换资产、读档之后，不必反复把常用工具项重新调一遍。&#xA;&#xA;如果你在摆件和公园之间因为反复开关“对齐路边”而感到烦躁， 如果你修建立交时总是要来回调整高度变化的精度， 如果你希望所有道路都能直接按曲线模式摆放，而不是每次都要点一下， 如果你苦恼每次读档都要重头设置一遍这些工具， 那么这个模组是你的救星。&#xA;&#xA;### **功能**&#xA;&#xA;1、支持按配置 实时记忆每个工具项的共用范围，配置方式支持 同组 / 同菜单 / 同类资产 / 全局共用 / 全部不共用 2、按存档名称自动保存，下次读档自动恢复 3、目前已兼容ANARCHY模组的工具项（anarchy开关、物件高度：高度/步长/浮动/锁定、左侧和右侧道路升级、常规工具）&#xA;&#xA;举个简单例子，原版游戏中，高度是同菜单共用的，也就是你摆放两车道道路抬高到10m，那么切换到四车道、八车道依然还是10m。而模组可以让你实现只在同组内共用，即切换到四车道、八车道还是0m。&#xA;&#xA;### **使用方法**&#xA;&#xA;1.  订阅并启用模组。&#xA;2.  进入游戏后像平时一样使用道路、建筑、区域等工具。&#xA;3.  如果感到不习惯，在模组选项界面按你的习惯调整共用范围。&#xA;4.  如果你只希望每次读档能恢复上次退出游戏时的设置，并不需要改写共用范围，可以将全部工具项的共用范围调整回原版。&#xA;&#xA;总开关关闭 = 完全原版行为。重置记忆、管理所有存档的记忆文件等功能都在选项界面的「关于」。&#xA;&#xA;### **兼容性**&#xA;&#xA;模组不改变游戏内的任何行为，所以不会和其它模组产生冲突。目前已支持记忆ANARCHY模组添加的工具项，未来会支持更多模组。&#xA;&#xA;如果你碰到功能或性能上的问题，可以在讨论区反馈。&#xA;&#xA;浏览我的其它模组并支持：[RAINBOW系列](https://rainbow-series-hvpma89wi25.qoder.zone/#top)" />
 	<Thumbnail Value="Properties/Thumbnail.jpg" />
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/tool-mode-memory.1942676/" />
 	<Tag Value="Code Mod" />
@@ -38,18 +38,22 @@
 	<ExternalLink Type="kofi" Url="https://ko-fi.com/yuexian7" />
 	<ExternalLink Type="x" Url="https://x.com/yuexian777/status/2101942150447702427?s=20" />
 <ChangeLog>
-v0.9.2
+v0.10.0
 
 This update rolls up everything since the version currently published (0.6.1).
 
 *   Settings rebuilt into five tabs: Mod, Buildings and Services, Functions, Props and About, with a separate memory switch for each of the three pages. The Mod switch ships off, the three page switches ship on, and switching all three pages off turns the Mod switch off by itself.
 *   Tool items are now split by what they actually act on: buildings and services, function tools, and props (Landscaping props and trees). Rows with the same name on different pages have independent switches and scopes.
-*   Panel rows follow the real game rows instead of a summary: brush type, brush size, brush strength, target height, age, keep-age, distance and the Anarchy object-height row are separate items, each with its own scope.
+*   Panel rows follow the real game rows instead of a summary: brush type, brush size, brush strength, target height, age, keep-age and distance are separate items, each with its own scope.
 *   Tool Mode and Snapping are now split per tool type, because the options themselves differ: Tool Mode (Roads) and Tool Mode (Buildings), Snapping (Roads) and Snapping (Buildings), Snapping (Zones), (Areas) and (Markers).
+*   The Functions page now has an Anarchy block as well: the Anarchy switch and the object height row (height, step, variance, lock), so terraforming, area and bulldoze tools can remember them too. The block only appears on tools that Anarchy actually gives that switch to.
 *   Scope text rewritten in all 12 languages: each level states what it shares, examples are written per page and per tool type, and items whose tools sit in a single group (terraforming, trees) say so instead of inventing another group.
 *   Functions and Props ship with no recommendations and every item off, which is exactly vanilla behaviour. Buildings and Services keeps a recommendation only where it helps: Tool Mode to Same type and Height to Same group.
+*   Changing a shared scope now takes effect at once: narrow it (for example Global Shared to Same Group) and every group shows the wider setting; widen it and the last value you set is what you get.
+*   Fixed a bug where the Anarchy switch and other session-wide rows could carry one asset's state over to the next asset you opened, most visibly the first asset of a group.
 *   Fixed the Colour row, which never worked: the game only shows it on route tools, so it now records and restores there.
 *   Fixed wrong row names and panel references in several descriptions (underground mode, topography, colour, tool mode), and the Anarchy block no longer appears when Anarchy is not installed.
+*   Removed a slight stutter when opening or switching toolbar menus and categories: the option list was being rescanned on every switch.
 
 中文
 
@@ -57,11 +61,15 @@ This update rolls up everything since the version currently published (0.6.1).
 
 *   设置页重做成五个标签页：总开关、建筑与服务、功能、道具、关于；三个页各有一个记忆开关。总开关出厂关闭，三个分开关出厂打开，三个分页全关时总开关自动跟着关。
 *   工具项按实际作用对象分成三类：建筑与服务、功能工具、道具（城市美化道具与树木）。不同页的同名行各有独立的开关与共用范围。
-*   面板行改成与游戏真实行一一对应，不再合并：笔刷种类、笔刷粗细、笔刷强度、目标高度、年龄、保留年代、距离，以及 Anarchy 的物件高度一排，各是一项、各配一份共用范围。
+*   面板行改成与游戏真实行一一对应，不再合并：笔刷种类、笔刷粗细、笔刷强度、目标高度、年龄、保留年代、距离，各是一项、各配一份共用范围。
 *   工具模式与对齐按工具类别拆开，因为可选值本来就不同：工具模式（道路）/（建筑），对齐（道路）/（建筑）、对齐（功能区）/（区域）/（标记与预制对象）。
+*   功能页也有 Anarchy 板块了：Anarchy 开关与物件高度一排（高度、步长、浮动、锁定），地形改造、区域工具、拆除也能记住它们了。这一块只在 Anarchy 真正提供这个开关的工具上出现。
 *   12 种语言的共用范围说明全部重写：每一档说清共用的是什么；例子按页、按工具类别写；只有一个分组的工具项（地形改造、树木）直接说明这一点，不再编出「另一组」。
 *   功能页与道具页不提供推荐、全部出厂关闭，就是完全原版的行为。建筑与服务页只在真有益处的地方保留推荐：工具模式推荐「同类」、高度推荐「同组」。
+*   共用范围改完立即生效：收窄（比如全局共用改同组）后各组显示的都是原来那一份；放宽则以最后一次设置的为准。
+*   修好了 Anarchy 开关等全局项会把上一个资产的状态带到下一个资产的问题（尤其是每组的第一个资产）。
 *   修好了一直空转的「颜色」：游戏只在路线工具上显示这一行，现在就在那里记录与恢复。
 *   修正了几处说错行名、说错面板的说明（地下模式、地形、颜色、工具模式）；没装 Anarchy 时那一块不再出现。
+*   切菜单栏、切分类时的轻微卡顿没了：之前每切一次都会把当前分类的可选项重新扫一遍。
 </ChangeLog>
 </PublishConfiguration>

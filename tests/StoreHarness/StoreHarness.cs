@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -864,9 +864,10 @@ namespace ToolModeMemory.Tests
 				&& ToolItemCatalog.Find(ToolItemCatalog.kGeneral).VanillaScope == ToolItemCatalog.kVanillaNone,
 				"Anarchy 三项原版无记忆");
 			// v0.8.0：道具页也有 Anarchy 项了（物件高度那一排出现在摆件工具面板上）。
-			// 功能页仍然没有：Anarchy 的白名单里没有功能区 / 区域 / 路线这类工具。
-			Check(ToolItemCatalog.AnarchyCount(ItemDomain.Function) == 0,
-				"功能页没有第三方项（Anarchy 白名单里没有功能区/区域/路线工具）");
+			// v0.10.0：功能页也有了 —— Anarchy 的白名单（m_ToolIDs）里真的有
+			// Terrain Tool / Area Tool / Bulldoze Tool，地形改造这类工具面板上就是有这一段。
+			Check(ToolItemCatalog.AnarchyCount(ItemDomain.Function) == 2,
+				"功能页有第三方项（地形改造/区域工具/拆除 与 物件高度，共 2 项）");
 			Check(ToolItemCatalog.AnarchyCount(ItemDomain.Asset) > 0
 				&& ToolItemCatalog.AnarchyCount(ItemDomain.Item) > 0,
 				"建筑与服务页与道具页都有 Anarchy 项（物件高度在两页各一份）");

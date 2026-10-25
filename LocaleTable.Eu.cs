@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace ToolModeMemory
@@ -61,7 +61,7 @@ namespace ToolModeMemory
 			d["about.rainbow.desc"] = "Die Website der Rainbow-Reihe öffnen.";
 
 			// ---------- Anarchy ----------
-			d["item.anarchy.desc"] = "Merkt sich den Schalter Anarchy, den der Anarchy-Mod hinzufügt; Anarchy ist im ganzen Spiel geteilt, dieser Punkt ist also global. Ohne den Anarchy-Mod wird dieser Punkt nicht angezeigt.";
+			d["item.anarchy.desc"] = "Merkt sich den Schalter des Anarchy-Mods.\nEr wird nur bei Werkzeugen gemerkt, die diesen Schalter wirklich haben.\nOhne den Anarchy-Mod wird dieser Punkt nicht angezeigt.";
 			d["item.anarchy.ex.group"] = "zum Beispiel schaltest du Anarchy für eine zweispurige kleine Straße ein, andere kleine Straßen haben Anarchy ebenfalls an, eine große Straße dagegen nicht.";
 			d["item.anarchy.ex.menu"] = "jedes Asset, das du im Menü Straßen anklickst, hat Anarchy an, im Menü Strom dagegen nicht.";
 			d["item.anarchy.ex.category"] = "wechselt man zu einer sechsspurigen Straße, bleibt Anarchy an, aber eine Brücke oder doppelte U-Bahn-Gleise gehen wieder aus und brauchen eine eigene Einstellung, obwohl alle im Menü Straßen liegen.";
@@ -269,7 +269,7 @@ namespace ToolModeMemory
 			d["about.rainbow.desc"] = "Abrir el sitio de la serie Rainbow.";
 
 			// ---------- Anarchy ----------
-			d["item.anarchy.desc"] = "Recuerda el estado del interruptor Anarchy que añade el mod Anarchy; Anarchy se comparte en todo el juego, así que este elemento es global.\nSin el mod Anarchy este elemento no aparece.";
+			d["item.anarchy.desc"] = "Recuerda el interruptor del mod Anarchy.\nSolo se recuerda en las herramientas que realmente tienen ese interruptor.\nSin el mod Anarchy este elemento no aparece.";
 			d["item.anarchy.ex.group"] = "por ejemplo, activas Anarchy en una carretera pequeña de dos carriles y las otras carreteras pequeñas también lo tienen activado, mientras que una carretera grande no.";
 			d["item.anarchy.ex.menu"] = "todos los activos que pulsas en el menú de Carreteras tienen Anarchy activado, pero al pasar al menú de Electricidad ya no.";
 			d["item.anarchy.ex.category"] = "cambiar a una carretera de seis carriles sigue teniéndolo activado, pero un puente o unas vías de metro dobles lo dejan desactivado y necesitan su propio ajuste, aunque todos estén en el menú de Carreteras.";
@@ -478,7 +478,7 @@ namespace ToolModeMemory
 			d["about.rainbow.desc"] = "Ouvrir le site de la série Rainbow.";
 
 			// ---------- Anarchy ----------
-			d["item.anarchy.desc"] = "Mémorise l'état du bouton Anarchy ajouté par le mod Anarchy ; Anarchy est partagé dans tout le jeu, cet élément est donc global.\nSans le mod Anarchy, cet élément n'apparaît pas.";
+			d["item.anarchy.desc"] = "Mémorise le bouton du mod Anarchy.\nIl n'est mémorisé que sur les outils qui ont réellement ce bouton.\nSans le mod Anarchy, cet élément n'apparaît pas.";
 			d["item.anarchy.ex.group"] = "par exemple, activez Anarchy sur une petite route à deux voies, les autres petites routes l'ont activé aussi, mais une grande route non.";
 			d["item.anarchy.ex.menu"] = "tous les assets sur lesquels vous cliquez dans le menu Routes ont Anarchy activé, mais dans le menu Électricité ce n'est plus le cas.";
 			d["item.anarchy.ex.category"] = "passer à une route à six voies laisse Anarchy activé, mais un pont ou une double voie de métro repasse à désactivé et réclame son propre réglage, bien que tous soient dans le menu Routes.";
@@ -687,7 +687,7 @@ namespace ToolModeMemory
 			d["about.rainbow.desc"] = "Apri il sito della serie Rainbow.";
 
 			// ---------- Anarchy ----------
-			d["item.anarchy.desc"] = "Ricorda lo stato del pulsante Anarchy aggiunto dal mod Anarchy; Anarchy è condiviso in tutto il gioco, quindi questa voce è globale.\nSenza il mod Anarchy questa voce non compare.";
+			d["item.anarchy.desc"] = "Ricorda l'interruttore del mod Anarchy.\nViene ricordato solo sugli strumenti che hanno davvero questo interruttore.\nSenza il mod Anarchy questa voce non compare.";
 			d["item.anarchy.ex.group"] = "per esempio, attivi Anarchy su una piccola strada a due corsie e anche le altre piccole strade ce l'hanno attivo, mentre una strada grande no.";
 			d["item.anarchy.ex.menu"] = "tutti gli asset che clicchi nel menu Strade hanno Anarchy attivo, ma passando al menu Elettricità no.";
 			d["item.anarchy.ex.category"] = "passando a una strada a sei corsie Anarchy resta attivo, ma un ponte o un binario della metropolitana doppio tornano a spento e necessitano un'impostazione propria, benché tutti siano nel menu Strade.";

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace ToolModeMemory
 {
@@ -171,10 +171,29 @@ namespace ToolModeMemory
 		/// </summary>
 		public readonly string TextId;
 
+		/// <summary>
+		/// 这一行的值在游戏里是**会话全局**的（不随资产/工具走），v0.10.0。
+		///
+		/// 判据：值不住在任何 prefab 或 tool 实例上，而是 Anarchy / 游戏全局各存一份 ——
+		/// Anarchy 的 m_AnarchyEnabled（AnarchyUISystem L85）、物件高度那一排 binding
+		/// （L491-497）、等高线的 UndergroundViewSystem.globalContourLinesOn 等。
+		///
+		/// 为什么必须有这个标记（owner 2026-10-26 实测）：把 Anarchy 主开关设成
+		/// 「全部不共用」后，在一个资产上开启，切到别的资产**也有几个是开着的**，
+		/// 尤其每组的第一个资产最明显，再切一次又恢复正常。
+		/// 原因是会话全局的值在切资产时不会自己变，而捕获是「每帧读面板就记」，
+		/// 于是上一个资产留下的那个值被原样写进了新资产的键 ——
+		/// 玩家从没在新资产上做过选择，键里却已经有了「开」。
+		/// 打了这个标记的项，捕获改成「只在同一个工具 + 同一个资产内、值真的变了才记」：
+		/// 换资产的第一帧只把当前值当基线，不写盘；玩家自己动开关才记。
+		/// </summary>
+		public readonly bool GlobalState;
+
 		public ToolItemDef(string id, int number, ItemSource source, int vanillaScope,
 			int recommendedScope, bool defaultEnabled, string[] subs = null, bool familyFreeScope = false,
 			ItemDomain domain = ItemDomain.Asset, string localeAlias = null, string places = "",
-			string exampleFamily = null, string family = null, string textId = null)
+			string exampleFamily = null, string family = null, string textId = null,
+			bool globalState = false)
 		{
 			Id = id;
 			Number = number;
@@ -190,6 +209,7 @@ namespace ToolModeMemory
 			ExampleFamily = exampleFamily ?? string.Empty;
 			Family = family ?? string.Empty;
 			TextId = textId ?? string.Empty;
+			GlobalState = globalState;
 		}
 
 		/// <summary>Places 允许的标记全集。门禁据此拒绝拼错的标记。</summary>
@@ -360,6 +380,25 @@ namespace ToolModeMemory
 		public const string kFBrushHeight = "f.brushHeight";
 		public const string kFDistance = "f.distance";
 		public const string kFColor = "f.color";
+		/// <summary>
+		/// 功能页的 Anarchy 板块（v0.10.0）。owner：「功能页怎么没有 anarchy 板块？
+		/// 像地形改造这种功能还是能设置 anarchy 的」。
+		///
+		/// 证据（research/round4/anarchy_rows.md 门 B + AnarchyUISystem L165/L722-767）：
+		/// 主开关只对 <c>m_ToolIDs</c> 白名单里的工具出现 ——
+		/// {Object Tool, Net Tool, Area Tool, Bulldoze Tool, Terrain Tool, Upgrade Tool, Line Tool}。
+		/// 功能页落在白名单上的是 地形改造(Terrain) / 区域工具(Area) / 拆除(Bulldoze) /
+		/// 标记与预制对象(Object)；功能区(Zone)、路线(Route)、水体(Water) 不在白名单，
+		/// 它们的面板上根本没有这一段，所以本页这一项对它们不生效（门槛见
+		/// ToolMemoryBridge.AnarchyToggleVisible）。
+		/// </summary>
+		public const string kFAnarchy = "f.anarchy";
+		/// <summary>
+		/// 功能页的「物件高度」（v0.10.0）。Anarchy 门 A 只管 Object Tool 与 "Line Tool"，
+		/// 本页的标记与预制对象正是摆件工具放的，所以要按「三页互不共用」再记一份
+		/// （与 kObjectElevation / kIObjectElevation 同一排控件、同一个桶名）。
+		/// </summary>
+		public const string kFAnarchyObjectElevation = "f.anarchyObjectElevation";
 
 		// ---- 道具域（id 加 "i." 前缀）----
 		// 老版的 kIToolMode / kISnap / kIBrush / kITopography / kIUnderground 保留原名
@@ -451,6 +490,12 @@ namespace ToolModeMemory
 		};
 
 		private static readonly string[] s_IObjectElevationSubs = new string[]
+		{
+			"anarchyElevation", "anarchyElevationStep", "anarchyElevationVariance", "anarchyLockElevation"
+		};
+
+		/// <summary>功能页那一份「物件高度」的桶名，理由同上（桶名三域共用，靠域前缀分开）。</summary>
+		private static readonly string[] s_FObjectElevationSubs = new string[]
 		{
 			"anarchyElevation", "anarchyElevationStep", "anarchyElevationVariance", "anarchyLockElevation"
 		};
@@ -558,20 +603,20 @@ namespace ToolModeMemory
 			new ToolItemDef(kSnapObj, 8, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.Category, true,
 				s_SnapSubs, false, ItemDomain.Asset, null, "object", "none", "obj", kSnap),
 			new ToolItemDef(kTopography, 9, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, (int)MemoryScope.GlobalShared, false,
-				null, true, ItemDomain.Asset, null, "net,object", "none"),
+				null, true, ItemDomain.Asset, null, "net,object", "none", globalState: true),
 			// 地下模式：推荐同组 == 原版同组 -> 默认关（用户定的规则）
 			new ToolItemDef(kUnderground, 10, ItemSource.Vanilla, (int)MemoryScope.Group, (int)MemoryScope.Group, false,
-				null, true, ItemDomain.Asset, null, "net,object", "none"),
+				null, true, ItemDomain.Asset, null, "net,object", "none", globalState: true),
 
 			// ---- Anarchy 板块（9..12：序号在同一标签页内连续，避免一页里出现两个「1.」）----
 			// Anarchy 是第三方模组，原版完全没有对应物（VanillaScope = kVanillaNone），
 			// 所以「原版档」对它无意义。v0.9.0 起本页 Anarchy 项一律无推荐、出厂关。
 			new ToolItemDef(kAnarchy, 11, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
-				null, true, ItemDomain.Asset, null, "anarchy", "none"),
+				null, true, ItemDomain.Asset, null, "anarchy", "none", globalState: true),
 			new ToolItemDef(kLeftRight, 12, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
-				s_LeftRightSubs, true, ItemDomain.Asset, null, "net,anarchy", "none"),
+				s_LeftRightSubs, true, ItemDomain.Asset, null, "net,anarchy", "none", globalState: true),
 			new ToolItemDef(kGeneral, 13, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
-				null, true, ItemDomain.Asset, null, "net,anarchy", "none"),
+				null, true, ItemDomain.Asset, null, "net,anarchy", "none", globalState: true),
 			// 物件高度（v0.8.0 新增）：Anarchy 注入在摆件工具面板上的**一排**高度控件。
 			// owner 2026-10-20：锁定变换 / 高度 / 高度变化范围 / 抬高降低幅度「这4项是同一项」，
 			// 同一排显示 → 一个工具项、一起记忆、一起共用；「重置高度为0」是瞬时按钮不列。
@@ -579,7 +624,7 @@ namespace ToolModeMemory
 			// ElevationVariance 0f / LockElevation=Settings.ElevationLock），
 			// 门 = 摆件工具 actualMode∈{Create,Brush,Stamp,Line,Curve} 且非建筑且 ShowElevationToolOption。
 			new ToolItemDef(kObjectElevation, 14, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
-				s_ObjectElevationSubs, false, ItemDomain.Asset, null, "object,anarchy", "none"),
+				s_ObjectElevationSubs, false, ItemDomain.Asset, null, "object,anarchy", "none", globalState: true),
 		};
 
 		/// <summary>
@@ -618,11 +663,11 @@ namespace ToolModeMemory
 			new ToolItemDef(kFSnapObj, 6, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_FSnapSubs, false, ItemDomain.Function, null, "object", "none", "obj", kFSnap),
 			new ToolItemDef(kFUnderground, 7, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_FUndergroundSubs, true, ItemDomain.Function, null, "area,route,bulldoze,object", "none"),
+				s_FUndergroundSubs, true, ItemDomain.Function, null, "area,route,bulldoze,object", "none", globalState: true),
 			// 等高线：游戏里全局只有一份值（UndergroundViewSystem.globalContourLinesOn）。
 			// owner 2026-10-19 明确选「三页各一份，按当前工具所属页读写」，所以功能页也有一行。
 			new ToolItemDef(kFTopography, 8, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, kNoRecommendation, false,
-				s_FTopographySubs, true, ItemDomain.Function, null, "zone,terrain,water,object", "none"),
+				s_FTopographySubs, true, ItemDomain.Function, null, "zone,terrain,water,object", "none", globalState: true),
 			// ---- v0.8.0 拆出来的笔刷家族：种类 / 粗细 / 强度 各自独立一项（owner：不要合一起）----
 			// 值都住在 ToolBaseSystem 上，地形工具与摆件工具（Brushable 资产）共用这两行。
 			new ToolItemDef(kFBrushType, 9, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
@@ -641,6 +686,20 @@ namespace ToolModeMemory
 			// 配色（v0.8.0 从建筑与服务页移来）：IColored 唯一实现者是 RoutePrefab -> 只有路线工具有这行。
 			new ToolItemDef(kFColor, 14, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_FColorSubs, false, ItemDomain.Function, null, "route", "route"),
+
+			// ---- Anarchy 板块（15..16，v0.10.0）----
+			// owner 2026-10-26：「功能页怎么没有 anarchy 板块？像地形改造这种功能还是能设置 anarchy 的。」
+			// 白名单（AnarchyUISystem L165）里落在本页的是 地形改造 / 区域工具 / 拆除 /
+			// 标记与预制对象；功能区、路线、水体不在白名单，面板上本来就没有这一段。
+			// 文案沿用建筑与服务页那一份（TextId），三页说的是同一件事，不再各写一遍。
+			new ToolItemDef(kFAnarchy, 15, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
+				null, true, ItemDomain.Function, null, "area,terrain,bulldoze,object,anarchy", "none",
+				null, kAnarchy, globalState: true),
+			// 物件高度：Anarchy 门 A 只管 Object Tool 与 "Line Tool"，本页的标记与预制对象
+			// 正是摆件工具放的 —— 面板上真有这一排，所以按「三页互不共用」也记一份。
+			new ToolItemDef(kFAnarchyObjectElevation, 16, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
+				s_FObjectElevationSubs, false, ItemDomain.Function, null, "object,anarchy", "none",
+				null, kObjectElevation, globalState: true),
 		};
 
 		/// <summary>
@@ -686,18 +745,18 @@ namespace ToolModeMemory
 			new ToolItemDef(kISnap, 10, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
 				s_ISnapSubs, false, ItemDomain.Item, null, "object", "prop"),
 			new ToolItemDef(kITopography, 11, ItemSource.Vanilla, (int)MemoryScope.GlobalShared, kNoRecommendation, false,
-				s_ITopographySubs, true, ItemDomain.Item, null, "object,stampable", "none"),
+				s_ITopographySubs, true, ItemDomain.Item, null, "object,stampable", "none", globalState: true),
 			new ToolItemDef(kIUnderground, 12, ItemSource.Vanilla, kVanillaNone, kNoRecommendation, false,
-				s_IUndergroundSubs, true, ItemDomain.Item, null, "object", "none"),
+				s_IUndergroundSubs, true, ItemDomain.Item, null, "object", "none", globalState: true),
 
 			// ---- Anarchy 板块（13..14）----
 			// Anarchy 主开关在摆件工具上出现（白名单含 "Object Tool"），道具正是摆件工具放的
 			new ToolItemDef(kIAnarchy, 13, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
-				null, true, ItemDomain.Item, null, "anarchy", "none"),
+				null, true, ItemDomain.Item, null, "anarchy", "none", globalState: true),
 			// 物件高度：与建筑与服务页同一排控件，但owner 定的「三页互不共用」要求本页也有自己的一份
 			// （独立开关 + 独立共用范围 + I| 前缀，玩家在道具页调的高度不会覆盖建筑页的）。
 			new ToolItemDef(kIObjectElevation, 14, ItemSource.AnarchyMod, kVanillaNone, kNoRecommendation, false,
-				s_IObjectElevationSubs, false, ItemDomain.Item, null, "object,anarchy", "prop"),
+				s_IObjectElevationSubs, false, ItemDomain.Item, null, "object,anarchy", "prop", globalState: true),
 		};
 
 		/// <summary>全表（三域拼接）。设置页、捕获/写回、回归测试都按域过滤后使用。</summary>

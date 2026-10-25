@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace ToolModeMemory
@@ -61,7 +61,7 @@ namespace ToolModeMemory
 			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Otwórz stronę serii Rainbow.";
 
-			d["item.anarchy.desc"] = "Zapamiętuje przełącznik Anarchy; jest wspólny dla całej gry, więc działa globalnie.\nBez moda Anarchy ta pozycja się nie pojawia.";
+			d["item.anarchy.desc"] = "Zapamiętuje przełącznik moda Anarchy.\nJest zapamiętywany tylko na narzędziach, które naprawdę mają ten przełącznik.\nBez moda Anarchy ta pozycja się nie pojawia.";
 			d["item.anarchy.ex.group"] = "na przykład włączysz Anarchy dla małej dwupasmowej drogi i inne małe drogi też będą mieć Anarchy włączone, a duża droga nie.";
 			d["item.anarchy.ex.menu"] = "każdy zasób kliknięty w menu Drogi ma włączone Anarchy, ale po przejściu do menu Elektryczność już nie.";
 			d["item.anarchy.ex.category"] = "przełączenie na drogę sześciopasmową zostawia go włączonym, ale most i metro potrzebują własnego ustawienia.";
@@ -248,7 +248,7 @@ namespace ToolModeMemory
 			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Abrir o site da série Rainbow.";
 
-			d["item.anarchy.desc"] = "Lembra o interruptor do Anarchy; ele é partilhado em todo o jogo, por isso age globalmente.\nSem o mod Anarchy este item não aparece.";
+			d["item.anarchy.desc"] = "Lembra o interruptor do mod Anarchy.\nSó é guardado nas ferramentas que têm realmente este interruptor.\nSem o mod Anarchy este item não aparece.";
 			d["item.anarchy.ex.group"] = "você liga o Anarchy numa rua pequena e as outras ruas pequenas também ficam ligadas.";
 			d["item.anarchy.ex.menu"] = "todo ativo que você clica no menu Vias tem o Anarchy ligado, mas ao mudar para o menu Eletricidade já não.";
 			d["item.anarchy.ex.category"] = "mudar para uma via de 6 faixas mantém ligado, mas uma ponte e o metrô precisam do próprio ajuste.";
@@ -435,7 +435,7 @@ namespace ToolModeMemory
 			d["about.rainbow"] = "RAINBOW Site";
 			d["about.rainbow.desc"] = "Открыть сайт серии Rainbow.";
 
-			d["item.anarchy.desc"] = "Запоминает переключатель Anarchy; он общий для всей игры, поэтому действует глобально.\nБез мода Anarchy этот пункт не появляется.";
+			d["item.anarchy.desc"] = "Запоминает переключатель мода Anarchy.\nОн запоминается только на инструментах, у которых этот переключатель действительно есть.\nБез мода Anarchy этот пункт не появляется.";
 			d["item.anarchy.ex.group"] = "вы включаете Anarchy на небольшой дороге, и на других небольших дорогах он тоже включён.";
 			d["item.anarchy.ex.menu"] = "у любого объекта, выбранного в меню «Дороги», Anarchy включён, но в меню «Электричество» уже нет.";
 			d["item.anarchy.ex.category"] = "переход на шестиполосную дорогу его сохраняет, но мост и метро требуют своей настройки.";

@@ -718,7 +718,7 @@ namespace ToolModeMemory
 
 			// ---------- Anarchy ----------
 			// v0.9.0 文案
-			d["item.anarchy.desc"] = "记住 Anarchy 模组的开关。\n没安装 Anarchy 时这一项不会出现。";
+			d["item.anarchy.desc"] = "记住 Anarchy 模组的开关。\n只在这个工具真的有这个开关时才记。\n没安装 Anarchy 时这一项不会出现。";
 			d["item.anarchy.ex.group"] = "比如给两车道小型道路打开 Anarchy，切换到其它的小型道路，也是打开的，但切换到大型道路就不是了。";
 			d["item.anarchy.ex.menu"] = "点击道路菜单里面的所有资产，Anarchy 都是打开的，但切换到电力菜单就不是了。";
 			d["item.anarchy.ex.category"] = "切换到六车道道路也是打开的，但切换到桥梁或双向地铁轨道就变成关闭（需单独设置），即使它们都在道路菜单下。";
@@ -960,7 +960,7 @@ namespace ToolModeMemory
 
 			// ---------- Anarchy ----------
 			// v0.9.0 文案
-			d["item.anarchy.desc"] = "记住 Anarchy 模组的开关。\n没安装 Anarchy 时这一项不会出现。";
+			d["item.anarchy.desc"] = "記住 Anarchy 模組的開關。\n只在這個工具真的有這個開關時才記。\n沒安裝 Anarchy 時這一項不會出現。";
 			d["item.anarchy.ex.group"] = "例如給兩車道小型道路開啟 Anarchy，切換到其他小型道路也是開啟的，但切換到大型道路就不是了。";
 			d["item.anarchy.ex.menu"] = "點選道路選單裡面的所有資產，Anarchy 都是開啟的，但切換到電力選單就不是了。";
 			d["item.anarchy.ex.category"] = "切換到六車道道路同樣是開啟的，但切換到橋樑或雙線地鐵軌道就變成關閉（需單獨設定），即使它們都在道路選單下。";
@@ -1214,7 +1214,7 @@ namespace ToolModeMemory
 
 			// ---------- Anarchy ----------
 			// v0.9.0 文案
-			d["item.anarchy.desc"] = "Remembers the Anarchy mod's toggle.\nThis item does not appear unless Anarchy is installed.";
+			d["item.anarchy.desc"] = "Remembers the Anarchy mod's toggle.\nIt is only remembered on tools that actually have this toggle.\nThis item does not appear unless Anarchy is installed.";
 			d["item.anarchy.ex.group"] = "for example, turn Anarchy on for a two-lane small road and the other small roads keep it on, while a large road does not.";
 			d["item.anarchy.ex.menu"] = "every asset you click in the Roads menu has Anarchy on, but moving to the Electricity menu it is not.";
 			d["item.anarchy.ex.category"] = "switching to a six-lane road keeps it on, but a bridge or a double subway track turns it off and needs its own setting, even though they are all in the Roads menu.";

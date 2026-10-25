@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Colossal;
@@ -46,9 +46,10 @@ namespace ToolModeMemory
 	[FileLocation(nameof(ToolModeMemory))]
 	[SettingsUITabOrder(kTabMaster, kTabAssets, kTabFunctions, kTabItems, kTabAbout)]
 	[SettingsUIGroupOrder(kGroupMaster, kGroupDomain, kGroupAssetOfficial, kGroupAssetAnarchy,
-		kGroupFunctionOfficial, kGroupItemOfficial, kGroupItemAnarchy, kGroupMemory, kGroupInfo)]
+		kGroupFunctionOfficial, kGroupFunctionAnarchy, kGroupItemOfficial, kGroupItemAnarchy,
+		kGroupMemory, kGroupInfo)]
 	[SettingsUIShowGroupName(kGroupDomain, kGroupAssetOfficial, kGroupAssetAnarchy,
-		kGroupFunctionOfficial, kGroupItemOfficial, kGroupItemAnarchy, kGroupMemory)]
+		kGroupFunctionOfficial, kGroupFunctionAnarchy, kGroupItemOfficial, kGroupItemAnarchy, kGroupMemory)]
 	public class ToolModeMemorySettings : ModSetting
 	{
 		public const string kTabMaster = "Master";
@@ -66,6 +67,12 @@ namespace ToolModeMemory
 		/// <summary>资产页：第三方板块，一个模组一块，板块名 = 模组名 + 「工具项设置」。</summary>
 		public const string kGroupAssetAnarchy = "AssetAnarchyItems";
 		public const string kGroupFunctionOfficial = "FunctionOfficialItems";
+		/// <summary>
+		/// 功能页：第三方板块（v0.10.0 新增）。owner：「功能页怎么没有 anarchy 板块？
+		/// 像地形改造这种功能还是能设置 anarchy 的」。
+		/// 板块名里带 Anarchy ⇒ 组标题走 locale 的 group.anarchy（「Anarchy工具项设置」），不必新加键。
+		/// </summary>
+		public const string kGroupFunctionAnarchy = "FunctionAnarchyItems";
 		public const string kGroupItemOfficial = "ItemOfficialItems";
 		/// <summary>道具页：第三方板块（v0.8.0 新增，Anarchy 的物件高度与主开关在摆件工具上出现）。</summary>
 		public const string kGroupItemAnarchy = "ItemAnarchyItems";
@@ -531,6 +538,39 @@ namespace ToolModeMemory
 		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFColorScopeDisabled))]
 		public int FColorScope { get { return GetScope(ToolItemCatalog.kFColor); } set { SetScope(ToolItemCatalog.kFColor, value); } }
 
+		// ==================== 功能页：第三方工具项（15..16，v0.10.0） ====================
+		//
+		// owner：「功能页怎么没有 anarchy 板块？像地形改造这种功能还是能设置 anarchy 的。」
+		// 证据（research/round4/anarchy_rows.md 门 B）：Anarchy 主开关只对 m_ToolIDs 白名单
+		// {Object, Net, Area, Bulldoze, Terrain, Upgrade, Line} 显示。落在本页的是
+		// 地形改造 / 区域工具 / 拆除 / 标记与预制对象；功能区、路线、水体没有这一段，
+		// 所以本行对它们不生效（运行期门槛见 ToolMemoryBridge.AnarchyToggleVisible）。
+		// 文案复用建筑与服务页那一份（TextId = kAnarchy / kObjectElevation），12 语言不需要新键。
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionAnarchy)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFunctionSectionOff))]
+		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
+		public bool FAnarchyEnabled { get { return GetEnabled(ToolItemCatalog.kFAnarchy); } set { SetEnabled(ToolItemCatalog.kFAnarchy, value); } }
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionAnarchy)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetFAnarchyScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFAnarchyScopeDisabled))]
+		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
+		public int FAnarchyScope { get { return GetScope(ToolItemCatalog.kFAnarchy); } set { SetScope(ToolItemCatalog.kFAnarchy, value); } }
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionAnarchy)]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFunctionSectionOff))]
+		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
+		public bool FAnarchyObjectElevationEnabled { get { return GetEnabled(ToolItemCatalog.kFAnarchyObjectElevation); } set { SetEnabled(ToolItemCatalog.kFAnarchyObjectElevation, value); } }
+
+		[SettingsUISection(kTabFunctions, kGroupFunctionAnarchy)]
+		[SettingsUIDropdown(typeof(ToolModeMemorySettings), nameof(GetFAnarchyObjectElevationScopeItems))]
+		[SettingsUIValueVersion(typeof(ToolModeMemorySettings), nameof(GetScopeItemsVersion))]
+		[SettingsUIDisableByCondition(typeof(ToolModeMemorySettings), nameof(IsFAnarchyObjectElevationScopeDisabled))]
+		[SettingsUIHideByCondition(typeof(ToolModeMemorySettings), nameof(IsAnarchyMissing))]
+		public int FAnarchyObjectElevationScope { get { return GetScope(ToolItemCatalog.kFAnarchyObjectElevation); } set { SetScope(ToolItemCatalog.kFAnarchyObjectElevation, value); } }
+
 		// ==================== 道具页：官方工具项（1..12） ====================
 		//
 		// v0.8.0 按 research/round4/vanilla_rows.md「Object Tool」一列把面板行列全：
@@ -743,6 +783,8 @@ namespace ToolModeMemory
 		public bool IsFDistanceScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFDistance); }
 
 		public bool IsFColorScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFColor); }
+		public bool IsFAnarchyScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFAnarchy); }
+		public bool IsFAnarchyObjectElevationScopeDisabled() { return IsFunctionSectionOff() || !GetEnabled(ToolItemCatalog.kFAnarchyObjectElevation); }
 
 		public bool IsIThemesScopeDisabled() { return IsItemSectionOff() || !GetEnabled(ToolItemCatalog.kIThemes); }
 
@@ -909,6 +951,8 @@ namespace ToolModeMemory
 		public DropdownItem<int>[] GetFBrushHeightScopeItems() { return BuildScopeItems(ToolItemCatalog.kFBrushHeight); }
 		public DropdownItem<int>[] GetFDistanceScopeItems() { return BuildScopeItems(ToolItemCatalog.kFDistance); }
 		public DropdownItem<int>[] GetFColorScopeItems() { return BuildScopeItems(ToolItemCatalog.kFColor); }
+		public DropdownItem<int>[] GetFAnarchyScopeItems() { return BuildScopeItems(ToolItemCatalog.kFAnarchy); }
+		public DropdownItem<int>[] GetFAnarchyObjectElevationScopeItems() { return BuildScopeItems(ToolItemCatalog.kFAnarchyObjectElevation); }
 		public DropdownItem<int>[] GetIThemesScopeItems() { return BuildScopeItems(ToolItemCatalog.kIThemes); }
 		public DropdownItem<int>[] GetIPacksScopeItems() { return BuildScopeItems(ToolItemCatalog.kIPacks); }
 		public DropdownItem<int>[] GetIToolModeScopeItems() { return BuildScopeItems(ToolItemCatalog.kIToolMode); }
@@ -1037,11 +1081,30 @@ namespace ToolModeMemory
 
 		private void SetScope(string id, int value)
 		{
+			// v0.10.0：改范围要「搬家」。owner 的规则 ——
+			// 从大范围改小（如全局改同组）：改完所有组显示的还是全局那一份（靠读的时候沿宽档回落）；
+			// 从小范围改大（如同组改全局）：以最后一次设置的为准（把当前值写进新档的键）。
+			// 这里只记待办：真正搬要在「有当前工具/资产」的时候才知道往哪个键里写。
+			int old = GetScope(id);
 			m_ItemScope[id] = value;
 			ToolItemDef def = ToolItemCatalog.Find(id);
 			if (def != null && !string.IsNullOrEmpty(def.TextId)) m_ItemScope[def.TextId] = value;
 			Sync();
 			Persist();
+			if (old != value) RequestScopeMigration(id, old, value);
+		}
+
+		/// <summary>把「范围变了」告诉运行中的系统（Sync 刚从同一个 World 里取过它）。</summary>
+		private static void RequestScopeMigration(string id, int from, int to)
+		{
+			try
+			{
+				if (Unity.Entities.World.DefaultGameObjectInjectionWorld == null) return;
+				Systems.ToolMemorySystem sys =
+					Unity.Entities.World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<Systems.ToolMemorySystem>();
+				if (sys != null) sys.RequestScopeMigration(id, from, to);
+			}
+			catch { }
 		}
 
 		/// <summary>

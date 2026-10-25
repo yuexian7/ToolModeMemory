@@ -209,9 +209,11 @@ def main():
     check(re.search(r"\[SettingsUISection\(kTabMaster, kGroupMaster\)\]\s*public bool Enabled", s)
           is not None, "「启用模组」大开关在总开关页第一块里")
 
-    # 每个标签页的官方 / 第三方板块都必须真的挂在该页上（三页各自一套，不许串页）
+    # 每页「官方 / 第三方」两个板块都必须真的挂在该页上（三页各自一套，不许串页）
     for tab, grp in (("kTabAssets", "kGroupAssetOfficial"), ("kTabAssets", "kGroupAssetAnarchy"),
-                     ("kTabFunctions", "kGroupFunctionOfficial"), ("kTabItems", "kGroupItemOfficial")):
+                     ("kTabFunctions", "kGroupFunctionOfficial"),
+                     ("kTabFunctions", "kGroupFunctionAnarchy"),
+                     ("kTabItems", "kGroupItemOfficial"), ("kTabItems", "kGroupItemAnarchy")):
         n = len(re.findall(r"\[SettingsUISection\(%s, %s\)\]" % (tab, grp), s))
         check(n > 0, "%s 页有 %s 板块（%d 行）" % (tab, grp, n))
 
@@ -229,25 +231,27 @@ def main():
           "目录 %d 项 = 官方 %d + 第三方 %d" % (n_items, src_official, src_anarchy))
     # 三页行数之和 = 项数×2（每项一个开关 + 一个共用范围），全部从目录推。
     # v0.8.0：道具页也有第三方板块（Anarchy 的「物件高度」出现在摆件工具面板上）。
+    # v0.10.0：功能页也有第三方板块（地形改造 / 区域工具 / 拆除 也能设 Anarchy）。
+    PAGE_GROUPS = ("kGroupAssetOfficial", "kGroupAssetAnarchy",
+                   "kGroupFunctionOfficial", "kGroupFunctionAnarchy",
+                   "kGroupItemOfficial", "kGroupItemAnarchy")
     per_tab = {}
-    for grp in ("kGroupAssetOfficial", "kGroupAssetAnarchy", "kGroupFunctionOfficial",
-                "kGroupItemOfficial", "kGroupItemAnarchy"):
+    for grp in PAGE_GROUPS:
         per_tab[grp] = len(re.findall(r"\[SettingsUISection\(\w+, %s\)\]" % grp, s))
     check(sum(per_tab.values()) == n_items * 2,
           "三页板块行数合计 = 项数×2（%d 行 / %d 项）" % (sum(per_tab.values()), n_items))
-    # Anarchy 项在建筑与服务页与道具页**各有一份**（owner：三页互不共用），
-    # 所以两个 Anarchy 板块的行数之和 = Anarchy 项数×2。
-    anarchy_rows = per_tab["kGroupAssetAnarchy"] + per_tab["kGroupItemAnarchy"]
+    # Anarchy 项在三页**各有一份**（owner：三页互不共用），
+    # 所以三个 Anarchy 板块的行数之和 = Anarchy 项数×2。
+    anarchy_groups = ("kGroupAssetAnarchy", "kGroupFunctionAnarchy", "kGroupItemAnarchy")
+    anarchy_rows = sum(per_tab[g] for g in anarchy_groups)
     check(anarchy_rows == src_anarchy * 2,
-          "两个 Anarchy 板块行数之和 = Anarchy 项数×2（%d + %d = %d 行 / %d 项）"
-          % (per_tab["kGroupAssetAnarchy"], per_tab["kGroupItemAnarchy"],
-             anarchy_rows, src_anarchy))
+          "三个 Anarchy 板块行数之和 = Anarchy 项数×2（%s = %d 行 / %d 项）"
+          % (" + ".join(str(per_tab[g]) for g in anarchy_groups), anarchy_rows, src_anarchy))
     # 关闭大开关后，三页里的每一项都要变灰：每个 *Enabled 行都必须挂本页的变灰条件。
     # 按行扫，**往前找最近的一条 [SettingsUISection( 前缀定义专属**，
     # 因为页与页交界处前 6 行的窗口会带进上一页的板块名（v0.7.0 拆页后必须这样才不串页）。
     slines = s.split("\n")
-    page_groups = ("kGroupAssetOfficial", "kGroupAssetAnarchy",
-                   "kGroupFunctionOfficial", "kGroupItemOfficial", "kGroupItemAnarchy")
+    page_groups = PAGE_GROUPS
     cur_section = None
     enabled_rows = []
     for i, ln in enumerate(slines):
@@ -354,17 +358,20 @@ def main():
     page_asset_official = [pascal_to_id(n) for n, c, g in enabled_rows if g == "kGroupAssetOfficial"]
     page_asset_anarchy = [pascal_to_id(n) for n, c, g in enabled_rows if g == "kGroupAssetAnarchy"]
     page_function = [pascal_to_id(n) for n, c, g in enabled_rows if g == "kGroupFunctionOfficial"]
+    page_function_anarchy = [pascal_to_id(n) for n, c, g in enabled_rows if g == "kGroupFunctionAnarchy"]
     page_item = [pascal_to_id(n) for n, c, g in enabled_rows if g == "kGroupItemOfficial"]
     page_item_anarchy = [pascal_to_id(n) for n, c, g in enabled_rows if g == "kGroupItemAnarchy"]
     # 目录里各项归属哪个板块，不靠「顺序猜」：
     #   建筑与服务页官方 = 不带 f. / i. 前缀的官方项；
     #   功能页 = f.* 官方项；道具页 = i.* 官方项；
-    #   Anarchy 项按域分：带 i. 前缀的进道具页 Anarchy 板块，其余进建筑与服务页 Anarchy 板块
-    #   （v0.8.0：Anarchy 在摆件工具面板上的「物件高度」归道具页，道路那三项归建筑与服务页）。
+    #   Anarchy 项按域分：带 i. 前缀的进道具页，带 f. 前缀的进功能页，其余进建筑与服务页
+    #   （v0.8.0：Anarchy 在摆件工具面板上的「物件高度」归道具页，道路那三项归建筑与服务页；
+    #    v0.10.0：地形改造 / 区域工具 / 拆除 那两项归功能页）。
     official_ids = [i for i in cat_official_all if not i.startswith(("f.", "i."))]
     func_ids = [i for i in cat_official_all if i.startswith("f.")]
     item_ids = [i for i in cat_official_all if i.startswith("i.")]
-    asset_anarchy_ids = [i for i in anarchy_ids if not i.startswith("i.")]
+    asset_anarchy_ids = [i for i in anarchy_ids if not i.startswith(("f.", "i."))]
+    func_anarchy_ids = [i for i in anarchy_ids if i.startswith("f.")]
     item_anarchy_ids = [i for i in anarchy_ids if i.startswith("i.")]
     check(page_asset_official == official_ids,
           "建筑与服务页官方板块属性顺序 == 目录顺序（%s）" % "->".join(official_ids))
@@ -372,6 +379,9 @@ def main():
           "建筑与服务页 Anarchy 板块属性顺序 == 目录顺序（%s）" % "->".join(asset_anarchy_ids))
     check(page_function == func_ids,
           "功能页属性顺序 == 目录里的 f.* 顺序（%s）" % "->".join(func_ids))
+    check(page_function_anarchy == func_anarchy_ids,
+          "功能页 Anarchy 板块属性顺序 == 目录里的 f.* Anarchy 项顺序（%s）"
+          % "->".join(func_anarchy_ids))
     check(page_item == item_ids,
           "道具页属性顺序 == 目录里的 i.* 官方项顺序（%s）" % "->".join(item_ids))
     check(page_item_anarchy == item_anarchy_ids,

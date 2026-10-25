@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Colossal.Logging;
 using Game;
@@ -72,6 +72,71 @@ namespace ToolModeMemory.Systems
 		// 失效条件与 m_Keys 完全同步（同一个 m_KeyEpoch），两批必须看到同一个 prefab/tool。
 		private readonly string[] m_LevelKeys = new string[10];
 		private readonly int[] m_LevelKeyPasses = new int[10];
+
+		// ---- v0.10.0：会话全局项（GlobalState）的「基线」----
+		//
+		// 这类项的值在游戏里只有一份（Anarchy 主开关、物体高度那一排、等高线…），
+		// 换资产时它自己不会变。而捕获是「每帧读面板就记」，于是上一个资产留下的值
+		// 会被当成「玩家在这个资产上的选择」写进新资产的键 —— owner 实测到的
+		// 「设成全部不共用后，切到别的资产也有几个是开着的，尤其每组第一个资产」。
+		//
+		// 规则：换到新键的第一帧只把当前值记成基线，不写盘；之后只有「值相对基线变了」
+		// 才是玩家的动作，才写。基线只跟一个键走（换键就重建），所以内存里最多一份。
+		private string m_StateKey;
+		private readonly Dictionary<string, int> m_StateBase = new Dictionary<string, int>(StringComparer.Ordinal);
+
+		// 换工具/换资产之后的一小段「静默期」：Anarchy 自己的 OnToolChanged 会在同一帧
+		// 翻转 m_AnarchyEnabled（离开铲除工具时关、进铲除工具时开），那是它自己的状态机、
+		// 不是玩家按的 —— 静默期内不建立基线也不写，等它折腾完再取基线。
+		private float m_StateQuietUntil;
+
+		// ---- v0.10.0：共用范围变更时的「搬家」----
+		//
+		// owner：「从更大的范围改成更小的范围，比如全局改同组，那很简单调整后所有组显示的
+		// 都是全局的设置；但反过来，比如同组变成全局，那么以最后一次设置的为准。」
+		//
+		// 收窄（大→小）不需要搬：宽档的键还在，读的时候沿更宽的档回落（见 ApplyNow 的
+		// m_FallbackScopes），于是所有组显示的还是全局那一份，直到玩家单独改某一组。
+		// 放宽（小→大）必须搬：新档的键里可能压着很久以前的老值，不搬的话玩家一改范围
+		// 面板就跳回旧值。所以记一条待办，在下一趟 ApplyNow 里把「改之前这个上下文
+		// 实际生效的值」写进新档的键。
+		private struct ScopeMove
+		{
+			public string ItemId;
+			public MemoryScope From;
+			public MemoryScope To;
+		}
+
+		private readonly List<ScopeMove> m_ScopeMoves = new List<ScopeMove>(8);
+
+		/// <summary>
+		/// 读不到本档的键时，按「由窄到宽」往上的回落顺序（v0.10.0）。
+		/// 层级本身是 资产 &lt; 分组 &lt; 菜单 &lt; 同类 &lt; 全局共用，「全部不共用」等于把每件资产单独
+		/// 拉出来、再往上回落。为什么这样才符合 owner 说的「全局改同组，所有组显示的都是全局的设置」：
+		/// 组键大多没有记录，回落就把全局那份读出来了；玩家改过的那一组有自己的键，天然单独生效。
+		/// 下标 = (int)MemoryScope，GlobalShared 没有更宽的一档。
+		/// </summary>
+		private static readonly MemoryScope[][] s_FallbackScopes = new MemoryScope[][]
+		{
+			new MemoryScope[] { MemoryScope.Menu, MemoryScope.Category, MemoryScope.GlobalShared },
+			new MemoryScope[] { MemoryScope.Category, MemoryScope.GlobalShared },
+			new MemoryScope[] { MemoryScope.GlobalShared },
+			new MemoryScope[0],
+			new MemoryScope[] { MemoryScope.Group, MemoryScope.Menu, MemoryScope.Category, MemoryScope.GlobalShared },
+		};
+
+		/// <summary>范围有多宽（数字越大越宽）。「全部不共用」最窄。</summary>
+		private static int WidthRank(MemoryScope scope)
+		{
+			switch (scope)
+			{
+				case MemoryScope.GlobalUnique: return 0;
+				case MemoryScope.Group: return 1;
+				case MemoryScope.Menu: return 2;
+				case MemoryScope.Category: return 3;
+				default: return 4;
+			}
+		}
 
 		/// <summary>
 		/// 「在不在存档里 / 进档稳定期过没过」这两条闸门（规则与理由见 SaveSessionGate）。
@@ -167,6 +232,10 @@ namespace ToolModeMemory.Systems
 			m_LastPrefab = null;
 			m_FilterRestoredTool = null;
 			m_FilterRestoredPrefab = null;
+			// 我们插在事件链最前面，所以此刻 Anarchy 还没轮到它的 OnToolChanged ——
+			// 那里会按 m_DisableAnarchyWhenCompleted 自己翻一次 m_AnarchyEnabled。
+			// 会话全局项在这段时间里不取基线（见 m_StateQuietUntil）。
+			MarkStateQuiet();
 			ApplyNow();
 			m_PendingApplyFrames = 1;
 		}
@@ -179,8 +248,19 @@ namespace ToolModeMemory.Systems
 			// 校正一次——两趟缺一不可。
 			m_FilterRestoredTool = null;
 			m_FilterRestoredPrefab = null;
+			MarkStateQuiet();
 			ApplyNow();
 			m_PendingApplyFrames = 1;
+		}
+
+		/// <summary>
+		/// 换工具/换资产后的静默期：会话全局项（GlobalState）在这段时间里既不取基线也不写盘。
+		/// 0.25 秒足够盖住「同一帧里排在我们后面的系统改这个值」这一类，
+		/// 又不至于让玩家真去点开关时漏记（人手不可能在 0.25 秒内完成点击）。
+		/// </summary>
+		private void MarkStateQuiet()
+		{
+			m_StateQuietUntil = UnityEngine.Time.unscaledTime + 0.25f;
 		}
 
 		protected override void OnUpdate()
@@ -359,7 +439,7 @@ namespace ToolModeMemory.Systems
 					// 默认主题、数据包本来就是空的，不补这一下就要等玩家下次切菜单才生效。
 					// 恢复没做完（当前分类的可选项还拿不到）就先别认基线：认了就等于把
 					// 「还没恢复」登记成「已经恢复过」，那一次失败就再也不会被补上。
-					if (!RestoreFilter(setting, store, def, slot, key)) continue;
+					if (!RestoreFilter(setting, store, def, slot, key, prefab, tool)) continue;
 					m_FilterSigs[slot] = sig;
 					m_FilterKeys[slot] = key;
 					continue;
@@ -371,7 +451,7 @@ namespace ToolModeMemory.Systems
 					// 所以这里只重设基线并恢复这个组自己的记忆，不写记忆。
 					m_FilterKeys[slot] = key;
 					m_FilterSigs[slot] = sig;
-					RestoreFilter(setting, store, def, slot, key);
+					RestoreFilter(setting, store, def, slot, key, prefab, tool);
 					continue;
 				}
 				if (m_FilterSigs[slot] == sig) continue;
@@ -421,7 +501,7 @@ namespace ToolModeMemory.Systems
 				if (def.Source != ItemSource.Toolbar) continue;
 				string key = LevelKeyFor(setting, def, prefab, tool);
 				if (string.IsNullOrEmpty(key)) continue;
-				if (!RestoreFilter(setting, store, def, FilterSlot(def.Id), key)) done = false;
+				if (!RestoreFilter(setting, store, def, FilterSlot(def.Id), key, prefab, tool)) done = false;
 			}
 			// 只有每一项都有了结论才记账；还有没就绪的就把这一对留着，下一帧 ApplyNow
 			// 会再跑一遍（稳定期里它本来就是每帧调的）。
@@ -440,17 +520,41 @@ namespace ToolModeMemory.Systems
 		/// true = 这一项已经有了结论（真的恢复了，或者本来就没有可恢复的）；
 		/// false = 工具栏还没就绪，调用方下一帧还得再试（见 <see cref="RestoreFilters"/>）。
 		/// </returns>
+		/// <summary>
+		/// 筛选项按当前层级读：本档没有记录时沿更宽的档回落（v0.10.0，与工具项同一套规则）。
+		/// 返回真正取到记录的那把键；都没有记录时返回 null。
+		/// </summary>
+		private string FilterKeyWithFallback(ToolModeMemorySettings setting, MemoryStore store,
+			ToolItemDef def, PrefabBase prefab, ToolBaseSystem tool, string key, out int remembered)
+		{
+			bool found;
+			remembered = store.Get(def.Id, key, out found);
+			if (found) return key;
+			MemoryScope scope = setting.GetItemScope(def.Id);
+			int slot = (int)scope;
+			if (slot < 0 || slot >= s_FallbackScopes.Length) return null;
+			MemoryScope[] wider = s_FallbackScopes[slot];
+			for (int i = 0; i < wider.Length; i++)
+			{
+				string widerKey = LevelKeyCached(wider[i], true, prefab, tool);
+				if (string.IsNullOrEmpty(widerKey)) continue;
+				remembered = store.Get(def.Id, widerKey, out found);
+				if (found) return widerKey;
+			}
+			return null;
+		}
+
 		private bool RestoreFilter(ToolModeMemorySettings setting, MemoryStore store,
-			ToolItemDef def, int slot, string key)
+			ToolItemDef def, int slot, string key, PrefabBase prefab, ToolBaseSystem tool)
 		{
 			if (!setting.IsItemEnabled(def.Id)) return true;
 			// 工具栏 UI 系统还没建好（读档头几帧就是如此）：这一帧什么都做不了。
 			// 必须让调用方知道，否则它会把「试过一次」当成「做完了」，稳定期后面几帧
 			// 一直跳过，玩家就永远看不到记忆里的主题 / 数据包。
 			if (!ToolMemoryBridge.ToolbarFilterReady()) return false;
-			bool found;
-			int remembered = store.Get(def.Id, key, out found);
-			if (!found) return true;
+			int remembered;
+			string from = FilterKeyWithFallback(setting, store, def, prefab, tool, key, out remembered);
+			if (from == null) return true;
 			m_FilterNames.Clear();
 			if (remembered > 0)
 			{
@@ -460,7 +564,7 @@ namespace ToolModeMemory.Systems
 				for (int j = m_FilterNames.Count - 1; j >= 0; j--)
 				{
 					bool hit;
-					int v = store.Get(def.Id, MemoryKeys.FilterOption(key, m_FilterNames[j]), out hit);
+					int v = store.Get(def.Id, MemoryKeys.FilterOption(from, m_FilterNames[j]), out hit);
 					if (!hit || v != MemoryKeys.FilterValue(true)) m_FilterNames.RemoveAt(j);
 				}
 			}
@@ -543,6 +647,43 @@ namespace ToolModeMemory.Systems
 			m_KeyPrefab = null;
 			m_KeyAt = 0f;
 			m_KeyEpoch++;
+			// 键重算了 = 上下文可能整个换了，会话全局项的基线跟着作废（v0.10.0）
+			m_StateKey = null;
+			m_StateBase.Clear();
+		}
+
+		/// <summary>
+		/// 会话全局项（<see cref="ToolItemDef.GlobalState"/>）要不要记这一次观测（v0.10.0）。
+		///
+		/// 这类值在游戏里只有一份，换资产时它自己不变，所以「读到的值」根本不能证明
+		/// 玩家在这个资产上做过选择 —— 上一个资产留下的「开」会在切过去的瞬间被记成
+		/// 「这个资产也是开」。规则：
+		/// <list type="number">
+		/// <item>换到新键（或刚换工具/换资产）的第一帧只把当前值当基线，不记；</item>
+		/// <item>之后值相对基线真的变了，才是玩家动的，记一次并更新基线；</item>
+		/// <item>静默期内不取基线（Anarchy 自己的 OnToolChanged 会在同一帧翻转这个值）。</item>
+		/// </list>
+		/// 代价：玩家从没在这个资产上动过开关，就不会为它留下记录 —— 那正是
+		/// 「全部不共用」想要的：没动过 = 没记录 = 读的时候按更宽的档回落、最后才是默认值。
+		/// </summary>
+		private bool AcceptsGlobalState(string key, string fieldId, int value, float now)
+		{
+			if (now < m_StateQuietUntil) return false;
+			if (!string.Equals(key, m_StateKey, StringComparison.Ordinal))
+			{
+				// 换了键 = 换了上下文，之前的基线全部作废
+				m_StateKey = key;
+				m_StateBase.Clear();
+			}
+			int baseline;
+			if (!m_StateBase.TryGetValue(fieldId, out baseline))
+			{
+				m_StateBase[fieldId] = value;
+				return false;
+			}
+			if (baseline == value) return false;
+			m_StateBase[fieldId] = value;
+			return true;
 		}
 
 		public void CaptureNow()
@@ -603,6 +744,8 @@ namespace ToolModeMemory.Systems
 						// 记下去要么污染共用桶（把道路一起拽走），要么变成水管永远用不了的死值。
 						if (ToolMemoryBridge.HasValueLimit(fieldId)
 							&& !ToolMemoryBridge.AcceptsCapture(fieldId, tool, value)) continue;
+						// v0.10.0：会话全局项只在「玩家动了它」时才记（理由见 m_StateBase）
+						if (def.GlobalState && !AcceptsGlobalState(key, fieldId, value, now)) continue;
 						store.Set(fieldId, key, value);
 					}
 				}
@@ -633,6 +776,9 @@ namespace ToolModeMemory.Systems
 
 			ToolItemDef[] items = ToolItemCatalog.Items;
 			ItemDomain domain = ToolMemoryBridge.DomainOf(tool, prefab);
+			// v0.10.0：先处理「共用范围改了」的搬家（放宽档位时把当前值写进新键），
+			// 必须在下面的读之前做完，否则这一帧面板会先跳到新档里的旧值再被纠正。
+			ApplyScopeMoves(setting, store, prefab, tool, domain);
 			if (!setting.IsDomainEnabled(domain))
 			{
 				// 本域整页关着：工具项什么都不写回，但工具栏筛选是资产页的两行、
@@ -660,6 +806,13 @@ namespace ToolModeMemory.Systems
 					int value = store.Get(fieldId, key, out found);
 					if (!found)
 					{
+						// v0.10.0：本档没有记录就沿更宽的档回落（见 s_FallbackScopes）。
+						// 这一条正是 owner 要的「全局改成同组之后，所有组显示的都是全局那份」：
+						// 组键大多不存在，回落读到的就是全局键；改过的那一组有自己的键，单独生效。
+						found = TryGetWider(store, def, prefab, tool, scope, domain, fieldId, out value);
+					}
+					if (!found)
+					{
 						// 未命中：单资产档必须写默认，避免上一资产状态泄漏；
 						// elevation 也写默认（原版根本不重置高度）。
 						bool needDefault = scope == MemoryScope.GlobalUnique
@@ -680,6 +833,99 @@ namespace ToolModeMemory.Systems
 
 			// 换工具 / 换资产时把工具栏筛选也补回来（这两项的记忆键是层级键，不带域和家族）
 			RestoreFilters(setting, store, prefab, tool);
+		}
+
+		/// <summary>
+		/// 本档读不到时沿更宽的一档回落的查找（v0.10.0，表见 <see cref="s_FallbackScopes"/>）。
+		/// 只在本档真的没有记录时才走，命中即返回 —— 正常情况下一次都不该发生。
+		/// </summary>
+		private bool TryGetWider(MemoryStore store, ToolItemDef def, PrefabBase prefab,
+			ToolBaseSystem tool, MemoryScope scope, ItemDomain domain, string fieldId, out int value)
+		{
+			value = 0;
+			int slot = (int)scope;
+			if (slot < 0 || slot >= s_FallbackScopes.Length) return false;
+			MemoryScope[] wider = s_FallbackScopes[slot];
+			for (int i = 0; i < wider.Length; i++)
+			{
+				string key = KeyFor(def, prefab, tool, wider[i], domain);
+				if (string.IsNullOrEmpty(key)) continue;
+				bool found;
+				int hit = store.Get(fieldId, key, out found);
+				if (!found) continue;
+				value = hit;
+				return true;
+			}
+			return false;
+		}
+
+		/// <summary>
+		/// 设置页改了某项的共用范围后调这里（v0.10.0）。两件事：
+		/// 收窄（大→小）什么都不用做 —— 宽档的键还在，读的时候沿更宽的档回落，
+		/// 于是所有组显示的还是原来那一份；放宽（小→大）记一条待办，
+		/// 在下一趟 ApplyNow 里把「改之前这个上下文实际生效的值」写进新档的键，
+		/// 这样面板不会在这些宽档键里翻出很久以前的老值（owner：「以最后一次设置的为准」）。
+		/// </summary>
+		public void RequestScopeMigration(string itemId, int from, int to)
+		{
+			if (string.IsNullOrEmpty(itemId) || from == to) return;
+			ScopeMove move = new ScopeMove
+			{
+				ItemId = itemId,
+				From = (MemoryScope)from,
+				To = (MemoryScope)to,
+			};
+			for (int i = 0; i < m_ScopeMoves.Count; i++)
+			{
+				if (string.Equals(m_ScopeMoves[i].ItemId, itemId, StringComparison.Ordinal))
+				{
+					m_ScopeMoves[i] = move;
+					return;
+				}
+			}
+			m_ScopeMoves.Add(move);
+		}
+
+		/// <summary>
+		/// 把待办的范围搬家落地。只在当前上下文真的轮得上这一项时才做，
+		/// 其余留在表里等玩家切到那一页 —— 搬家用的是改了范围那一刻的上下文，
+		/// 而选项页里没有「当前工具」，所以只能推到下一次真正用工具的时候。
+		/// </summary>
+		private void ApplyScopeMoves(ToolModeMemorySettings setting, MemoryStore store,
+			PrefabBase prefab, ToolBaseSystem tool, ItemDomain domain)
+		{
+			if (m_ScopeMoves.Count == 0) return;
+			for (int i = 0; i < m_ScopeMoves.Count; i++)
+			{
+				ScopeMove move = m_ScopeMoves[i];
+				ToolItemDef def = ToolItemCatalog.Find(move.ItemId);
+				if (def == null)
+				{
+					m_ScopeMoves.RemoveAt(i--);
+					continue;
+				}
+				if (def.Domain != domain || !FamilyMatches(def, tool)) continue;
+				if (WidthRank(move.To) <= WidthRank(move.From))
+				{
+					// 收窄（或宽度没变）：靠回落就行，不搬
+					m_ScopeMoves.RemoveAt(i--);
+					continue;
+				}
+				string toKey = KeyFor(def, prefab, tool, move.To, domain);
+				string fromKey = KeyFor(def, prefab, tool, move.From, domain);
+				string[] subs = def.Subs;
+				int count = subs == null ? 1 : subs.Length;
+				for (int j = 0; j < count; j++)
+				{
+					string fieldId = subs == null ? def.Id : subs[j];
+					bool found;
+					int value = store.Get(fieldId, fromKey, out found);
+					if (!found) found = TryGetWider(store, def, prefab, tool, move.From, domain, fieldId, out value);
+					if (!found) continue;
+					store.Set(fieldId, toKey, value);
+				}
+				m_ScopeMoves.RemoveAt(i--);
+			}
 		}
 
 		/// <summary>重置记忆后把当前工具面板恢复到出厂状态。</summary>

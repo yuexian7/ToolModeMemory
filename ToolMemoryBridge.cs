@@ -188,6 +188,15 @@ namespace ToolModeMemory
 			public Type NetworkType;
 			public PropertyInfo EnabledProp;
 			public FieldInfo EnabledField;
+
+			/// <summary>
+			/// AnarchyUISystem.m_ToolIDs（L165，v0.10.0 用到）：主开关**只对这份名单里的工具**显示。
+			/// 名单 = {Object Tool, Net Tool, Area Tool, Bulldoze Tool, Terrain Tool, Upgrade Tool, Line Tool}，
+			/// 并且它是私有的 List&lt;string&gt;，外部还能通过 TryAddTool(id)（L183）往里加。
+			/// 所以我们反射读它、而不是把七个 id 写死 —— 别的模组加进来的工具也照名单认。
+			/// 读不到就退化成 s_FallbackToolIds（见 AnarchyToggleVisible）。
+			/// </summary>
+			public FieldInfo ToolIdsField;
 			public PropertyInfo LeftUpgradeProp;
 			public PropertyInfo RightUpgradeProp;
 			public PropertyInfo CompositionProp;
@@ -343,6 +352,11 @@ namespace ToolModeMemory
 			// 同理：工具栏 UI 系统也属于当前 World，换档必须重取实例
 			s_ToolbarUi = null;
 			s_ToolbarUiResolved = false;
+			// 可选项缓存带的是实体索引，换档后 Index 会被复用，必须一起清（v0.10.0）
+			s_ThemeCache.Forget();
+			s_PackCache.Forget();
+			s_OptEntities = s_ThemeCache.Entities;
+			s_OptNames = s_ThemeCache.Names;
 		}
 
 		// ============================ 键解析 ============================
@@ -1174,12 +1188,12 @@ namespace ToolModeMemory
 					case F_BRUSH_HEIGHT: return CaptureBrushHeight(tool, out value);
 					case F_AGE_MASK: return CaptureAgeMask(tool, out value);
 					case F_DISTANCE: return CaptureDistance(tool, out value);
-					case F_AN_ELEV: return CaptureAnarchyElevation(F_AN_ELEV, out value);
-					case F_AN_ELEV_STEP: return CaptureAnarchyElevation(F_AN_ELEV_STEP, out value);
-					case F_AN_ELEV_VAR: return CaptureAnarchyElevation(F_AN_ELEV_VAR, out value);
-					case F_AN_LOCK_ELEV: return CaptureAnarchyElevation(F_AN_LOCK_ELEV, out value);
+					case F_AN_ELEV: return CaptureAnarchyElevation(F_AN_ELEV, tool, out value);
+					case F_AN_ELEV_STEP: return CaptureAnarchyElevation(F_AN_ELEV_STEP, tool, out value);
+					case F_AN_ELEV_VAR: return CaptureAnarchyElevation(F_AN_ELEV_VAR, tool, out value);
+					case F_AN_LOCK_ELEV: return CaptureAnarchyElevation(F_AN_LOCK_ELEV, tool, out value);
 					case F_DECORATION: return CaptureDecoration(tool, out value);
-					case F_ANARCHY: return CaptureAnarchyEnabled(out value);
+					case F_ANARCHY: return CaptureAnarchyEnabled(tool, out value);
 					case F_LR_LEFT: return CaptureAnarchySide(tool, true, out value);
 					case F_LR_RIGHT: return CaptureAnarchySide(tool, false, out value);
 					case F_GENERAL: return CaptureAnarchyGeneral(tool, out value);
@@ -1475,13 +1489,23 @@ namespace ToolModeMemory
 		/// 它是 Anarchy 的**会话全局**状态、不属于任何工具，所以不按工具设门槛——
 		/// anarchy 这一项对 Anarchy 支持的所有工具都成立（道路、建筑、区划…）。
 		/// </summary>
-		private static bool CaptureAnarchyEnabled(out int value)
+		/// <summary>
+		/// 捕获 Anarchy 主开关（v0.10.0 起带工具门槛）。
+		///
+		/// 这个值住在 AnarchyUISystem 上（m_AnarchyEnabled），是**会话全局**的一份 ——
+		/// 不随工具、也不随资产走。面板上没有这一段的工具（功能区 / 路线 / 水体 / 选择）
+		/// 站在上面时读到的是上一个工具留下的残留值，记下来就变成「玩家在这个资产上的选择」，
+		/// 于是 owner 看到的「切到别的资产也有几个是开着的」。
+		/// 所以：面板上不显示这一段就当作「这一项在当前上下文不存在」，不捕获也不写回。
+		/// </summary>
+		private static bool CaptureAnarchyEnabled(ToolBaseSystem tool, out int value)
 		{
 			value = 0;
 			AnarchyHandles h = Anarchy();
 			if (h == null) return false;
 			object ui = AnarchyUi();
 			if (ui == null) return false;
+			if (!AnarchyToggleVisible(tool)) return false;
 			object raw = null;
 			if (h.EnabledProp != null) raw = h.EnabledProp.GetValue(ui, null);
 			if (raw == null && h.EnabledField != null) raw = h.EnabledField.GetValue(ui);
@@ -1543,9 +1567,13 @@ namespace ToolModeMemory
 		/// 值都住在 AnarchyUISystem 的 ValueBindingHelper 里：float 的按 kScale 存整数，
 		/// bool（锁定变换）存 0/1。
 		/// </summary>
-		private static bool CaptureAnarchyElevation(string fieldId, out int value)
+		private static bool CaptureAnarchyElevation(string fieldId, ToolBaseSystem tool, out int value)
 		{
 			value = 0;
+			// v0.10.0：与写回同一个门槛 —— 这一排不在面板上就别记。
+			// 少了这一句，功能区 / 道路工具会把摆件工具上一次留下的高度记进自己的键，
+			// 表现就是「刚进这一页，高度就是别的工具那个数」。
+			if (!AnarchyElevationVisible(tool)) return false;
 			AnarchyHandles h = Anarchy();
 			if (h == null) return false;
 			object ui = AnarchyUi();
@@ -1676,7 +1704,7 @@ namespace ToolModeMemory
 					case F_AN_ELEV_VAR: return ApplyAnarchyElevation(F_AN_ELEV_VAR, tool, value);
 					case F_AN_LOCK_ELEV: return ApplyAnarchyElevation(F_AN_LOCK_ELEV, tool, value);
 					case F_DECORATION: return ApplyDecoration(tool, value);
-					case F_ANARCHY: return ApplyAnarchyEnabled(value);
+					case F_ANARCHY: return ApplyAnarchyEnabled(tool, value);
 					case F_LR_LEFT: return ApplySideUpgrade(tool, true, value);
 					case F_LR_RIGHT: return ApplySideUpgrade(tool, false, value);
 					case F_GENERAL: return ApplyComposition(tool, value);
@@ -2102,12 +2130,17 @@ namespace ToolModeMemory
 		/// 面板下一帧自己重画；我们若去写它的绑定就是重复劳动 + 抢它自己的状态机。
 		/// 也不走它的私有 AnarchyToggled()：那个除了翻转还会顺手清 m_DisableAnarchyWhenCompleted
 		/// 并打开 ResetNetCompositionDataSystem，那是「玩家按下开关」的语义，不是「恢复状态」。
+		///
+		/// v0.10.0：加工具门槛（与捕获同一判据）。面板上没有这一段的工具（功能区 / 路线 /
+		/// 水体 / 选择）上去写这个全局字段只会把别的工具上的状态改坏 —— 玩家在那上面
+		/// 既看不到开关也改不了它，我们没有理由替他动。
 		/// </summary>
-		private static bool ApplyAnarchyEnabled(int value)
+		private static bool ApplyAnarchyEnabled(ToolBaseSystem tool, int value)
 		{
 			AnarchyHandles h = Anarchy();
 			object ui = AnarchyUi();
 			if (ui == null || h == null || h.EnabledField == null) return false;
+			if (!AnarchyToggleVisible(tool)) return false;
 			h.EnabledField.SetValue(ui, value != 0);
 			return true;
 		}
@@ -2527,6 +2560,60 @@ namespace ToolModeMemory
 		}
 
 		/// <summary>
+		/// 当前工具的面板上**有没有** Anarchy 那个主开关（v0.10.0）。
+		///
+		/// 为什么要这道门槛（owner 2026-10-26 实测）：把 Anarchy 主开关设成「全部不共用」后，
+		/// 在一个资产上开启，切到别的资产有几个也显示开着 —— 尤其每组第一个资产最明显。
+		/// 两个来源之一就是这个值本身是**会话全局**的（m_AnarchyEnabled 不随工具也不随资产走）：
+		/// 站在功能区、路线、水体这些面板上没有 Anarchy 的工具上，我们仍然每帧把那个残留值
+		/// 当成「玩家在这个资产上的选择」记进当前键；写回时也照样写字段，
+		/// 而那些工具上根本没有这一段 UI，玩家既看不到也改不了。
+		///
+		/// 判据照 Anarchy 自己的名单（AnarchyUISystem L165 m_ToolIDs + IsToolAppropriate），
+		/// 不按 C# 类型判：「Line Tool」「Upgrade Tool」不是独立的 ToolBaseSystem 子类。
+		/// 名单反射不到时退化成 s_FallbackAnarchyToolIds，宁可漏判也不要错误地全放行。
+		/// </summary>
+		public static bool AnarchyToggleVisible(ToolBaseSystem tool)
+		{
+			if (tool == null) return false;
+			string id;
+			try { id = tool.toolID; }
+			catch { return false; }
+			if (string.IsNullOrEmpty(id)) return false;
+
+			try
+			{
+				AnarchyHandles h = Anarchy();
+				object ui = AnarchyUi();
+				if (h != null && ui != null && h.ToolIdsField != null)
+				{
+					System.Collections.IList ids = h.ToolIdsField.GetValue(ui) as System.Collections.IList;
+					if (ids != null)
+					{
+						for (int i = 0; i < ids.Count; i++)
+						{
+							if (string.Equals(ids[i] as string, id, StringComparison.Ordinal)) return true;
+						}
+						return false;
+					}
+				}
+			}
+			catch { }
+
+			for (int i = 0; i < s_FallbackAnarchyToolIds.Length; i++)
+			{
+				if (string.Equals(s_FallbackAnarchyToolIds[i], id, StringComparison.Ordinal)) return true;
+			}
+			return false;
+		}
+
+		/// <summary>反射读不到名单时的兜底：AnarchyUISystem L165 那一份的字面值。</summary>
+		private static readonly string[] s_FallbackAnarchyToolIds = new string[]
+		{
+			"Object Tool", "Net Tool", "Area Tool", "Bulldoze Tool", "Terrain Tool", "Upgrade Tool", "Line Tool"
+		};
+
+		/// <summary>
 		/// 游戏自己的「模组全部加载完毕」信号。取不到（GameManager 还没建、正在卸载、模组被禁用）
 		/// 都返回 false —— 判不出来的结果就是「什么都不藏」。
 		/// </summary>
@@ -2594,6 +2681,7 @@ namespace ToolModeMemory
 
 			h.EnabledProp = FindProperty(h.UiType, "AnarchyEnabled");
 			h.EnabledField = FindField(h.UiType, "m_AnarchyEnabled");
+			h.ToolIdsField = FindField(h.UiType, "m_ToolIDs");
 
 			h.LeftUpgradeProp = FindProperty(h.NetworkType, "LeftUpgrade");
 			h.RightUpgradeProp = FindProperty(h.NetworkType, "RightUpgrade");
@@ -2729,9 +2817,56 @@ namespace ToolModeMemory
 		private static MethodInfo s_ApplyMethod;
 		private static bool s_WarnedToolbarUi;
 
-		// 当前分类的可选项（实体 + 名）：单线程主循环内复用，避免每次调用都分配
-		private static readonly List<Entity> s_OptEntities = new List<Entity>(64);
-		private static readonly List<string> s_OptNames = new List<string>(64);
+		// 当前分类的可选项（实体 + 名）：指向下面两个缓存槽中「当前这个 fieldId」的那一份。
+		// 单线程主循环内复用，换分类才重建，命中时零分配。
+		private static List<Entity> s_OptEntities = new List<Entity>(64);
+		private static List<string> s_OptNames = new List<string>(64);
+
+		// v0.10.0：当前分类可选项的缓存。列出一个分类有哪些主题 / 数据包，要逐个资产读
+		// UIGroupElement / ObjectRequirementElement / AssetPackElement 再取 prefab 名 ——
+		// 一个大分类就是几百次缓冲读取加一堆字符串分配。而这份列表只在「换分类」时才真的变，
+		// 原版自己也是这么算的（切分类才重画筛选项），所以照 (分类实体, 该分类资产数) 缓存一份。
+		private sealed class FilterOptionCache
+		{
+			public int CategoryIndex = -1;
+			public int CategoryVersion = -1;
+			public int AssetCount = -1;
+			public readonly List<Entity> Entities = new List<Entity>(64);
+			public readonly List<string> Names = new List<string>(64);
+			// 名 → 下标：既是去重表（原来是 List.Contains 线性查，O(n²)），也是查表用的索引
+			public readonly Dictionary<string, int> Index = new Dictionary<string, int>(StringComparer.Ordinal);
+
+			public bool Matches(Entity category, int assets)
+			{
+				return CategoryIndex == category.Index && CategoryVersion == category.Version
+					&& AssetCount == assets;
+			}
+
+			public void Start(Entity category, int assets)
+			{
+				CategoryIndex = category.Index;
+				CategoryVersion = category.Version;
+				AssetCount = assets;
+				Entities.Clear();
+				Names.Clear();
+				Index.Clear();
+			}
+
+			public void Forget()
+			{
+				CategoryIndex = -1;
+				CategoryVersion = -1;
+				AssetCount = -1;
+				Entities.Clear();
+				Names.Clear();
+				Index.Clear();
+			}
+		}
+
+		private static readonly FilterOptionCache s_ThemeCache = new FilterOptionCache();
+		private static readonly FilterOptionCache s_PackCache = new FilterOptionCache();
+		// 最近一次 CollectOptions 用的槽（查名用它的字典，O(1)）
+		private static FilterOptionCache s_OptCache = s_ThemeCache;
 
 		/// <summary>筛选项可用吗（拿得到工具栏 UI 系统且私有成员都对得上）。</summary>
 		public static bool ToolbarFilterReady()
@@ -2861,13 +2996,14 @@ namespace ToolModeMemory
 			into.Clear();
 			if (names == null || names.Count == 0) return 0;
 			if (CollectOptions(fieldId) < 0) return -1;
+			FilterOptionCache cache = s_OptCache;
 			for (int i = 0; i < names.Count; i++)
 			{
-				int at = s_OptNames.IndexOf(names[i]);
-				if (at >= 0 && at < s_OptEntities.Count && !into.Contains(s_OptEntities[at]))
-				{
-					into.Add(s_OptEntities[at]);
-				}
+				int at;
+				if (!cache.Index.TryGetValue(names[i], out at)) continue;
+				if (at < 0 || at >= cache.Entities.Count) continue;
+				Entity entity = cache.Entities[at];
+				if (!into.Contains(entity)) into.Add(entity);
 			}
 			return into.Count;
 		}
@@ -2940,23 +3076,45 @@ namespace ToolModeMemory
 		/// <summary>
 		/// 当前分类的可选项集合（照抄原版算画勾的那段：T:227-251 / T:294-321）。
 		/// 返回个数；-1 = 这次拿不到（没有选中分类 / 工具栏还没建好 / 抛异常）。
+		///
+		/// v0.10.0：结果按 (分类实体, 该分类资产数) 缓存 —— 见 <see cref="FilterOptionCache"/>。
+		/// 命中时代价只剩「读一次分类绑定 + 一次缓冲长度」，不再逐个资产翻组件。
 		/// </summary>
 		private static int CollectOptions(string fieldId)
 		{
-			s_OptEntities.Clear();
-			s_OptNames.Clear();
+			FilterOptionCache cache = fieldId == F_THEMES ? s_ThemeCache : s_PackCache;
+			// 调用方随后直接读 s_OptNames / s_OptEntities，所以把这两个字段指到本槽的缓存上：
+			// 命中时不用复制，重建时 AddOption 也正好往缓存里写。
+			s_OptCache = cache;
+			s_OptEntities = cache.Entities;
+			s_OptNames = cache.Names;
 			ToolbarUISystem ui = ToolbarUi();
 			EntityManager em = s_Em;
 			PrefabSystem ps = s_CachedPrefabSystem;
 			// s_HaveSystems 是「本局到底解到过 PrefabSystem / EntityManager 没有」的唯一凭据：
 			// s_Em 是结构体，没解到时是个默认值，直接拿它去 Exists 会抛。
-			if (ui == null || ps == null || em == null || !s_HaveSystems) return -1;
+			if (ui == null || ps == null || em == null || !s_HaveSystems)
+			{
+				cache.Forget();
+				return -1;
+			}
 			try
 			{
 				Entity category = BindingEntity(s_CategoryBindingField, ui);
-				if (category == Entity.Null || !em.Exists(category)) return -1;
-				if (!em.HasComponent<UIAssetCategoryData>(category)) return -1;
-				if (!em.HasComponent<UIGroupElement>(category)) return 0;
+				if (category == Entity.Null || !em.Exists(category)
+					|| !em.HasComponent<UIAssetCategoryData>(category))
+				{
+					// 没有选中分类：这次拿不到东西，但缓存也不能留着假装还有
+					cache.Forget();
+					return -1;
+				}
+				int assets = em.HasComponent<UIGroupElement>(category)
+					? em.GetBuffer<UIGroupElement>(category, isReadOnly: true).Length
+					: 0;
+				if (cache.Matches(category, assets)) return cache.Entities.Count;
+				cache.Start(category, assets);
+				if (assets == 0) return 0;
+
 				DynamicBuffer<UIGroupElement> groups = em.GetBuffer<UIGroupElement>(category, isReadOnly: true);
 				bool themes = fieldId == F_THEMES;
 				for (int i = 0; i < groups.Length; i++)
@@ -2972,7 +3130,7 @@ namespace ToolModeMemory
 						{
 							Entity opt = reqs[j].m_Requirement;
 							if (opt == Entity.Null || !em.Exists(opt) || !em.HasComponent<ThemeData>(opt)) continue;
-							AddOption(opt, ps);
+							AddOption(cache, opt, ps);
 						}
 					}
 					else
@@ -2984,25 +3142,27 @@ namespace ToolModeMemory
 						{
 							Entity opt = elem[k].m_Pack;
 							if (opt == Entity.Null || !em.Exists(opt) || !em.HasComponent<AssetPackData>(opt)) continue;
-							AddOption(opt, ps);
+							AddOption(cache, opt, ps);
 						}
 					}
 				}
-				return s_OptEntities.Count;
+				return cache.Entities.Count;
 			}
 			catch (Exception ex)
 			{
+				cache.Forget();
 				WarnToolbarUi(ex);
 				return -1;
 			}
 		}
 
-		private static void AddOption(Entity opt, PrefabSystem ps)
+		private static void AddOption(FilterOptionCache cache, Entity opt, PrefabSystem ps)
 		{
 			string name = OptionName(opt, ps);
-			if (name == null || s_OptNames.Contains(name)) return;
-			s_OptNames.Add(name);
-			s_OptEntities.Add(opt);
+			if (name == null || cache.Index.ContainsKey(name)) return;
+			cache.Index[name] = cache.Entities.Count;
+			cache.Names.Add(name);
+			cache.Entities.Add(opt);
 		}
 
 		private static string OptionName(Entity opt, PrefabSystem ps)
