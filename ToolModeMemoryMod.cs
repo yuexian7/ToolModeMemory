@@ -585,7 +585,13 @@ namespace ToolModeMemory
 		/// </summary>
 		private void HandleSaveLoad(string saveName, bool start, bool success)
 		{
-			if (start) return;
+			// 存盘开始哨兵（2026-10-26 闪退排查后补）：游戏若崩在存档过程中，
+			// 日志里有没有这一行能直接区分「崩在事件广播到我们之前 / 之后」。
+			if (start)
+			{
+				log.Info("Save event started for '" + (saveName ?? "?") + "'.");
+				return;
+			}
 			if (!m_InSave) return;
 			if (Store == null) return;
 
